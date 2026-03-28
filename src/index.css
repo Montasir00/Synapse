@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+  --font-serif: "Playfair Display", serif;
+  --font-headline: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Near Black & Soft Gray Palette */
+  --color-bg: #121212;
+  --color-bg-gradient: #0a0a0a;
+  --color-surface: #1e1e1e;
+  --color-ink: #ededed;
+  --color-accent: #8e8e8e;
+  --color-accent-hover: #a0a0a0;
+  --color-secondary: #6b6b6b; /* Muted Silver */
+  --color-success: #6f8f7a;   /* Sage */
+  --color-alert: #c2846e;     /* Terracotta */
+  --color-muted: #a0a0a0;     /* Gray */
+  --color-dark-border: #2c2c2c; /* Dark Border */
+  --color-border: #2c2c2c;
+
+  /* Semantic Aliases for Component Compatibility */
+  --color-primary: var(--color-accent);
+  --color-on-surface: var(--color-ink);
+  --color-on-surface-variant: var(--color-muted);
+  --color-teal: var(--color-success);
+  
+  /* Glassmorphism Refinement */
+  --glass-bg: rgba(30, 30, 30, 0.8);
+  --glass-border: var(--color-dark-border);
+  --glass-blur: 12px;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bg text-ink antialiased;
+    background: 
+      radial-gradient(circle at 0% 0%, rgba(142, 142, 142, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(107, 107, 107, 0.02) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, var(--color-bg) 0%, var(--color-bg-gradient) 100%);
+    min-height: 100vh;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
+  }
+}
+
+@layer utilities {
+  .serif-display {
+    @apply font-serif italic;
+  }
+
+  .micro-label {
+    @apply font-sans text-[10px] uppercase tracking-[0.15em] font-semibold opacity-60;
+  }
+
+  .glass-surface {
+    @apply bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-[var(--glass-blur)];
+  }
+
+  .glass-card {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    @apply rounded-2xl transition-all duration-300 hover:border-white/20;
+  }
+
+  .writing-vertical-rl {
+    writing-mode: vertical-rl;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

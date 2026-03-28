@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: tasks
+    // Fields: title, description, priority, status, due_date, totalTimeSpent, createdAt
+    //
+    // Collection: transactions
+    // Fields: date, category, merchant, amount, type, status, description, createdAt
+    //
+    // Collection: budgets
+    // Fields: category, monthly_limit, updatedAt
+    //
+    // Collection: exercises
+    // Fields: title, category, date, duration, intensity, createdAt
+    //
+    // Collection: crypto_holdings
+    // Fields: asset, amount, avg_buy_price, last_updated
+    //
+    // Collection: crypto_trades
+    // Fields: date, asset, type, amount, price, profit_loss, createdAt
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // For this app, we'll allow authenticated users to access their data.
+    // Since we don't have a 'uid' field on every document yet, we'll assume
+    // that for now, any authenticated user can read/write.
+    // TODO: Add 'uid' field to all documents and restrict access by uid.
+
+    match /tasks/{taskId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /budgets/{budgetId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /exercises/{exerciseId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /crypto_holdings/{holdingId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /crypto_trades/{tradeId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

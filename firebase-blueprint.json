@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A productivity task or pursuit",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "status": { "type": "string", "enum": ["todo", "in-progress", "review", "done"] },
+        "due_date": { "type": "string" },
+        "totalTimeSpent": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "category": { "type": "string" },
+        "merchant": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "status": { "type": "string", "enum": ["Completed", "Pending", "Flagged"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "category", "merchant", "amount", "type"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly budget limit for a category",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string" },
+        "monthly_limit": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["category", "monthly_limit"]
+    },
+    "Exercise": {
+      "title": "Exercise",
+      "description": "A logged exercise session",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "duration": { "type": "string" },
+        "intensity": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "date", "duration", "intensity"]
+    },
+    "CryptoHolding": {
+      "title": "Crypto Holding",
+      "description": "Current balance of a crypto asset",
+      "type": "object",
+      "properties": {
+        "asset": { "type": "string" },
+        "amount": { "type": "number" },
+        "avg_buy_price": { "type": "number" },
+        "last_updated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["asset", "amount", "avg_buy_price"]
+    },
+    "CryptoTrade": {
+      "title": "Crypto Trade",
+      "description": "A logged crypto trade",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "asset": { "type": "string" },
+        "type": { "type": "string", "enum": ["Buy", "Sell"] },
+        "amount": { "type": "number" },
+        "price": { "type": "number" },
+        "profit_loss": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "asset", "type", "amount", "price"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": { "schema": "Task", "description": "Tasks collection" },
+    "/transactions/{transactionId}": { "schema": "Transaction", "description": "Transactions collection" },
+    "/budgets/{budgetId}": { "schema": "Budget", "description": "Budgets collection" },
+    "/exercises/{exerciseId}": { "schema": "Exercise", "description": "Exercises collection" },
+    "/crypto_holdings/{holdingId}": { "schema": "CryptoHolding", "description": "Crypto holdings collection" },
+    "/crypto_trades/{tradeId}": { "schema": "CryptoTrade", "description": "Crypto trades collection" }
+  }
+}
