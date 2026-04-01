@@ -20,13 +20,13 @@ export default function Toast({ toasts, onRemove }: ToastProps) {
         {toasts.map((toast) => (
           <motion.div
             key={toast.id}
-            initial={{ opacity: 0, x: 50, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 50, scale: 0.9 }}
-            className={`flex items-center gap-4 p-4 rounded-2xl shadow-2xl border backdrop-blur-md min-w-[300px] max-w-md ${
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className={`flex items-center gap-4 p-5 rounded-[4px] shadow-2xl border backdrop-blur-xl min-w-[320px] max-w-md ${
               toast.type === 'success' 
-                ? 'bg-success/10 border-success/20 text-success' 
-                : 'bg-error/10 border-error/20 text-error'
+                ? 'bg-success/5 border-success/20 text-success' 
+                : 'bg-coral/5 border-coral/20 text-coral'
             }`}
           >
             {toast.type === 'success' ? (
@@ -34,10 +34,10 @@ export default function Toast({ toasts, onRemove }: ToastProps) {
             ) : (
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
             )}
-            <p className="text-sm font-semibold flex-1">{toast.message}</p>
+            <p className="text-[11px] font-black uppercase tracking-tight flex-1">{toast.message}</p>
             <button 
               onClick={() => onRemove(toast.id)}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors"
+              className="p-1 hover:bg-white/10 rounded-[2px] transition-all active:scale-90"
             >
               <X className="w-4 h-4" />
             </button>

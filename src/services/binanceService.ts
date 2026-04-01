@@ -2,8 +2,7 @@ import axios from 'axios';
 import { BinanceTrade, Position } from '../types/binance';
 
 export const fetchBinanceTrades = async (
-  apiKey: string,
-  apiSecret: string,
+  idToken: string,
   symbol: string,
   baseUrl: string = 'https://api.binance.com'
 ): Promise<BinanceTrade[]> => {
@@ -12,9 +11,9 @@ export const fetchBinanceTrades = async (
       method: 'GET',
       endpoint: '/api/v3/myTrades',
       params: { symbol },
-      apiKey,
-      apiSecret,
       baseUrl
+    }, {
+      headers: { Authorization: `Bearer ${idToken}` }
     });
     return response.data;
   } catch (error) {
@@ -23,79 +22,119 @@ export const fetchBinanceTrades = async (
   }
 };
 
+export const fetchBinanceAccount = async (
+  idToken: string,
+  baseUrl: string = 'https://api.binance.com'
+): Promise<any> => {
+  try {
+    const response = await axios.post('/api/binance/proxy', {
+      method: 'GET',
+      endpoint: '/api/v3/account',
+      params: {},
+      baseUrl
+    }, {
+      headers: { Authorization: `Bearer ${idToken}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching account:', error);
+    throw error;
+  }
+};
+
 export const processTradesIntoPositions = (trades: BinanceTrade[]): Position[] => {
+  if (!trades.length) return [];
+  
+  const getBaseAsset = (symbol: string) => {
+    return symbol.replace(/USDT$|USDC$|BUSD$|FDUSD$|BNB$|BTC$|ETH$/, '');
+  };
+
   // Sort trades by time ascending
   const sortedTrades = [...trades].sort((a, b) => a.time - b.time);
   
-  const positions: Position[] = [];
-  let currentPosition: Partial<Position> | null = null;
-
+  // Group trades by BASE ASSET (e.g. JUP) to handle cross-pair trades
+  const tradesByBase: Record<string, BinanceTrade[]> = {};
   for (const trade of sortedTrades) {
-    const price = parseFloat(trade.price);
-    const qty = parseFloat(trade.qty);
-    const quoteQty = parseFloat(trade.quoteQty);
-    const commission = parseFloat(trade.commission);
-    
-    if (trade.isBuyer) {
-      // Buy trade
-      if (!currentPosition || currentPosition.status === 'CLOSED') {
-        // Start new position
-        currentPosition = {
-          id: `pos_${trade.symbol}_${trade.time}`,
-          symbol: trade.symbol,
-          status: 'OPEN',
-          totalQty: qty,
-          remainingQty: qty,
-          avgEntryPrice: (quoteQty + commission) / qty, // Include commission in entry cost
-          trades: [trade],
-          entryTime: trade.time,
-          realizedPnl: 0,
-          realizedPnlPercentage: 0
-        };
-      } else {
-        // Add to existing position (DCA)
-        const totalCost = (currentPosition.avgEntryPrice! * currentPosition.totalQty!) + quoteQty + commission;
-        currentPosition.totalQty! += qty;
-        currentPosition.remainingQty! += qty;
-        currentPosition.avgEntryPrice = totalCost / currentPosition.totalQty!;
-        currentPosition.trades!.push(trade);
-      }
-    } else {
-      // Sell trade
-      if (currentPosition && currentPosition.status === 'OPEN') {
-        const sellPrice = price;
-        const sellQty = qty;
-        const sellQuoteQty = quoteQty - commission; // Deduct commission from proceeds
-        
-        const entryCostForThisQty = currentPosition.avgEntryPrice! * sellQty;
-        const pnl = sellQuoteQty - entryCostForThisQty;
-        
-        currentPosition.realizedPnl! += pnl;
-        currentPosition.remainingQty! -= sellQty;
-        currentPosition.trades!.push(trade);
+    const base = getBaseAsset(trade.symbol);
+    if (!tradesByBase[base]) tradesByBase[base] = [];
+    tradesByBase[base].push(trade);
+  }
 
-        if (currentPosition.remainingQty! <= 0.00000001) { // Floating point safety
-          currentPosition.status = 'CLOSED';
-          currentPosition.exitTime = trade.time;
-          currentPosition.avgExitPrice = currentPosition.trades!
-            .filter(t => !t.isBuyer)
-            .reduce((acc, t) => acc + parseFloat(t.quoteQty), 0) / currentPosition.totalQty!;
+  const allPositions: Position[] = [];
+
+  for (const base in tradesByBase) {
+    const baseTrades = tradesByBase[base];
+    let currentPosition: Partial<Position> | null = null;
+
+    for (const trade of baseTrades) {
+      const rawQty = parseFloat(trade.qty);
+      const quoteQty = parseFloat(trade.quoteQty);
+      const commission = parseFloat(trade.commission);
+      const commissionAsset = trade.commissionAsset;
+
+      let effectiveQty = rawQty;
+      let effectiveCost = quoteQty;
+
+      if (trade.isBuyer) {
+        if (commissionAsset === base) {
+          effectiveQty -= commission;
+        } else if (/USDT|USDC|BUSD|FDUSD/.test(commissionAsset)) {
+          effectiveCost += commission;
+        }
+        
+        if (!currentPosition || currentPosition.status === 'CLOSED') {
+          currentPosition = {
+            id: `pos_${base}_${trade.time}`,
+            symbol: base, // Use base asset as the display name
+            status: 'OPEN',
+            totalQty: effectiveQty,
+            remainingQty: effectiveQty,
+            avgEntryPrice: effectiveCost / effectiveQty,
+            trades: [trade],
+            entryTime: trade.time,
+            realizedPnl: 0,
+            realizedPnlPercentage: 0
+          };
+        } else {
+          const prevCost = (currentPosition.avgEntryPrice! * currentPosition.totalQty!);
+          currentPosition.totalQty! += effectiveQty;
+          currentPosition.remainingQty! += effectiveQty;
+          currentPosition.avgEntryPrice = (prevCost + effectiveCost) / currentPosition.totalQty!;
+          currentPosition.trades!.push(trade);
+        }
+      } else {
+        if (/USDT|USDC|BUSD|FDUSD/.test(commissionAsset)) {
+          effectiveCost -= commission;
+        }
+
+        if (currentPosition && currentPosition.status === 'OPEN') {
+          const entryCostForThisQty = currentPosition.avgEntryPrice! * effectiveQty;
+          const pnl = effectiveCost - entryCostForThisQty;
           
-          currentPosition.realizedPnlPercentage = (currentPosition.realizedPnl! / (currentPosition.avgEntryPrice! * currentPosition.totalQty!)) * 100;
-          
-          positions.push(currentPosition as Position);
-          currentPosition = null;
+          currentPosition.realizedPnl! += pnl;
+          currentPosition.remainingQty! -= effectiveQty;
+          currentPosition.trades!.push(trade);
+
+          if (currentPosition.remainingQty! <= 0.001) { 
+            currentPosition.status = 'CLOSED';
+            currentPosition.exitTime = trade.time;
+            
+            const totalEntryBasis = currentPosition.avgEntryPrice! * currentPosition.totalQty!;
+            currentPosition.realizedPnlPercentage = (currentPosition.realizedPnl! / totalEntryBasis) * 100;
+            
+            allPositions.push(currentPosition as Position);
+            currentPosition = null;
+          }
         }
       }
     }
+
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      allPositions.push(currentPosition as Position);
+    }
   }
 
-  // If there's an open position left, add it to the list
-  if (currentPosition && currentPosition.status === 'OPEN') {
-    positions.push(currentPosition as Position);
-  }
-
-  return positions.reverse(); // Newest first
+  return allPositions.sort((a, b) => b.entryTime - a.entryTime);
 };
 
 export const calculateMetrics = (positions: Position[]) => {

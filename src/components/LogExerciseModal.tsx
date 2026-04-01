@@ -57,47 +57,51 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
           />
           
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative glass-card w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20"
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="relative bg-surface w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[42px] shadow-2xl border border-white/10"
           >
             <div className="p-8 lg:p-10">
-              <div className="flex justify-between items-center mb-10">
-                <h2 className="serif-text text-3xl font-bold text-on-surface">Log Session</h2>
-                <button 
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-on-surface-variant hover:bg-white/10 transition-colors border border-white/10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                <div className="flex justify-between items-center mb-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    <span className="text-[10px] font-black text-ink uppercase tracking-[0.3em]">Protocol Session Entry</span>
+                  </div>
+                  <button 
+                    onClick={onClose}
+                    className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-accent hover:bg-white/10 transition-all border border-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
               <form className="space-y-6" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Session Name</label>
-                  <div className="relative">
-                    <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-4 h-4" />
+                <div className="space-y-3">
+                  <label className="micro-label opacity-40">Session Descriptor</label>
+                  <div className="relative group">
+                    <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/30 group-focus-within:text-accent w-4 h-4 transition-colors" />
                     <input 
                       type="text" 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Morning Run" 
-                      className="w-full bg-white/5 rounded-2xl py-4 pl-12 pr-5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all border border-white/10 text-on-surface placeholder:text-on-surface-variant/50"
+                      placeholder="e.g. Endurance Protocol" 
+                      className="w-full bg-black/20 rounded-full py-4 pl-12 pr-6 text-sm font-medium focus:border-accent/40 outline-none transition-all border border-white/5 text-ink placeholder:text-muted/20"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
+                  <div className="space-y-3">
+                    <label className="micro-label opacity-40">Classification</label>
                     <div className="relative group">
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-4 h-4" />
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/30 w-4 h-4" />
                       <select 
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full bg-white/5 rounded-2xl py-4 px-5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer border border-white/10 text-on-surface"
+                        className="w-full bg-black/20 rounded-full py-4 px-6 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-white/5 text-ink"
                       >
                         <option className="bg-surface" value="Strength">Strength</option>
                         <option className="bg-surface" value="Yoga">Yoga</option>
@@ -105,30 +109,30 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                       </select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Duration (min)</label>
-                    <div className="relative">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-4 h-4" />
+                  <div className="space-y-3">
+                    <label className="micro-label opacity-40">Duration (min)</label>
+                    <div className="relative group">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/30 group-focus-within:text-accent w-4 h-4 transition-colors" />
                       <input 
                         type="number" 
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
                         placeholder="30" 
-                        className="w-full bg-white/5 rounded-2xl py-4 pl-12 pr-5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all border border-white/10 text-on-surface placeholder:text-on-surface-variant/50"
+                        className="w-full bg-black/20 rounded-full py-4 pl-12 pr-6 text-sm font-medium focus:border-accent/40 outline-none transition-all border border-white/5 text-ink placeholder:text-muted/20"
                         required
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Intensity</label>
+                <div className="space-y-3">
+                  <label className="micro-label opacity-40">Load Intensity</label>
                   <div className="relative group">
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-4 h-4" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/30 w-4 h-4" />
                     <select 
                       value={intensity}
                       onChange={(e) => setIntensity(e.target.value)}
-                      className="w-full bg-white/5 rounded-2xl py-4 px-5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer border border-white/10 text-on-surface"
+                      className="w-full bg-black/20 rounded-full py-4 px-6 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-white/5 text-ink"
                     >
                       <option className="bg-surface" value="Low">Low Intensity</option>
                       <option className="bg-surface" value="Moderate">Moderate</option>
@@ -137,24 +141,24 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Notes</label>
-                  <div className="relative">
-                    <AlignLeft className="absolute left-4 top-4 text-on-surface-variant w-4 h-4" />
+                <div className="space-y-3">
+                  <label className="micro-label opacity-40">Biometric Notes</label>
+                  <div className="relative group">
+                    <AlignLeft className="absolute left-4 top-4 text-muted/30 w-4 h-4 transition-colors group-focus-within:text-accent" />
                     <textarea 
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="How did you feel?" 
-                      className="w-full bg-white/5 rounded-2xl py-4 pl-12 pr-5 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none transition-all min-h-[100px] resize-none border border-white/10 text-on-surface placeholder:text-on-surface-variant/50"
+                      placeholder="Feedback loop notes..." 
+                      className="w-full bg-black/20 rounded-[32px] py-4 pl-12 pr-6 text-sm font-medium focus:border-accent/40 outline-none transition-all min-h-[100px] resize-none border border-white/5 text-ink placeholder:text-muted/20"
                     />
                   </div>
                 </div>
 
                 <button 
                   type="submit"
-                  className="w-full py-5 bg-primary text-black rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4"
+                  className="precise-button w-full py-4 text-xs tracking-[0.3em] font-black mt-4 shadow-xl active:scale-[0.98]"
                 >
-                  Log Session
+                  Confirm Session
                 </button>
               </form>
             </div>

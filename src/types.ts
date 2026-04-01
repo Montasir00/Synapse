@@ -1,7 +1,7 @@
-export interface SubTask {
+export interface Subtask {
   id: string;
   title: string;
-  completed: boolean;
+  isCompleted: boolean;
 }
 
 export interface Task {
@@ -9,11 +9,40 @@ export interface Task {
   title: string;
   description: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'todo' | 'in-progress' | 'review' | 'done';
-  linkedExpenseId?: string;
-  subtasks?: SubTask[];
+  status: 'todo' | 'done';
+  taskCategory?: 'daily' | 'long-term';
+  lastCompletedAt?: string; // ISO string used for daily resets
+  uid?: string | null;
+  createdAt?: string;
   dueDate?: string;
-  totalTimeSpent?: number; // in seconds
+  isStacked?: boolean;
+  position?: number;
+  subtasks?: Subtask[];
+  recurrence?: {
+    type: 'none' | 'daily' | 'weekly' | 'monthly' | 'interval';
+    daysOfWeek?: number[]; // [0-6] where 0 is Sunday
+    dateOfMonth?: number; // 1-31
+    intervalDays?: number; // e.g., every 3 days
+  } | null;
+}
+
+export interface UserStats {
+  id: string; // usually maps to uid
+  uid: string;
+  level: number;
+  exp: number;
+  currentStreak: number;
+  lastActiveDate: string; // YYYY-MM-DD
+}
+
+export interface Note {
+  id: string;
+  uid: string;
+  content: string;
+  color?: string;
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Transaction {

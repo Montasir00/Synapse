@@ -41,28 +41,66 @@ service cloud.firestore {
     // that for now, any authenticated user can read/write.
     // TODO: Add 'uid' field to all documents and restrict access by uid.
 
+    function isUserOwned(docData) {
+      return isAuthenticated() && docData.data.uid == request.auth.uid;
+    }
+
     match /tasks/{taskId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
     match /transactions/{transactionId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
     match /budgets/{budgetId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
     match /exercises/{exerciseId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+    }
+
+    match /tradeNotes/{noteId} {
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
     match /crypto_holdings/{holdingId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
     match /crypto_trades/{tradeId} {
-      allow read, write: if isAuthenticated();
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+    }
+
+    match /notes/{noteId} {
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+    }
+
+    match /user_stats/{statId} {
+      allow read, delete: if isUserOwned(resource);
+      allow create: if isUserOwned(request.resource);
+      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+    }
+
+    match /user_secrets/{userId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

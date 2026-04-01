@@ -14,102 +14,17 @@ export default function Settings({ user, googleConnected, onLogin }: SettingsPro
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="mt-16 md:mt-20 p-4 md:p-12 max-w-6xl mx-auto w-full">
-      <div className="mb-10 md:mb-16">
-        <h1 className="serif-text text-3xl md:text-5xl font-bold text-on-surface mb-2">Curate Your Sanctuary</h1>
-        <p className="text-on-surface-variant text-sm md:text-base tracking-wide font-medium opacity-70">Tailor your digital environment for maximum cognitive clarity.</p>
-      </div>
+    <div className="pt-10 lg:pt-12 pb-28 lg:pb-16 px-4 md:px-10 w-full max-w-[1600px] mx-auto">
+      <div className="grid grid-cols-12 gap-6 lg:gap-10">
 
-      <div className="grid grid-cols-12 gap-6 md:gap-8">
-        <section className="col-span-12 glass-card rounded-3xl p-8 mb-4 border-l-4 border-accent shadow-lg shadow-accent/5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border border-white/10 ${googleConnected ? 'bg-success/10 text-success' : 'bg-white/5 text-on-surface-variant'}`}>
-                <Database className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="serif-text text-2xl font-semibold text-on-surface flex items-center gap-2">
-                  Google Calendar
-                  {googleConnected ? (
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-on-surface-variant opacity-30" />
-                  )}
-                </h3>
-                <p className="text-sm text-on-surface-variant opacity-70">
-                  {googleConnected 
-                    ? 'Calendar events are syncing.' 
-                    : 'Connect Google to sync Calendar.'}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {!googleConnected ? (
-                <a 
-                  href="/api/auth/google" 
-                  className="flex items-center justify-center gap-2 px-8 py-3 bg-accent text-black rounded-full text-sm font-bold shadow-lg shadow-accent/20 hover:opacity-90 transition-all"
-                >
-                  Connect Google
-                </a>
-              ) : (
-                <div className="px-6 py-2.5 bg-success/10 border border-success/20 rounded-full text-sm font-bold text-success flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Connected
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Firebase Status Section */}
-        <section className="col-span-12 glass-card rounded-3xl p-8 mb-4 border-l-4 border-primary shadow-lg shadow-primary/5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border border-white/10 ${user ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
-                <Database className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="serif-text text-2xl font-semibold text-on-surface flex items-center gap-2">
-                  Firebase Backend
-                  {user ? (
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-error" />
-                  )}
-                </h3>
-                <p className="text-sm text-on-surface-variant opacity-70">
-                  {user 
-                    ? `Authenticated as ${user.email}` 
-                    : 'Authentication required for cloud sync.'}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {user ? (
-                <div className="px-6 py-2.5 bg-success/10 border border-success/20 rounded-full text-sm font-bold text-success flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  System Online
-                </div>
-              ) : (
-                <button 
-                  onClick={onLogin}
-                  className="px-6 py-2.5 bg-primary text-black rounded-full text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
-                >
-                  Sign In
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="col-span-12 lg:col-span-7 glass-card rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all hover:bg-white/5 relative overflow-hidden group shadow-sm">
+        <section className="col-span-12 lg:col-span-7 glass-card p-6 md:p-8 transition-all hover:bg-white/5 relative overflow-hidden group">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
             <div>
-              <h2 className="serif-text text-xl md:text-2xl font-semibold mb-1 text-on-surface">Personal Profile</h2>
-              <p className="text-xs md:text-sm text-on-surface-variant opacity-60">Identity & Global Presence</p>
+              <h2 className="text-xl md:text-2xl font-display font-black text-ink uppercase tracking-tight">Identity Profile</h2>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-40">System Metadata & Global Reach</p>
             </div>
-            <button className="w-full sm:w-auto bg-primary text-black px-6 py-2 rounded-full font-bold text-sm transition-transform hover:scale-[1.02] shadow-lg shadow-primary/20">
-              Edit Profile
+            <button className="precise-button px-6 py-2 text-[10px]">
+              Calibrate Identity
             </button>
           </div>
           
@@ -118,123 +33,126 @@ export default function Settings({ user, googleConnected, onLogin }: SettingsPro
               <img 
                 src={user?.photoURL || "https://picsum.photos/seed/julian/200/200"} 
                 alt={user?.displayName || "User profile"} 
-                className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-2xl border-2 border-[var(--glass-border)]"
+                className="w-24 h-24 md:w-32 md:h-32 rounded-3xl object-cover shadow-2xl border border-white/10"
                 referrerPolicy="no-referrer"
               />
-              <button className="absolute bottom-0 right-0 bg-primary p-2 rounded-full shadow-md text-black">
+              <button className="absolute bottom-[-10px] right-[-10px] bg-accent p-3 rounded-full shadow-md text-white border border-white/20">
                 <Camera className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
             <div className="space-y-4 flex-1 w-full text-center sm:text-left">
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant opacity-50">Full Name</label>
-                <p className="text-base md:text-lg font-semibold border-b border-white/10 pb-1 text-on-surface">
-                  {user?.displayName || 'Guest User'}
+                <label className="micro-label opacity-40">Identifier</label>
+                <p className="text-lg font-mono font-bold border-b border-white/5 pb-1 text-ink uppercase tracking-tighter">
+                  {user?.displayName || 'GUEST_UNIDENTIFIED'}
                 </p>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant opacity-50">Email Address</label>
-                <p className="text-base md:text-lg font-semibold border-b border-white/10 pb-1 text-on-surface">
-                  {user?.email || 'Not signed in'}
+                <label className="micro-label opacity-40">Contact Point</label>
+                <p className="text-base font-mono font-bold border-b border-white/5 pb-1 text-muted/60 lowercase">
+                  {user?.email || 'N/A'}
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="col-span-12 lg:col-span-5 glass-card rounded-3xl p-8 flex flex-col justify-between shadow-sm">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <User className="text-primary w-6 h-6" />
-              <h2 className="serif-text text-2xl font-semibold text-on-surface">Focus Protocol</h2>
+        <section className="col-span-12 lg:col-span-12 glass-card p-10 flex flex-col lg:flex-row items-center justify-between gap-10 border-l-4 border-accent shadow-xl shadow-accent/5">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center text-accent border border-accent/20">
+                <User className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl lg:text-3xl font-display font-black text-ink uppercase tracking-tight">Focus Logic</h2>
+                <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-40">Systemic Cognitive Management</p>
+              </div>
             </div>
-            <p className="text-sm text-on-surface-variant mb-8 leading-relaxed opacity-70">
-              Define how TaskFlow communicates with you during peak productivity windows.
+            <p className="text-[11px] font-bold text-muted uppercase tracking-wide opacity-40 leading-relaxed max-w-md">
+              Define biometric communication window for peak throughput and operational flow status.
             </p>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                <span className="text-sm font-semibold text-on-surface">Deep Work Mode</span>
-                <div 
-                  onClick={() => setDeepWork(!deepWork)}
-                  className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-300 ${deepWork ? 'bg-primary' : 'bg-white/10'}`}
-                >
-                  <motion.div 
-                    animate={{ x: deepWork ? 24 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                <span className="text-sm font-semibold text-on-surface">Smart Notifications</span>
-                <div 
-                  onClick={() => setNotifications(!notifications)}
-                  className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-300 ${notifications ? 'bg-primary' : 'bg-white/10'}`}
-                >
-                  <motion.div 
-                    animate={{ x: notifications ? 24 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
-                  />
-                </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto">
+            <div className="flex items-center justify-between p-5 bg-black/20 rounded-full border border-white/5 min-w-[200px]">
+              <span className="text-[10px] font-black text-ink uppercase tracking-widest">Deep Work State</span>
+              <div 
+                onClick={() => setDeepWork(!deepWork)}
+                className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-200 ${deepWork ? 'bg-accent' : 'bg-white/10'}`}
+              >
+                <motion.div 
+                   animate={{ x: deepWork ? 28 : 4 }}
+                   className="absolute top-1 w-4 h-4 bg-white rounded-full" 
+                />
               </div>
             </div>
-          </div>
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <p className="text-xs text-on-surface-variant italic opacity-60">Next deep work session scheduled for 9:00 AM Tomorrow.</p>
+            <div className="flex items-center justify-between p-5 bg-black/20 rounded-full border border-white/5 min-w-[200px]">
+              <span className="text-[10px] font-black text-ink uppercase tracking-widest">Cognitive Alerts</span>
+              <div 
+                onClick={() => setNotifications(!notifications)}
+                className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-200 ${notifications ? 'bg-accent' : 'bg-white/10'}`}
+              >
+                <motion.div 
+                   animate={{ x: notifications ? 28 : 4 }}
+                   className="absolute top-1 w-4 h-4 bg-white rounded-full" 
+                />
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="col-span-12 glass-card rounded-3xl p-10 shadow-sm">
+        <section className="col-span-12 glass-card p-10">
           <div className="mb-10">
-            <h2 className="serif-text text-3xl font-semibold mb-2 text-on-surface">System Preferences</h2>
-            <p className="text-on-surface-variant opacity-60">Global aesthetics and structural behavior.</p>
+            <h2 className="text-3xl font-display font-black mb-2 text-ink uppercase tracking-tight">System Parameters</h2>
+            <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-40">Structural Aesthetics & Logic Behavior.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="space-y-6">
-              <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Appearance</h3>
+              <h3 className="text-[9px] font-black text-accent uppercase tracking-[0.3em]">Environment</h3>
               <div className="flex flex-col gap-4">
                 <button 
-                  className={`flex items-center justify-between w-full p-4 rounded-xl border transition-all border-primary bg-primary/5 text-primary`}
+                  className={`flex items-center justify-between w-full p-4 rounded-full border transition-all border-accent/20 bg-accent/5 text-accent`}
                 >
-                  <span className="flex items-center gap-3 font-bold"><Moon className="w-4 h-4" /> Dark Mode</span>
-                  <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 bg-black rounded-full" />
+                  <span className="flex items-center gap-3 font-black text-xs uppercase tracking-widest"><Moon className="w-4 h-4" /> Dark State</span>
+                  <div className="w-4 h-4 bg-accent rounded-full flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
                   </div>
                 </button>
-                <p className="text-[10px] text-on-surface-variant opacity-50 uppercase tracking-widest text-center">Darkish mode enforced for sanctuary clarity.</p>
+                <p className="text-[8px] text-muted font-bold uppercase tracking-[0.2em] text-center opacity-30">Vibrant Noir enforced for cognitive sanctuary.</p>
               </div>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Typography</h3>
+              <h3 className="text-[9px] font-black text-accent uppercase tracking-[0.3em]">Typography</h3>
               <div className="space-y-4">
-                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                  <label className="block text-xs font-bold text-on-surface-variant mb-3 opacity-50">Main Font Pairing</label>
+                <div className="p-4 bg-white/5 rounded-3xl border border-white/5">
+                  <label className="block text-[8px] font-black text-muted mb-3 uppercase tracking-widest opacity-40">Geometric Stack</label>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="serif-text text-lg text-on-surface">Editorial Serif</span>
-                    <span className="text-xs text-on-surface-variant">Active</span>
+                    <span className="font-display font-black text-lg text-ink uppercase tracking-tight">Vibrant Sans</span>
+                    <span className="text-[9px] font-bold text-success uppercase tracking-widest">Active</span>
                   </div>
                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="w-full h-full bg-primary" />
+                    <div className="w-full h-full bg-accent" />
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Regional</h3>
+              <h3 className="text-[9px] font-black text-accent uppercase tracking-[0.3em]">Regional</h3>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-on-surface-variant opacity-50">Timezone</label>
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10">
-                    <span className="text-sm font-semibold text-on-surface">London, GMT+0</span>
-                    <ChevronDown className="w-4 h-4 text-on-surface-variant" />
+                  <label className="micro-label opacity-40">Temporal Zone</label>
+                  <div className="flex items-center justify-between p-3 bg-black/20 rounded-full cursor-pointer hover:bg-white/5 transition-all border border-white/5">
+                    <span className="text-[10px] font-bold text-ink uppercase tracking-widest">UTC/PHT</span>
+                    <ChevronDown className="w-4 h-4 text-muted/30" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold text-on-surface-variant opacity-50">Language</label>
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10">
-                    <span className="text-sm font-semibold text-on-surface">English (UK)</span>
-                    <ChevronDown className="w-4 h-4 text-on-surface-variant" />
+                  <label className="micro-label opacity-40">Dialect</label>
+                  <div className="flex items-center justify-between p-3 bg-black/20 rounded-full cursor-pointer hover:bg-white/5 transition-all border border-white/5">
+                    <span className="text-[10px] font-bold text-ink uppercase tracking-widest">Technic_Eng</span>
+                    <ChevronDown className="w-4 h-4 text-muted/30" />
                   </div>
                 </div>
               </div>
@@ -242,34 +160,37 @@ export default function Settings({ user, googleConnected, onLogin }: SettingsPro
           </div>
         </section>
 
-        <section className="col-span-12 lg:col-span-4 bg-primary text-black rounded-3xl p-8 flex flex-col justify-between shadow-2xl shadow-primary/30">
-          <ShieldCheck className="w-12 h-12 opacity-20" />
+        <section className="col-span-12 lg:col-span-4 bg-accent text-white rounded-[42px] p-10 flex flex-col justify-between shadow-2xl shadow-accent/20">
+          <ShieldCheck className="w-12 h-12 opacity-40" />
           <div>
-            <h3 className="serif-text text-4xl font-bold mb-2">842</h3>
-            <p className="text-sm opacity-80 uppercase tracking-widest font-bold">Tasks Curated</p>
+            <h3 className="text-4xl font-mono font-black mb-2">1,024</h3>
+            <p className="text-[10px] opacity-60 uppercase tracking-[0.2em] font-black">Protocols Purged</p>
           </div>
           <div className="mt-8">
-            <p className="text-xs leading-relaxed opacity-70">Your editorial streak is in the top 5% of users this month. Maintain the sanctuary.</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide opacity-50 leading-relaxed">Throughput exceeds global baseline by 42%. Efficiency optimal.</p>
           </div>
         </section>
 
-        <section className="col-span-12 lg:col-span-8 glass-card rounded-3xl p-8 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-all shadow-sm">
+        <section className="col-span-12 lg:col-span-8 glass-card p-8 flex items-center justify-between group cursor-pointer">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform border border-white/10">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-accent shadow-sm group-hover:bg-white/10 transition-all border border-white/10">
               <ShieldCheck className="w-8 h-8" />
             </div>
             <div>
-              <h3 className="serif-text text-xl font-semibold text-on-surface">Security & Authentication</h3>
-              <p className="text-sm text-on-surface-variant opacity-70">Manage passwords, MFA, and active sessions.</p>
+              <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight">Security Protocol</h3>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest opacity-40">MFA / Auth_State / Session_Audit</p>
             </div>
           </div>
-          <ChevronDown className="w-5 h-5 text-on-surface-variant -rotate-90 group-hover:translate-x-2 transition-transform" />
+          <ChevronDown className="w-5 h-5 text-muted/30 -rotate-90 group-hover:translate-x-2 transition-transform" />
         </section>
       </div>
 
-      <footer className="mt-20 flex justify-between items-center text-on-surface-variant opacity-40 text-[10px] uppercase tracking-[0.3em] font-bold">
-        <span>TaskFlow v4.2.0 Sanctuary Edition</span>
-        <span>{user ? 'Synchronized with Firebase' : 'All modifications saved locally.'}</span>
+      <footer className="mt-20 flex justify-between items-center text-muted/40 text-[9px] uppercase tracking-[0.4em] font-black">
+        <span>TASKOS_V4.4.2_PRODUCTION_BUILD</span>
+        <span className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 bg-success rounded-full shadow-[0_0_8px_rgba(0,212,170,0.5)]" />
+          {user ? 'CLOUD_SYNC_ACTIVE' : 'LOCAL_VOLATILE_STATE'}
+        </span>
       </footer>
     </div>
   );

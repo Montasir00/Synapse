@@ -102,46 +102,48 @@ export default function LogExpenseModal({
           />
           
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-border"
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="relative bg-surface w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[42px] shadow-2xl border border-white/10"
             >
               <div className="p-8 lg:p-10">
                 <div className="flex justify-between items-center mb-10">
-                  <h2 className="text-3xl font-display font-bold text-ink">
-                    {editingTransaction ? 'Edit Entry' : 'Financial Entry'}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    <span className="text-[10px] font-black text-ink uppercase tracking-[0.3em]">Ledger Synchronization</span>
+                  </div>
                   <button 
                     onClick={onClose}
-                    className="w-10 h-10 rounded-full bg-bg flex items-center justify-center text-muted hover:bg-border transition-colors border border-border"
+                    className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-accent hover:bg-white/10 transition-all border border-white/10"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="flex p-1 bg-bg rounded-2xl mb-8 border border-border">
+                <div className="flex p-1 bg-black/20 rounded-full mb-8 border border-white/5">
                   <button 
                     type="button"
                     onClick={() => setType('expense')}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${type === 'expense' ? 'bg-surface text-ink shadow-lg' : 'text-muted hover:text-ink'}`}
+                    className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${type === 'expense' ? 'bg-white/10 text-ink shadow-lg' : 'text-muted hover:text-ink'}`}
                   >
-                    Expense
+                    Outflow
                   </button>
                   <button 
                     type="button"
                     onClick={() => setType('income')}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${type === 'income' ? 'bg-accent text-bg shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
+                    className={`flex-1 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${type === 'income' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                   >
-                    Income
+                    Inflow
                   </button>
                 </div>
 
-                <form className="space-y-8" onSubmit={handleSubmit}>
-                  <div className="space-y-2">
-                    <label className="micro-label">Amount</label>
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                  <div className="space-y-4 mb-10">
+                    <label className="micro-label opacity-40">Value Injection</label>
                     <div className="relative">
-                      <span className={`absolute left-0 top-1/2 -translate-y-1/2 text-3xl font-display font-bold ${type === 'income' ? 'text-success' : 'text-ink'}`}>
+                      <span className={`absolute left-0 top-1/2 -translate-y-1/2 text-3xl font-mono font-bold ${type === 'income' ? 'text-success' : 'text-ink'}`}>
                         {type === 'income' ? '+' : '-'}
                       </span>
                       <input 
@@ -150,49 +152,49 @@ export default function LogExpenseModal({
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="0.00" 
-                        className={`w-full bg-transparent border-b-2 border-border py-4 pl-8 text-5xl font-display font-bold focus:border-accent outline-none transition-colors placeholder:text-muted/20 ${type === 'income' ? 'text-success' : 'text-ink'}`}
+                        className={`w-full bg-transparent border-b border-white/10 py-4 pl-8 text-5xl font-mono font-bold focus:border-accent outline-none transition-colors placeholder:text-muted/20 ${type === 'income' ? 'text-success' : 'text-ink'}`}
                         required
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <label className="micro-label">Merchant / Source</label>
+                    <div className="space-y-3">
+                      <label className="micro-label opacity-40">Merchant / Source</label>
                       <div className="relative">
                         <input 
                           type="text" 
                           value={merchant}
                           onChange={(e) => handleMerchantChange(e.target.value)}
-                          placeholder={type === 'income' ? "e.g. Salary" : "e.g. Apple Store"} 
-                          className="w-full bg-bg rounded-2xl py-4 px-5 text-sm font-semibold focus:ring-2 focus:ring-accent/20 outline-none transition-all border border-border text-ink placeholder:text-muted/50"
+                          placeholder={type === 'income' ? "e.g. Salary" : "e.g. Terminal"} 
+                          className="w-full bg-black/20 rounded-full py-4 px-6 text-sm font-semibold focus:border-accent/40 outline-none transition-all border border-white/5 text-ink placeholder:text-muted/50"
                           required
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="micro-label">Date</label>
+                    <div className="space-y-3">
+                      <label className="micro-label opacity-40">Timestamp</label>
                       <div className="relative">
-                        <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
+                        <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/30 w-4 h-4" />
                         <input 
                           type="date" 
                           value={date}
                           onChange={(e) => setDate(e.target.value)}
-                          className="w-full bg-bg rounded-2xl py-4 px-5 text-sm font-semibold focus:ring-2 focus:ring-accent/20 outline-none transition-all border border-border text-ink appearance-none"
+                          className="w-full bg-black/20 rounded-full py-4 px-6 text-sm font-semibold focus:border-accent/40 outline-none transition-all border border-white/5 text-ink appearance-none [color-scheme:dark]"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <label className="micro-label">Category</label>
+                      <label className="micro-label opacity-40">Classification</label>
                       <button 
                         type="button"
                         onClick={() => setIsAddingCategory(!isAddingCategory)}
-                        className="text-[9px] font-bold uppercase tracking-widest text-accent hover:underline"
+                        className="text-[9px] font-bold uppercase tracking-widest text-accent hover:text-ink transition-colors"
                       >
-                        {isAddingCategory ? 'Cancel' : '+ New Category'}
+                        {isAddingCategory ? 'Cancel' : '+ Define New'}
                       </button>
                     </div>
                     
@@ -203,25 +205,25 @@ export default function LogExpenseModal({
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value)}
                           placeholder="Category name..."
-                          className="flex-1 bg-bg rounded-2xl py-4 px-5 text-sm font-semibold focus:ring-2 focus:ring-accent/20 outline-none transition-all border border-border text-ink"
+                          className="flex-1 bg-black/20 rounded-full py-4 px-6 text-sm font-semibold focus:border-accent/40 outline-none transition-all border border-white/5 text-ink"
                           autoFocus
                         />
                         <button 
                           type="button"
                           onClick={handleAddCategory}
-                          className="px-6 bg-accent text-bg rounded-2xl font-bold text-xs"
+                          className="px-6 bg-accent text-white rounded-full font-bold text-xs"
                         >
                           Add
                         </button>
                       </div>
                     ) : (
                       <div className="relative group">
-                        <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
+                        <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/30 w-4 h-4 transition-colors group-focus-within:text-accent" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/30 w-4 h-4" />
                         <select 
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
-                          className="w-full bg-bg rounded-2xl py-4 pl-12 pr-10 text-sm font-semibold focus:ring-2 focus:ring-accent/20 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
+                          className="w-full bg-black/20 rounded-full py-4 pl-12 pr-10 text-sm font-semibold focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-white/5 text-ink"
                         >
                           {categories.map(cat => (
                             <option key={cat} value={cat} className="bg-surface">{cat}</option>
@@ -231,24 +233,24 @@ export default function LogExpenseModal({
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="micro-label">Notes</label>
-                    <div className="relative">
-                      <FileText className="absolute left-4 top-4 text-muted w-4 h-4" />
+                  <div className="space-y-3">
+                    <label className="micro-label opacity-40">Context Notes</label>
+                    <div className="relative group">
+                      <FileText className="absolute left-4 top-4 text-muted/30 w-4 h-4 transition-colors group-focus-within:text-accent" />
                       <textarea 
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Add a mindful note..." 
-                        className="w-full bg-bg rounded-2xl py-4 pl-12 pr-5 text-sm font-semibold focus:ring-2 focus:ring-accent/20 outline-none transition-all min-h-[100px] resize-none border border-border text-ink placeholder:text-muted/50"
+                        placeholder="Mindful justification..." 
+                        className="w-full bg-black/20 rounded-[32px] py-4 pl-12 pr-5 text-sm font-semibold focus:border-accent/40 outline-none transition-all min-h-[100px] resize-none border border-white/5 text-ink placeholder:text-muted/50"
                       />
                     </div>
                   </div>
 
                   <button 
                     type="submit"
-                    className={`w-full py-5 rounded-2xl font-bold text-lg shadow-xl transition-all active:scale-[0.98] mt-4 ${type === 'income' ? 'bg-success text-bg shadow-success/20 hover:shadow-success/40' : 'bg-accent text-bg shadow-accent/20 hover:shadow-accent/40'}`}
+                    className={`precise-button w-full py-4 text-xs tracking-[0.3em] font-black mt-4 shadow-xl active:scale-[0.98] ${type === 'income' ? 'bg-success hover:bg-success/80 !text-white' : ''}`}
                   >
-                    {editingTransaction ? 'Update' : 'Log'} {type === 'income' ? 'Inflow' : 'Outflow'}
+                    {editingTransaction ? 'Re-apply' : 'Apply'} {type === 'income' ? 'Injection' : 'Outflow'}
                   </button>
                 </form>
               </div>
