@@ -1,0 +1,68 @@
+:root {
+  /* Design system color tokens (single source of truth) */
+  --ds-color-bg: #f7f8fa;
+  --ds-color-surface: #ffffff;
+  --ds-color-surface-subtle: #f3f5f7;
+  --ds-color-border: #e5e9ef;
+  --ds-color-border-strong: #d4dae3;
+
+  --ds-color-text-primary: #111827;
+  --ds-color-text-secondary: #475467;
+  --ds-color-text-muted: #667085;
+  --ds-color-text-disabled: #98a2b3;
+
+  --ds-color-primary: #4f46e5;
+  --ds-color-primary-hover: #4338ca;
+  --ds-color-primary-active: #3730a3;
+  --ds-color-primary-soft: #eef0ff;
+
+  --ds-color-secondary: #0f766e;
+  --ds-color-secondary-hover: #115e59;
+  --ds-color-secondary-soft: #e8f7f5;
+
+  --ds-color-success: #15803d;
+  --ds-color-success-soft: #ecfdf3;
+  --ds-color-warning: #b54708;
+  --ds-color-warning-soft: #fff7e6;
+  --ds-color-danger: #b42318;
+  --ds-color-danger-soft: #fef3f2;
+  --ds-color-info: #1d4ed8;
+  --ds-color-info-soft: #eff6ff;
+
+  /* Spacing & radius */
+  --spacing-unit: 8px;
+  --radius: 12px;
+
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 10px 24px rgba(16, 24, 40, 0.1);
+}
+
+/* Utility classes */
+.focus-visible-outline:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: var(--ds-color-primary);
+  border-radius: var(--radius);
+}

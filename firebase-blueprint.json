@@ -8,7 +8,7 @@
         "title": { "type": "string" },
         "description": { "type": "string" },
         "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
-        "status": { "type": "string", "enum": ["todo", "in-progress", "review", "done"] },
+        "status": { "type": "string", "enum": ["todo", "done"] },
         "due_date": { "type": "string" },
         "totalTimeSpent": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -82,6 +82,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["date", "asset", "type", "amount", "price"]
+    },
+    "AppSettings": {
+      "title": "App Settings",
+      "description": "Per-user persisted app configuration",
+      "type": "object",
+      "properties": {
+        "uid": { "type": ["string", "null"] },
+        "monthlyBudget": { "type": "number" },
+        "deepWork": { "type": "boolean" },
+        "notifications": { "type": "boolean" },
+        "merchantCategoryMap": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["monthlyBudget", "deepWork", "notifications", "merchantCategoryMap"]
     }
   },
   "firestore": {
@@ -90,6 +107,7 @@
     "/budgets/{budgetId}": { "schema": "Budget", "description": "Budgets collection" },
     "/exercises/{exerciseId}": { "schema": "Exercise", "description": "Exercises collection" },
     "/crypto_holdings/{holdingId}": { "schema": "CryptoHolding", "description": "Crypto holdings collection" },
-    "/crypto_trades/{tradeId}": { "schema": "CryptoTrade", "description": "Crypto trades collection" }
+    "/crypto_trades/{tradeId}": { "schema": "CryptoTrade", "description": "Crypto trades collection" },
+    "/app_settings/{settingsId}": { "schema": "AppSettings", "description": "App settings collection" }
   }
 }

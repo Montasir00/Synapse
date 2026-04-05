@@ -1,0 +1,55 @@
+﻿{
+    "projectId":  "project-166720b8-9694-4ef7-b97",
+    "exportedAt":  "2026-04-04T16:39:48.9792767+02:00",
+    "collection":  "user_stats",
+    "count":  2,
+    "documents":  [
+                      {
+                          "name":  "projects/project-166720b8-9694-4ef7-b97/databases/(default)/documents/user_stats/Jxgu7U605wOdAVIQGQc8",
+                          "fields":  {
+                                         "exp":  {
+                                                     "integerValue":  "0"
+                                                 },
+                                         "level":  {
+                                                       "integerValue":  "1"
+                                                   },
+                                         "currentStreak":  {
+                                                               "integerValue":  "0"
+                                                           },
+                                         "monthlyBudget":  {
+                                                               "integerValue":  "0"
+                                                           },
+                                         "uid":  {
+                                                     "stringValue":  "8z9mbYXPb8XfU8alifyINsL1gmj2"
+                                                 },
+                                         "lastActiveDate":  {
+                                                                "stringValue":  "2026-04-04"
+                                                            }
+                                     },
+                          "createTime":  "2026-03-31T21:41:39.353596Z",
+                          "updateTime":  "2026-04-04T13:54:06.457582Z"
+                      },
+                      {
+                          "name":  "projects/project-166720b8-9694-4ef7-b97/databases/(default)/documents/user_stats/Ko2VuIuQ7ZQiU6hJxhRq",
+                          "fields":  {
+                                         "currentStreak":  {
+                                                               "integerValue":  "0"
+                                                           },
+                                         "level":  {
+                                                       "integerValue":  "1"
+                                                   },
+                                         "exp":  {
+                                                     "integerValue":  "0"
+                                                 },
+                                         "lastActiveDate":  {
+                                                                "stringValue":  "2026-04-02"
+                                                            },
+                                         "uid":  {
+                                                     "stringValue":  "8z9mbYXPb8XfU8alifyINsL1gmj2"
+                                                 }
+                                     },
+                          "createTime":  "2026-04-02T12:09:48.050576Z",
+                          "updateTime":  "2026-04-02T12:09:48.050576Z"
+                      }
+                  ]
+}

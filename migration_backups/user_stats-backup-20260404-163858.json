@@ -1,0 +1,27 @@
+﻿{
+    "projectId":  "project-166720b8-9694-4ef7-b97",
+    "exportedAt":  "2026-04-04T16:38:58.5885861+02:00",
+    "collection":  "user_stats",
+    "count":  1,
+    "documents":  [
+                      {
+                          "name":  "projects/project-166720b8-9694-4ef7-b97/databases/(default)/documents/app_settings/8z9mbYXPb8XfU8alifyINsL1gmj2",
+                          "fields":  {
+                                         "migratedFrom":  {
+                                                              "stringValue":  "user_stats"
+                                                          },
+                                         "uid":  {
+                                                     "stringValue":  "8z9mbYXPb8XfU8alifyINsL1gmj2"
+                                                 },
+                                         "migratedAt":  {
+                                                            "timestampValue":  "2026-04-04T14:34:01.468Z"
+                                                        },
+                                         "monthlyBudget":  {
+                                                               "integerValue":  "0"
+                                                           }
+                                     },
+                          "createTime":  "2026-04-04T14:34:02.285661Z",
+                          "updateTime":  "2026-04-04T14:34:02.285661Z"
+                      }
+                  ]
+}

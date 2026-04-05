@@ -1,11 +1,23 @@
 # Implementation Checklist: TaskOS Gamified Overhaul
 
+## 2026-04-04 Cleanup + Settings Consolidation (Implemented)
+
+- `[x]` Remove dead listeners/state/functions from `src/App.tsx` (legacy crypto listener state and dead helpers).
+- `[x]` Remove mobile sidebar open-state/overlay path and keep `MobileNav` as the mobile navigation source.
+- `[x]` Delete unused `src/components/FloatingTimer.tsx`.
+- `[x]` Remove dead props/caller wiring (`Tasks`/`Settings`) and unused `getTitle` function.
+- `[x]` Standardize auth flow to one entrypoint (`signInWithGoogle`/`logout` from `src/firebase.ts`).
+- `[x]` Persist Settings toggles (`deepWork`, `notifications`) in `app_settings` for authenticated users.
+- `[x]` Persist merchant-category mapping in `app_settings.merchantCategoryMap` and learn mapping from expense submissions.
+- `[x]` Logged-out Settings behavior changed to login-only CTA (Google sign-in).
+- `[x]` Focused unused import/symbol cleanup applied across touched pages/components.
+
 - `[/]` **1. Database & Type Models**
   - `[ ]` Update `src/types/index.ts` with `UserStats`, `Note`, and new `Task` features (`taskCategory`, `lastCompletedAt`).
-  - `[ ]` Update `firestore.rules` for `notes` and `user_stats` collections.
+  - `[ ]` Update `firestore.rules` for `notes` and `app_settings` collections.
 
 - `[ ]` **2. Core Application Logic (`App.tsx`)**
-  - `[ ]` Add state and `onSnapshot` listeners for `notes` and `user_stats`.
+  - `[ ]` Add state and `onSnapshot` listeners for `notes` and `app_settings`.
   - `[ ]` Implement `awardEXP(amount)` function handling level ups and streak maintenance.
   - `[ ]` Implement standard midnight reset check for "daily" tasks.
 

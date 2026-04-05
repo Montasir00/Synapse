@@ -1,6 +1,6 @@
-import { TrendingUp, AlertTriangle, Landmark, Plus, ChevronRight, ShoppingBag, Utensils, Briefcase, Home, Plane, ArrowUpRight, ArrowDownRight, Flame, Repeat, CheckCircle2, Circle } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Plus, ArrowUpRight, ListChecks, Wallet, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Task, Transaction, Budget, UserStats } from '../types';
+import { Task, Transaction, Budget } from '../types';
 import { ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { subMonths, format, isWithinInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { useMemo } from 'react';
@@ -9,36 +9,33 @@ interface DashboardProps {
   tasks: Task[];
   transactions: Transaction[];
   budgets: Budget[];
-  userStats?: UserStats | null;
-  onViewTasks: () => void;
+   onViewTasks?: () => void;
   onViewExpenses: () => void;
+   onAddTask: () => void;
+   onAddExpense: () => void;
   onAddClick: () => void;
-  userName?: string;
-  onUpdateTaskStatus?: (taskId: string, status: Task['status']) => void;
-}
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+   tradeSnapshot?: {
+      openPositions: number;
+      closedPositions: number;
+      totalNetPnl: number;
+      lastSyncAt: number | null;
+      hasError: boolean;
+   };
 }
 
 export default function Dashboard({
   tasks = [],
   transactions = [],
   budgets = [],
-  onViewTasks,
+   onViewTasks,
   onViewExpenses,
+   onAddTask,
+   onAddExpense,
   onAddClick,
-  userName,
-  userStats,
-  onUpdateTaskStatus,
+   tradeSnapshot,
 }: DashboardProps) {
   const safeTasks = Array.isArray(tasks) ? tasks : [];
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
-
-  const tasksDueToday = safeTasks.filter(t => t.status !== 'done').length;
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -52,7 +49,6 @@ export default function Dashboard({
   const monthlyIncome = monthlyTransactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc, 0);
   const netBalance = monthlyIncome - monthlySpend;
   const totalBudgetLimit = budgets.reduce((acc, b) => acc + b.monthly_limit, 0);
-  const budgetRemaining = Math.max(0, totalBudgetLimit - monthlySpend);
   const budgetUsagePercent = totalBudgetLimit > 0 ? Math.round((monthlySpend / totalBudgetLimit) * 100) : 0;
 
   const cashflowData = useMemo(() => {
@@ -70,213 +66,178 @@ export default function Dashboard({
     });
   }, [safeTransactions]);
 
-  const getIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'technology': return ShoppingBag;
-      case 'dining': return Utensils;
-      case 'income': return Briefcase;
-      case 'housing': return Home;
-      case 'travel': return Plane;
-      default: return Landmark;
-    }
-  };
+   const todoCount = safeTasks.filter(t => t.status !== 'done').length;
+   const activeTradeSnapshot = tradeSnapshot || {
+      openPositions: 0,
+      closedPositions: 0,
+      totalNetPnl: 0,
+      lastSyncAt: null,
+      hasError: false,
+   };
 
-  const stats = [
-    { label: 'Active Habits', value: safeTasks.filter(t => t.taskCategory === 'daily' && t.status !== 'done').length.toString(), trend: 'Daily Protocol', trendIcon: Repeat, color: 'text-accent' },
-    { label: 'Savings', value: `$${Math.max(0, netBalance).toLocaleString()}`, trend: `${monthlyIncome > 0 ? Math.round((netBalance / monthlyIncome) * 100) : 0}% rate`, trendIcon: ArrowUpRight, color: 'text-success' },
-    { label: 'Monthly Spend', value: `$${monthlySpend.toLocaleString()}`, trend: `${budgetUsagePercent}% of budget`, trendIcon: AlertTriangle, color: budgetUsagePercent > 90 ? 'text-alert' : 'text-accent' },
-    { label: 'Budget Left', value: `$${budgetRemaining.toLocaleString()}`, trend: totalBudgetLimit > 0 ? 'Active allocation' : 'No budget set', trendIcon: Landmark, color: 'text-success' },
-  ];
-
-  const displayName = userName || 'You';
+   const stats = [
+      { label: 'Savings', value: `$${Math.max(0, netBalance).toLocaleString()}`, trend: `${monthlyIncome > 0 ? Math.round((netBalance / monthlyIncome) * 100) : 0}% rate`, trendIcon: ArrowUpRight, color: 'text-success' },
+      { label: 'Monthly Spend', value: `$${monthlySpend.toLocaleString()}`, trend: `${budgetUsagePercent}% limit`, trendIcon: AlertTriangle, color: budgetUsagePercent > 90 ? 'text-alert' : 'text-accent' },
+      { label: 'To Do', value: todoCount.toString(), trend: `${safeTasks.length - todoCount}/${safeTasks.length} done`, trendIcon: ListChecks, color: 'text-accent' },
+      {
+         label: 'Buffer States',
+         value: `${activeTradeSnapshot.openPositions} Open`,
+         trend: activeTradeSnapshot.hasError
+            ? 'Sync attention needed'
+            : activeTradeSnapshot.lastSyncAt
+            ? `Sync ${format(new Date(activeTradeSnapshot.lastSyncAt), 'MMM d HH:mm')}`
+            : 'No sync yet',
+         trendIcon: Wallet,
+         color: activeTradeSnapshot.totalNetPnl >= 0 ? 'text-success' : 'text-alert'
+      },
+   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-12 pb-24">
-    <div className="w-full max-w-6xl mx-auto space-y-16 pb-32 px-6">
-      {/* 1. Header & Identity Pulse */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 pt-8">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-center lg:text-left space-y-4"
-        >
-          <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-accent/5 border border-accent/10 rounded-full">
-            <span className="w-2 h-2 bg-accent rounded-full animate-pulse shadow-[0_0_12px_rgba(99,102,241,0.5)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">System Active</span>
-          </div>
-          <h1 className="text-5xl lg:text-7xl font-display font-black tracking-[-0.04em] text-ink leading-tight">
-            {getGreeting()},<br/>
-            <span className="text-accent/40">{displayName}</span>
-          </h1>
-        </motion.div>
+   <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
 
-        {userStats && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative w-48 h-48 flex items-center justify-center"
-          >
-            {/* Circular Progress Ring */}
-            <svg className="w-full h-full -rotate-90">
-              <circle
-                cx="96" cy="96" r="88"
-                className="fill-none stroke-white/[0.03] stroke-[6]"
-              />
-              <motion.circle
-                cx="96" cy="96" r="88"
-                className="fill-none stroke-accent stroke-[6]"
-                strokeDasharray="552.92"
-                initial={{ strokeDashoffset: 552.92 }}
-                animate={{ strokeDashoffset: 552.92 - (552.92 * (userStats.exp / (userStats.level * 100))) }}
-                transition={{ duration: 2, ease: "circOut" }}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-display font-black text-ink">{userStats.level}</span>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted/50">Tier</span>
+         <div className="soothing-card p-4 sm:p-6 lg:p-8 bg-surface border-border">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+               <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-ink tracking-tight">Dashboard Command</h2>
+                  <p className="micro-label mt-1">Capture tasks and expenses without leaving this page.</p>
+               </div>
+               <div className="flex flex-wrap gap-3">
+                  <button onClick={onAddTask} className="precise-button !pl-6 !pr-6 !py-3 w-full sm:w-auto">+ Add Task</button>
+                  <button onClick={onAddExpense} className="precise-button !pl-6 !pr-6 !py-3 w-full sm:w-auto">+ Add Expense</button>
+                  {onViewTasks && (
+                     <button
+                        onClick={onViewTasks}
+                        className="px-4 py-3 rounded-full border border-border bg-surface-subtle text-xs font-black uppercase tracking-widest text-muted hover:text-ink transition-colors"
+                     >
+                        Open Tasks
+                     </button>
+                  )}
+                  <button
+                     onClick={onViewExpenses}
+                     className="px-4 py-3 rounded-full border border-border bg-surface-subtle text-xs font-black uppercase tracking-widest text-muted hover:text-ink transition-colors"
+                  >
+                     Open Expenses
+                  </button>
+               </div>
             </div>
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-accent/5 blur-3xl rounded-full scale-75 pointer-events-none" />
-          </motion.div>
-        )}
-      </div>
+         </div>
 
-      {/* 2. Top Missions (Pill Cards) */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="micro-label !text-muted/40">Critical Protocol</h3>
-          <button onClick={onViewTasks} className="text-[10px] font-bold text-accent hover:underline uppercase tracking-widest">Open Archive</button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {safeTasks.filter(t => t.status !== 'done').slice(0, 3).map((task, i) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="pill-container group cursor-pointer justify-between"
-              onClick={() => onUpdateTaskStatus?.(task.id, 'done')}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full border border-white/5 flex items-center justify-center group-hover:border-accent/30 transition-all">
-                  <div className="w-2 h-2 bg-muted/20 rounded-full group-hover:bg-accent transition-all" />
-                </div>
-                <span className="text-xs font-bold text-ink/70 group-hover:text-ink truncate max-w-[120px]">{task.title}</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted/20 group-hover:text-accent group-hover:translate-x-1 transition-all" />
-            </motion.div>
-          ))}
-          {safeTasks.filter(t => t.status !== 'done').length === 0 && (
-            <div className="md:col-span-3 py-8 text-center text-muted/20 text-[10px] uppercase font-black tracking-widest bg-white/[0.01] rounded-full border border-dashed border-white/5">
-              No Pending Missions
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      {/* 3. Stats Reflection */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* 2. Top-Tier Stats (Condensed Grid) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {stats.map((stat, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.05 }}
-            className="group flex flex-col items-center text-center space-y-4"
+            transition={{ delay: 0.1 + i * 0.05 }}
+            className="soothing-card p-3 sm:p-4 min-h-[108px] sm:min-h-[120px] bg-surface group hover:border-accent/20 transition-all flex flex-col justify-between"
           >
-            <div className="w-20 h-20 rounded-full border border-white/10 bg-white/[0.01] flex items-center justify-center group-hover:border-accent/30 group-hover:bg-accent/5 transition-all duration-500 shadow-xl shadow-black/20">
-              <stat.trendIcon className={`w-8 h-8 ${stat.color} opacity-40 group-hover:opacity-100 transition-all`} />
+            <div className="flex items-center justify-between mb-4">
+               <div className={`p-2 rounded-lg bg-surface-subtle border border-border transition-colors ${stat.color} group-hover:bg-accent/5`}>
+                  <stat.trendIcon className="w-4 h-4" />
+               </div>
+               <span className="text-[10px] sm:text-[11px] font-bold text-muted text-right">{stat.trend}</span>
             </div>
-            <div>
-              <p className="micro-label !text-muted/30 mb-1">{stat.label}</p>
-              <p className="text-2xl font-mono font-black text-ink group-hover:text-ink transition-colors">{stat.value}</p>
-            </div>
+            <p className="micro-label !text-muted mb-1">{stat.label}</p>
+            <p className="text-xl sm:text-2xl font-mono font-black text-ink group-hover:text-accent transition-colors">{stat.value}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* 4. Financial Status & Protocol Matrix */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pt-8 border-t border-white/[0.03]">
-        <div className="lg:col-span-12 space-y-8">
-           <div className="flex items-center justify-between border-b border-white/[0.03] pb-6">
-              <div>
-                <h3 className="text-2xl font-display font-black text-ink">Asset Flow</h3>
-                <p className="micro-label mt-1 opacity-30">Real-time financial resonance</p>
-              </div>
-              <div className="flex items-center gap-6">
-                 {/* Mini Chart Pill */}
-                 <div className="pill-container !py-2 !px-4 hidden sm:flex">
-                   <BarChart width={40} height={20} data={cashflowData.slice(-4)}>
-                     <Bar dataKey="net">
-                        {cashflowData.slice(-4).map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.net >= 0 ? 'var(--color-success)' : 'var(--color-alert)'} opacity={0.4} />
-                        ))}
-                     </Bar>
-                   </BarChart>
-                   <span className="text-[10px] font-black text-success">+12%</span>
-                 </div>
-                 <button onClick={onViewExpenses} className="precise-button">Report</button>
-              </div>
-           </div>
+      {/* 3. Financial Audit Row */}
+      <div className="space-y-8 pt-6 border-t border-border">
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div>
+               <h3 className="text-2xl font-black text-ink">Financial Snapshot</h3>
+               <p className="micro-label mt-1">Real-time expenditure tracking</p>
+            </div>
+            <button onClick={onViewExpenses} className="precise-button !pl-8 !pr-8 !py-3 w-full sm:w-auto">View Expenses</button>
+         </div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              {/* Financial Snapshot Card */}
-              <motion.div whileHover={{ y: -5 }} className="soothing-card bg-gradient-to-br from-white/[0.02] to-transparent">
-                 <div className="flex justify-between items-start mb-8">
-                    <p className="micro-label">Weekly Burn Rate</p>
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-                       <TrendingUp className="w-4 h-4" />
-                    </div>
-                 </div>
-                 <div className="space-y-2">
-                    <p className="text-4xl font-mono font-black text-ink">${monthlySpend.toLocaleString()}</p>
-                    <div className="w-full h-2 bg-white/[0.03] rounded-full overflow-hidden">
-                       <motion.div 
-                          className="h-full bg-accent shadow-[0_0_12px_rgba(99,102,241,0.4)]"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${budgetUsagePercent}%` }}
-                       />
-                    </div>
-                    <p className="text-[10px] font-bold text-muted/40 uppercase tracking-widest text-right">{budgetUsagePercent}% of limit reached</p>
-                 </div>
-              </motion.div>
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <motion.div whileHover={{ scale: 1.01 }} className="soothing-card p-5 sm:p-8 bg-surface border-border">
+               <div className="flex justify-between items-start mb-10">
+                  <p className="micro-label !text-ink/40">Resource Depletion Rate (Monthly)</p>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-alert/10 rounded-full">
+                     <TrendingUp className="w-3 h-3 text-alert" />
+                     <span className="text-[10px] font-black text-alert uppercase tracking-wide">High Frequency</span>
+                  </div>
+               </div>
+               <div className="space-y-4">
+                  <div className="flex flex-wrap items-end justify-between gap-2">
+                     <p className="text-3xl sm:text-5xl font-mono font-black text-ink tracking-tight leading-none">${monthlySpend.toLocaleString()}</p>
+                     <p className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-[0.12em] sm:tracking-[0.2em] whitespace-nowrap">{budgetUsagePercent}% Utilization</p>
+                  </div>
+                  <div className="w-full h-1.5 bg-surface-subtle rounded-full overflow-hidden">
+                     <motion.div 
+                        className="h-full bg-accent shadow-[0_0_15px_rgba(139,92,246,0.6)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${budgetUsagePercent}%` }}
+                        transition={{ duration: 1.5, ease: "easeOut" }}
+                     />
+                  </div>
+               </div>
+            </motion.div>
 
-              {/* Habit Pulse Matrix */}
-              <div className="soothing-card space-y-6">
-                 <p className="micro-label">Active Habits</p>
-                 <div className="grid grid-cols-5 gap-4">
-                    {safeTasks.filter(t => t.taskCategory === 'daily').slice(0, 5).map((habit, i) => (
-                       <button 
-                          key={habit.id}
-                          onClick={() => onUpdateTaskStatus?.(habit.id, habit.status === 'done' ? 'todo' : 'done')}
-                          className={`w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center ${habit.status === 'done' ? 'border-success bg-success/10 text-success' : 'border-white/5 bg-white/[0.01] text-muted/20 hover:border-accent/40'}`}
-                       >
-                          {habit.status === 'done' ? <CheckCircle2 className="w-5 h-5" /> : <Repeat className="w-5 h-5" />}
-                       </button>
-                    ))}
-                    {/* Placeholder for habits if empty */}
-                    {safeTasks.filter(t => t.taskCategory === 'daily').length === 0 && (
-                       <div className="col-span-5 h-14 rounded-full border border-dashed border-white/5 flex items-center justify-center text-[10px] text-muted/20 font-black uppercase">Initialize Protocols</div>
-                    )}
-                 </div>
-                 <p className="text-[10px] font-bold text-muted/40 uppercase tracking-[0.2em] text-center">Maintain consistency for bonus EXP</p>
-              </div>
-           </div>
-        </div>
+            <div className="soothing-card p-5 sm:p-8 flex flex-col justify-between border-border bg-surface">
+               <div className="flex items-center justify-between">
+                  <p className="micro-label !text-ink/40">Temporal Cashflow Sync</p>
+                  <div className="flex items-center gap-1 px-3 py-1 bg-success/10 rounded-full">
+                     <ArrowUpRight className="w-3 h-3 text-success" />
+                     <span className="text-[10px] font-black text-success uppercase">+12.4%</span>
+                  </div>
+               </div>
+               <div className="h-32 w-full mt-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={cashflowData}>
+                      <Bar dataKey="net">
+                         {cashflowData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.net >= 0 ? 'var(--color-success)' : 'var(--color-alert)'} opacity={index === cashflowData.length - 1 ? 1 : 0.2} />
+                         ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+               </div>
+            </div>
+         </div>
+
+             <div className="soothing-card p-5 sm:p-6 lg:p-8 border-border bg-surface-subtle/40">
+                <div className="flex items-center justify-between mb-4">
+                   <p className="micro-label !text-ink/40">Trade Buffer States</p>
+                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted">
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {activeTradeSnapshot.lastSyncAt ? format(new Date(activeTradeSnapshot.lastSyncAt), 'MMM d HH:mm') : 'No Sync'}
+                   </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                   <div className="rounded-2xl border border-border bg-surface p-4">
+                      <p className="micro-label mb-2">Open Positions</p>
+                      <p className="text-2xl font-mono font-black text-accent">{activeTradeSnapshot.openPositions}</p>
+                   </div>
+                   <div className="rounded-2xl border border-border bg-surface p-4">
+                      <p className="micro-label mb-2">Closed Positions</p>
+                      <p className="text-2xl font-mono font-black text-ink">{activeTradeSnapshot.closedPositions}</p>
+                   </div>
+                   <div className="rounded-2xl border border-border bg-surface p-4">
+                      <p className="micro-label mb-2">Trade Net PnL</p>
+                      <p className={`text-2xl font-mono font-black ${activeTradeSnapshot.totalNetPnl >= 0 ? 'text-success' : 'text-alert'}`}>
+                         {activeTradeSnapshot.totalNetPnl >= 0 ? '+' : '-'}${Math.abs(activeTradeSnapshot.totalNetPnl).toLocaleString()}
+                      </p>
+                   </div>
+                </div>
+             </div>
       </div>
 
       {/* Modern FAB */}
       <motion.button
-        whileHover={{ scale: 1.1, rotate: 90 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={onAddClick}
-        className="fixed bottom-12 right-12 w-16 h-16 bg-accent text-white rounded-full shadow-[0_20px_40px_rgba(99,102,241,0.4)] flex items-center justify-center z-50 border border-white/20"
+         whileHover={{ scale: 1.1, rotate: 90 }}
+         whileTap={{ scale: 0.9 }}
+         onClick={onAddClick}
+         className="hidden lg:flex fixed bottom-12 right-12 w-16 h-16 bg-accent text-white rounded-full shadow-md items-center justify-center z-50 border border-transparent"
       >
-        <Plus className="w-6 h-6" />
+         <Plus className="w-6 h-6" />
       </motion.button>
-    </div>
+
     </div>
   );
 }

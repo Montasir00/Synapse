@@ -93,7 +93,7 @@ service cloud.firestore {
       allow update: if isUserOwned(resource) && isUserOwned(request.resource);
     }
 
-    match /user_stats/{statId} {
+    match /app_settings/{statId} {
       allow read, delete: if isUserOwned(resource);
       allow create: if isUserOwned(request.resource);
       allow update: if isUserOwned(resource) && isUserOwned(request.resource);
@@ -101,6 +101,22 @@ service cloud.firestore {
 
     match /user_secrets/{userId} {
       allow read, write: if isOwner(userId);
+    }
+
+    match /binance_trades/{userId}/{document=**} {
+      allow read, write, delete: if isOwner(userId);
+    }
+
+    match /binance_positions/{userId}/{document=**} {
+      allow read, write, delete: if isOwner(userId);
+    }
+
+    match /binance_metrics/{userId} {
+      allow read, write, delete: if isOwner(userId);
+    }
+
+    match /user_trades_sync/{userId} {
+      allow read, write, delete: if isOwner(userId);
     }
   }
 }

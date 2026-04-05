@@ -1,6 +1,7 @@
-import { PlusCircle, Star, Clock, Zap, Flower2, Activity, ChevronRight } from 'lucide-react';
+import { PlusCircle, Clock, Zap, Flower2, Activity, ChevronRight, Dumbbell, History } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Exercise } from '../types';
+import ModuleCard from './ModuleCard';
 
 interface ExercisesProps {
   sessions: Exercise[];
@@ -25,19 +26,20 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
   };
 
   return (
-    <div className="pt-10 lg:pt-12 pb-28 lg:pb-16 px-4 md:px-10 w-full min-h-screen">
+    <div className="pt-6 sm:pt-8 lg:pt-12 pb-20 sm:pb-24 lg:pb-16 px-3 sm:px-4 md:px-8 lg:px-10 w-full min-h-screen">
       {/* Page Header Removed */}
         <button 
           onClick={onLogSession}
           className="precise-button w-full md:w-auto px-10 py-4 shadow-xl active:scale-95 mb-10 lg:mb-16"
+          aria-label="Log new exercise session"
         >
-          <PlusCircle className="w-5 h-5" />
+          <PlusCircle className="w-5 h-5" aria-hidden="true" />
           <span className="ml-2">Log Session</span>
         </button>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-20">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
         {stats.map((stat, i) => (
-          <div key={i} className="glass-card p-8 flex flex-col justify-between h-52 group">
+          <div key={i} className="soothing-card p-6 flex flex-col justify-between h-48 group">
             <span className="micro-label opacity-40">{stat.label}</span>
             <div className="flex items-baseline gap-2">
               <span className={`text-3xl sm:text-5xl font-mono font-bold tracking-tighter ${stat.type === 'goal' ? 'text-accent' : 'text-ink'}`}>{stat.value}</span>
@@ -60,13 +62,16 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
-          <div className="flex items-baseline justify-between mb-12 px-2">
-            <h3 className="text-3xl font-display font-black text-ink uppercase tracking-tight">Recent Sessions</h3>
-            <button className="text-accent font-bold text-[9px] uppercase tracking-widest hover:text-ink transition-colors">History Log</button>
-          </div>
-          <div className="space-y-12">
+          <ModuleCard
+            title="Recent Sessions"
+            icon={<History className="w-5 h-5" />}
+            badge={sessions.length > 0 ? `${sessions.length} RECORDED` : undefined}
+            maxItems={5}
+            className="w-full"
+          >
+            <div className="space-y-8 pt-4">
             {sessions.map((session, i) => {
               const Icon = getIcon(session.icon);
               return (
@@ -105,12 +110,8 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                 </motion.div>
               );
             })}
-            {sessions.length === 0 && (
-              <div className="py-24 text-center glass-card rounded-[42px] border-dashed border-white/5">
-                <p className="micro-label !opacity-20">Protocol Journal Void</p>
-              </div>
-            )}
-          </div>
+            </div>
+          </ModuleCard>
         </div>
 
         <div className="lg:col-span-4 space-y-16">
@@ -134,10 +135,13 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
             </div>
           </div>
 
-          <div>
-            <h4 className="text-xl font-display font-black mb-8 text-ink px-2 uppercase tracking-tight">Active Programs</h4>
-            <div className="space-y-6">
-              <div className="p-8 glass-card border-l-4 border-accent">
+          <ModuleCard
+            title="Active Programs"
+            icon={<Dumbbell className="w-5 h-5" />}
+            className="w-full"
+          >
+            <div className="space-y-6 pt-4">
+              <div className="p-6 soothing-card border-l-4 border-accent">
                 <div className="flex justify-between items-start mb-3">
                   <h5 className="text-lg font-display font-bold text-ink uppercase tracking-tight">PPL Split: Phase 2</h5>
                   <span className="text-[9px] font-black text-accent uppercase tracking-widest">W6/12</span>
@@ -155,7 +159,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </ModuleCard>
 
           <div className="relative overflow-hidden rounded-[32px] p-8 md:p-10 bg-white/[0.02] border border-white/5 backdrop-blur-xl text-ink shadow-2xl">
             <div className="relative z-10">

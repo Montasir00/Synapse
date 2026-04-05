@@ -1,21 +1,35 @@
 # Security Policy
 
-## Supported Versions
+## Supported Scope
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+This project is maintained on the latest `main` branch deployment.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+In scope:
+- Firebase Hosting frontend (`src/`)
+- Cloud Functions API (`functions/src/`)
+- Firestore security rules (`firestore.rules`)
+
+Out of scope:
+- Local environment misconfiguration
+- Issues caused by leaked local credentials
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security issue, report it privately and include:
+- Affected endpoint, page, or rule
+- Reproduction steps
+- Expected impact
+- Suggested mitigation (if known)
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Do not open public issues with exploit details.
+
+## Secrets and Keys
+
+- Never commit API keys or secrets.
+- Store sensitive values in environment variables or secure backend storage.
+- Use least-privilege API keys (read-only when possible).
+
+## Response Targets
+
+- Initial triage target: within 72 hours
+- Fix timeline: based on severity and exploitability

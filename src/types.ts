@@ -12,10 +12,10 @@ export interface Task {
   status: 'todo' | 'done';
   taskCategory?: 'daily' | 'long-term';
   lastCompletedAt?: string; // ISO string used for daily resets
+  isMissedDaily?: boolean;
   uid?: string | null;
   createdAt?: string;
   dueDate?: string;
-  isStacked?: boolean;
   position?: number;
   subtasks?: Subtask[];
   recurrence?: {
@@ -24,15 +24,6 @@ export interface Task {
     dateOfMonth?: number; // 1-31
     intervalDays?: number; // e.g., every 3 days
   } | null;
-}
-
-export interface UserStats {
-  id: string; // usually maps to uid
-  uid: string;
-  level: number;
-  exp: number;
-  currentStreak: number;
-  lastActiveDate: string; // YYYY-MM-DD
 }
 
 export interface Note {
@@ -90,9 +81,12 @@ export interface UserProfile {
 }
 
 export interface AppSettings {
+  uid?: string | null;
+  monthlyBudget: number;
+  deepWork: boolean;
   notifications: boolean;
-  darkMode: boolean;
-  biometric: boolean;
+  merchantCategoryMap: Record<string, string>;
+  updatedAt?: string;
 }
 
 export interface CryptoHolding {

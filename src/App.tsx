@@ -3,26 +3,168 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo, Fragment } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
-import Dashboard from './components/Dashboard';
-import Tasks from './components/Tasks';
-import Expenses from './components/Expenses';
-import Exercises from './components/Exercises';
-import TradeTracker from './components/TradeTracker';
-import Settings from './components/Settings';
+
+// Lazy load pages for performance
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Tasks = lazy(() => import('./components/Tasks'));
+const Expenses = lazy(() => import('./components/Expenses'));
+const Exercises = lazy(() => import('./components/Exercises'));
+const TradeTracker = lazy(() => import('./components/TradeTracker'));
+const TempApiKeyCheck = lazy(() => import('./components/TempApiKeyCheck'));
+const Settings = lazy(() => import('./components/Settings'));
 import LogExpenseModal from './components/LogExpenseModal';
 import TaskModal from './components/TaskModal';
 import LogExerciseModal from './components/LogExerciseModal';
-import Toast, { ToastMessage } from './components/Toast';
-import { Task, Transaction, Budget, CryptoHolding, CryptoTrade, Note, UserStats } from './types';
+import { Task, Transaction, Budget, Note } from './types';
 import { Toaster, toast } from 'sonner';
-import { auth, db } from './firebase';
+import { auth, db, signInWithGoogle, logout } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc, addDoc, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc, addDoc, where, getDocs } from 'firebase/firestore';
+
+const ITALY_TIME_ZONE = 'Europe/Rome';
+
+const getItalyDateKey = (dateInput: Date | string): string => {
+  const value = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(value.getTime())) return '';
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ITALY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(value);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  if (!year || !month || !day) return '';
+  return `${year}-${month}-${day}`;
+};
+
+const SectionSkeleton = ({ className }: { className?: string }) => (
+  <div className={`soothing-card bg-surface border-border overflow-hidden ${className || ''}`}>
+    <div className="h-full w-full skeleton-shimmer" />
+  </div>
+);
+
+const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
+  if (activeTab === 'expenses') {
+    return (
+      <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Fragment key={i}>
+              <SectionSkeleton className="h-28 sm:h-32" />
+            </Fragment>
+          ))}
+        </div>
+        <SectionSkeleton className="h-48 sm:h-56" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
+          <SectionSkeleton className="lg:col-span-7 h-[420px]" />
+          <div className="lg:col-span-5 space-y-5 sm:space-y-8">
+            <SectionSkeleton className="h-[260px]" />
+            <SectionSkeleton className="h-[380px]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'tasks') {
+    return (
+      <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-12">
+        <SectionSkeleton className="h-36 sm:h-40" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Fragment key={i}>
+              <SectionSkeleton className="h-[360px]" />
+            </Fragment>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'settings') {
+    return (
+      <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8">
+        <SectionSkeleton className="h-40" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <SectionSkeleton className="h-72" />
+          <SectionSkeleton className="h-72" />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'exercises') {
+    return (
+      <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32">
+        <SectionSkeleton className="h-36 sm:h-40" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Fragment key={i}>
+              <SectionSkeleton className="h-44 sm:h-52" />
+            </Fragment>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'trade-tracker') {
+    return (
+      <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32">
+        <SectionSkeleton className="h-36 sm:h-44" />
+        <SectionSkeleton className="h-[280px]" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <SectionSkeleton className="h-[260px]" />
+          <SectionSkeleton className="h-[260px]" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+      <SectionSkeleton className="h-36 sm:h-40" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Fragment key={i}>
+            <SectionSkeleton className="h-28 sm:h-32" />
+          </Fragment>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <SectionSkeleton className="lg:col-span-2 h-[260px]" />
+        <SectionSkeleton className="h-[260px]" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <SectionSkeleton className="h-[240px]" />
+        <SectionSkeleton className="h-[240px]" />
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
+  const defaultSourceOptions = [
+    'Salary',
+    'Bank Transfer',
+    'Card',
+    'Cash',
+    'Investments',
+  ];
+  const legacySeededSources = [
+    'Freelance',
+    'Business',
+    'GCash',
+  ];
+
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -30,7 +172,6 @@ export default function App() {
     }
     return 'dashboard';
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   
@@ -41,32 +182,46 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
 
-  // Toasts state
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const addToast = (type: 'success' | 'error', message: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 5000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
   // Data state
   const [tasks, setTasks] = useState<Task[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [categories, setCategories] = useState<string[]>(['Technology', 'Dining', 'Lifestyle', 'Housing', 'Travel', 'Income', 'Health', 'Education']);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customSources, setCustomSources] = useState<string[]>(defaultSourceOptions);
+  
+  // Dynamic Merchant & Category Logic
+  const categories = useMemo(() => {
+    const defaultCats = ['Technology', 'Dining', 'Lifestyle', 'Housing', 'Travel', 'Income', 'Health', 'Education'];
+    const activeCats = new Set([...defaultCats, ...customCategories, ...transactions.map(t => t.category), ...budgets.map(b => b.category)]);
+    return Array.from(activeCats).sort();
+  }, [transactions, budgets, customCategories]);
+
+  const uniqueMerchants = useMemo(() => {
+    const merchants = transactions
+      .map(t => t.merchant)
+      .filter((m): m is string => !!m);
+    
+    // Count frequency
+    const counts: Record<string, number> = {};
+    merchants.forEach(m => counts[m] = (counts[m] || 0) + 1);
+    
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1]) // Sort by frequency
+      .map(([m]) => m);
+  }, [transactions]);
+
   const [merchantToCategory, setMerchantToCategory] = useState<Record<string, string>>({});
   const [exerciseSessions, setExerciseSessions] = useState<any[]>([]);
-  const [cryptoTrades, setCryptoTrades] = useState<CryptoTrade[]>([]);
-  const [cryptoHoldings, setCryptoHoldings] = useState<CryptoHolding[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [tradeBufferState, setTradeBufferState] = useState({
+    openPositions: 0,
+    closedPositions: 0,
+    totalNetPnl: 0,
+    lastSyncAt: null as number | null,
+    hasError: false,
+  });
+  const [settingsDocId, setSettingsDocId] = useState<string | null>(null);
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
 
@@ -122,22 +277,6 @@ export default function App() {
       setExerciseSessions(exercisesData);
     }, (error) => console.error("Exercises listener error:", error));
 
-    // Crypto Holdings Listener
-    const holdingsQuery = query(collection(db, 'crypto_holdings'), where('uid', '==', currentUid));
-    const unsubscribeHoldings = onSnapshot(holdingsQuery, (snapshot) => {
-      const holdingsData: CryptoHolding[] = [];
-      snapshot.forEach((doc) => holdingsData.push({ ...doc.data(), id: doc.id } as CryptoHolding));
-      setCryptoHoldings(holdingsData);
-    }, (error) => console.error("Holdings listener error:", error));
-
-    // Crypto Trades Listener
-    const tradesQuery = query(collection(db, 'crypto_trades'), where('uid', '==', currentUid));
-    const unsubscribeTrades = onSnapshot(tradesQuery, (snapshot) => {
-      const tradesData: CryptoTrade[] = [];
-      snapshot.forEach((doc) => tradesData.push({ ...doc.data(), id: doc.id } as CryptoTrade));
-      setCryptoTrades(tradesData);
-    }, (error) => console.error("Trades listener error:", error));
-
     // Notes Listener
     const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid));
     const unsubscribeNotes = onSnapshot(notesQuery, (snapshot) => {
@@ -146,23 +285,45 @@ export default function App() {
       setNotes(notesData);
     }, (error) => console.error("Notes listener error:", error));
 
-    // User Stats Listener
-    const userStatsQuery = query(collection(db, 'user_stats'), where('uid', '==', currentUid));
-    const unsubscribeUserStats = onSnapshot(userStatsQuery, (snapshot) => {
+    // App Settings Listener (stores non-gamified settings such as monthly budget)
+    const appSettingsQuery = query(collection(db, 'app_settings'), where('uid', '==', currentUid));
+    const unsubscribeSettings = onSnapshot(appSettingsQuery, (snapshot) => {
       if (!snapshot.empty) {
-        setUserStats({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id } as UserStats);
+        setSettingsDocId(snapshot.docs[0].id);
+        const settings = snapshot.docs[0].data();
+        setMonthlyBudget(settings.monthlyBudget || 0);
+
+        setMerchantToCategory(settings.merchantCategoryMap ?? {});
+        setCustomCategories(settings.customExpenseCategories ?? []);
+
+        const persistedSources = Array.isArray(settings.sourceOptions)
+          ? settings.sourceOptions.map((s: unknown) => String(s).trim()).filter(Boolean)
+          : [];
+        const withoutLegacy = persistedSources.filter((s: string) => !legacySeededSources.includes(s));
+        const normalizedSources = withoutLegacy.length > 0
+          ? Array.from(new Set(withoutLegacy))
+          : defaultSourceOptions;
+
+        setCustomSources(normalizedSources);
       } else if (currentUid) {
-        // Initialize user stats if they don't exist
-        const defaultStats: Omit<UserStats, 'id'> = {
+        setSettingsDocId(null);
+        const defaultSettings = {
           uid: currentUid,
-          level: 1,
-          exp: 0,
-          currentStreak: 0,
-          lastActiveDate: new Date().toISOString().split('T')[0]
+          monthlyBudget: 0,
+          merchantCategoryMap: {},
+          customExpenseCategories: [],
+          sourceOptions: defaultSourceOptions,
+          updatedAt: new Date().toISOString(),
         };
-        addDoc(collection(db, 'user_stats'), defaultStats).catch(err => console.error(err));
+        addDoc(collection(db, 'app_settings'), defaultSettings).catch(err => console.error(err));
+      } else {
+        setSettingsDocId(null);
+        setMonthlyBudget(0);
+        setMerchantToCategory({});
+        setCustomCategories([]);
+        setCustomSources(defaultSourceOptions);
       }
-    }, (error) => console.error("User stats listener error:", error));
+    }, (error) => console.error("App settings listener error:", error));
 
     setIsLoading(false);
 
@@ -171,175 +332,286 @@ export default function App() {
       unsubscribeTrans();
       unsubscribeBudgets();
       unsubscribeExercises();
-      unsubscribeHoldings();
-      unsubscribeTrades();
       unsubscribeNotes();
-      unsubscribeUserStats();
+      unsubscribeSettings();
     };
   }, [user, isAuthReady]);
+
+  // Trade tracker persisted-state listeners for dashboard buffer cards.
+  useEffect(() => {
+    if (!user?.uid) {
+      setTradeBufferState({
+        openPositions: 0,
+        closedPositions: 0,
+        totalNetPnl: 0,
+        lastSyncAt: null,
+        hasError: false,
+      });
+      return;
+    }
+
+    const metricsRef = doc(db, 'binance_metrics', user.uid);
+    const syncRef = doc(db, 'user_trades_sync', user.uid);
+    const positionsRef = collection(db, 'binance_positions', user.uid, 'items');
+
+    const unsubscribeMetrics = onSnapshot(metricsRef, (snap) => {
+      const data = snap.data() as { totalNetPnl?: number } | undefined;
+      setTradeBufferState((prev) => ({
+        ...prev,
+        totalNetPnl: typeof data?.totalNetPnl === 'number' ? data.totalNetPnl : 0,
+      }));
+    });
+
+    const unsubscribeSync = onSnapshot(syncRef, (snap) => {
+      const data = snap.data() as { lastSyncTime?: number; hasError?: boolean } | undefined;
+      setTradeBufferState((prev) => ({
+        ...prev,
+        lastSyncAt: typeof data?.lastSyncTime === 'number' ? data.lastSyncTime : null,
+        hasError: Boolean(data?.hasError),
+      }));
+    });
+
+    const unsubscribePositions = onSnapshot(positionsRef, (snap) => {
+      let openPositions = 0;
+      let closedPositions = 0;
+
+      snap.forEach((docSnap) => {
+        const status = (docSnap.data() as { status?: string }).status;
+        if (status === 'OPEN') openPositions += 1;
+        if (status === 'CLOSED') closedPositions += 1;
+      });
+
+      setTradeBufferState((prev) => ({
+        ...prev,
+        openPositions,
+        closedPositions,
+      }));
+    });
+
+    return () => {
+      unsubscribeMetrics();
+      unsubscribeSync();
+      unsubscribePositions();
+    };
+  }, [user?.uid]);
+
+  const upsertAppSettings = async (updates: Record<string, unknown>) => {
+    if (!user?.uid) return false;
+
+    const payload = {
+      ...updates,
+      uid: user.uid,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (settingsDocId) {
+      await updateDoc(doc(db, 'app_settings', settingsDocId), payload);
+    } else {
+      const docRef = await addDoc(collection(db, 'app_settings'), payload);
+      setSettingsDocId(docRef.id);
+    }
+
+    return true;
+  };
 
   const deleteTransaction = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'transactions', id));
-      toast.success('Transaction removed');
+      toast.success('Transaction deleted.');
     } catch (error) {
       console.error('Error deleting transaction:', error);
-      toast.error('Failed to delete transaction');
+      toast.error('Could not delete transaction.');
     }
   };
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
       await updateDoc(doc(db, 'transactions', id), updates);
-      toast.success('Transaction updated');
+      toast.success('Transaction updated.');
     } catch (error) {
       console.error('Error updating transaction:', error);
-      toast.error('Failed to update transaction');
+      toast.error('Could not update transaction.');
     }
   };
 
   const upsertBudget = async (category: string, monthlyLimit: number) => {
     try {
-      const budgetId = budgets.find(b => b.category === category)?.id || `budget_${category}_${user?.uid}`;
-      await setDoc(doc(db, 'budgets', budgetId), {
+      const budgetId = budgets.find(b => b.category === category)?.id || `budget_${category}_${user?.uid || 'guest'}`;
+      const payload = {
         category,
         monthly_limit: monthlyLimit,
         uid: user?.uid || null,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
-      toast.success('Budget updated');
-    } catch (error) {
+      };
+      console.log(`[Firebase Write] Upserting Budget for ${category}:`, payload);
+      await setDoc(doc(db, 'budgets', budgetId), payload, { merge: true });
+      toast.success(`${category} budget set to $${monthlyLimit}.`);
+    } catch (error: any) {
       console.error('Error upserting budget:', error);
-      toast.error('Failed to update budget');
+      toast.error('Could not update budget.');
     }
   };
 
-  // Gamification & Daily Routines
-  const awardEXP = async (amount: number) => {
-    if (!userStats || !user?.uid) return;
-    
-    let newExp = userStats.exp + amount;
-    let newLevel = userStats.level;
-    const expNeeded = newLevel * 100;
-
-    // Safety Floor: Ensure XP never drops below zero unless leveling down
-    if (newExp < 0) {
-      if (newLevel > 1) {
-        newLevel -= 1;
-        newExp = (newLevel * 100) + newExp;
-      } else {
-        newExp = 0;
-      }
+  const setGlobalBudget = async (limit: number) => {
+    if (!user?.uid) return;
+    try {
+      await upsertAppSettings({ monthlyBudget: limit });
+      setMonthlyBudget(limit);
+      toast.success(`Monthly spending limit set to $${limit}.`);
+    } catch (error: any) {
+      console.error('Error setting global budget:', error);
+      toast.error('Could not update monthly limit.');
     }
+  };
 
-    let leveledUp = false;
-    if (newExp >= expNeeded) {
-      newExp -= expNeeded;
-      newLevel += 1;
-      leveledUp = true;
-    }
+  const learnMerchantCategory = async (merchant: string, category: string) => {
+    const normalizedMerchant = merchant.trim().toLowerCase();
+    if (!normalizedMerchant || !category) return;
+    if (merchantToCategory[normalizedMerchant] === category) return;
+
+    const nextMap = {
+      ...merchantToCategory,
+      [normalizedMerchant]: category,
+    };
+
+    setMerchantToCategory(nextMap);
+
+    if (!user?.uid) return;
 
     try {
-      await updateDoc(doc(db, 'user_stats', userStats.id), {
-        exp: newExp,
-        level: newLevel,
-      });
+      await upsertAppSettings({ merchantCategoryMap: nextMap });
+    } catch (error) {
+      console.error('Error persisting merchant category mapping:', error);
+    }
+  };
 
-      if (leveledUp) {
-        toast.success(`SYSTEM OVERRIDE: Operator Tier reached Level ${newLevel}!`, {
-          style: { background: 'var(--color-accent)', color: 'var(--color-bg)', border: 'none' }
+  const addCustomCategory = async (categoryName: string) => {
+    const normalized = categoryName.trim();
+    if (!normalized) return;
+
+    const exists = categories.some((c) => c.toLowerCase() === normalized.toLowerCase());
+    if (exists) return;
+
+    const nextCategories = [...customCategories, normalized];
+    setCustomCategories(nextCategories);
+
+    if (!user?.uid) return;
+    try {
+      await upsertAppSettings({ customExpenseCategories: nextCategories });
+    } catch (error) {
+      console.error('Error persisting custom categories:', error);
+    }
+  };
+
+  const addCustomSource = async (sourceName: string) => {
+    const normalized = sourceName.trim();
+    if (!normalized) return;
+
+    const exists = customSources.some((s) => s.toLowerCase() === normalized.toLowerCase());
+    if (exists) return;
+
+    const nextSources = [...customSources, normalized];
+    setCustomSources(nextSources);
+
+    if (!user?.uid) return;
+    try {
+      await upsertAppSettings({ sourceOptions: nextSources });
+    } catch (error) {
+      console.error('Error persisting source options:', error);
+    }
+  };
+
+  const handleSystemReset = async () => {
+    const currentUid = user?.uid || null;
+    try {
+      const collections = ['tasks', 'transactions', 'budgets', 'notes', 'exercises'];
+      
+      for (const collName of collections) {
+        const q = query(collection(db, collName), where('uid', '==', currentUid));
+        const snapshot = await getDocs(q);
+        console.log(`[System Reset] Purging ${snapshot.size} documents from ${collName}`);
+        
+        const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, collName, d.id)));
+        await Promise.all(deletePromises);
+      }
+      
+      if (user?.uid) {
+        await upsertAppSettings({
+          monthlyBudget: 0,
+          deepWork: true,
+          notifications: false,
+          merchantCategoryMap: {},
         });
       }
-    } catch (e) {
-      console.error('Error awarding EXP:', e);
+
+      setMonthlyBudget(0);
+      setMerchantToCategory({});
+
+      toast.success('All your data has been reset.');
+    } catch (error: any) {
+      console.error('System Reset Error:', error);
+      toast.error('Reset failed. Please try again.');
     }
   };
 
   useEffect(() => {
-    if (!userStats || !user?.uid || tasks.length === 0) return;
+    if (tasks.length === 0) return;
+
+    const resetKey = `taskos_last_recurrence_reset_${user?.uid || 'guest'}`;
 
     const checkDailyReset = () => {
-      const today = new Date().toISOString().split('T')[0];
-      if (userStats.lastActiveDate !== today) {
-        const lastActive = new Date(userStats.lastActiveDate);
-        const current = new Date(today);
-        const diffTime = Math.abs(current.getTime() - lastActive.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let newStreak = userStats.currentStreak;
-        if (diffDays === 1) {
-          newStreak += 1;
-          toast.success(`Daily Login: Streak increased to ${newStreak} days!`);
-        } else if (diffDays > 1) {
-          newStreak = 0;
-          toast.error('Streak broken. Operator system reset.', {
-            style: { background: 'var(--color-alert)', color: 'var(--color-bg)', border: 'none' }
-          });
+      const italyToday = getItalyDateKey(new Date());
+      if (!italyToday) return;
+      if (localStorage.getItem(resetKey) === italyToday) return;
+
+      let dailyTasksToReset: string[] = [];
+      let dailyTasksToMarkMissed: string[] = [];
+
+      const todayObj = new Date();
+
+      tasks.forEach(t => {
+        if (t.taskCategory !== 'daily') return;
+
+        if (t.status === 'done') {
+          if (!t.lastCompletedAt) return;
+
+          const italyCompletedDate = getItalyDateKey(t.lastCompletedAt);
+          if (!italyCompletedDate || italyCompletedDate === italyToday) return;
+
+          let shouldReset = false;
+          if (!t.recurrence || t.recurrence.type === 'daily') {
+            shouldReset = true;
+          } else if (t.recurrence.type === 'weekly' && t.recurrence.daysOfWeek) {
+            shouldReset = t.recurrence.daysOfWeek.includes(todayObj.getDay());
+          } else if (t.recurrence.type === 'monthly' && t.recurrence.dateOfMonth) {
+            shouldReset = t.recurrence.dateOfMonth === todayObj.getDate();
+          } else if (t.recurrence.type === 'interval' && t.recurrence.intervalDays) {
+            const lastCompletedObj = new Date(t.lastCompletedAt);
+            const diffTime = Math.abs(todayObj.getTime() - lastCompletedObj.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            shouldReset = diffDays >= t.recurrence.intervalDays;
+          }
+
+          if (shouldReset) {
+            dailyTasksToReset.push(t.id);
+          }
+          return;
         }
 
-        // Reset daily tasks and apply XP penalty for stacked queue
-        let xpPenalty = 0;
-        let tasksToStack: string[] = [];
-        let dailyTasksToReset: string[] = [];
-
-        const todayObj = new Date();
-
-        tasks.forEach(t => {
-          if (t.status === 'todo' && t.taskCategory !== 'long-term') {
-            if (!t.isStacked) {
-              xpPenalty += 10;
-              tasksToStack.push(t.id);
-            }
-          }
-          
-          if (t.taskCategory === 'daily' && t.status === 'done') {
-            if (t.lastCompletedAt && t.lastCompletedAt.split('T')[0] !== today) {
-              let shouldReset = false;
-              if (!t.recurrence || t.recurrence.type === 'daily') {
-                shouldReset = true;
-              } else if (t.recurrence.type === 'weekly' && t.recurrence.daysOfWeek) {
-                shouldReset = t.recurrence.daysOfWeek.includes(todayObj.getDay());
-              } else if (t.recurrence.type === 'monthly' && t.recurrence.dateOfMonth) {
-                shouldReset = t.recurrence.dateOfMonth === todayObj.getDate();
-              } else if (t.recurrence.type === 'interval' && t.recurrence.intervalDays) {
-                const lastCompletedObj = new Date(t.lastCompletedAt);
-                const diffTime = Math.abs(todayObj.getTime() - lastCompletedObj.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                shouldReset = diffDays >= t.recurrence.intervalDays;
-              }
-              
-              if (shouldReset) {
-                dailyTasksToReset.push(t.id);
-              }
-            }
-          }
-        });
-
-        let updatedExp = userStats.exp;
-        let updatedLevel = userStats.level;
-        if (xpPenalty > 0) {
-          updatedExp -= xpPenalty;
-          while (updatedExp < 0 && updatedLevel > 1) {
-            updatedLevel -= 1;
-            updatedExp += (updatedLevel * 100);
-          }
-          if (updatedExp < 0) updatedExp = 0;
+        if (t.status === 'todo' && !t.isMissedDaily) {
+          dailyTasksToMarkMissed.push(t.id);
         }
+      });
 
-        updateDoc(doc(db, 'user_stats', userStats.id), {
-          lastActiveDate: today,
-          currentStreak: newStreak,
-          exp: updatedExp,
-          level: updatedLevel
-        }).catch(console.error);
+      dailyTasksToReset.forEach(id => {
+        updateDoc(doc(db, 'tasks', id), { status: 'todo', isMissedDaily: false }).catch(console.error);
+      });
 
-        dailyTasksToReset.forEach(id => {
-           updateDoc(doc(db, 'tasks', id), { status: 'todo', isStacked: false }).catch(console.error);
-        });
-        tasksToStack.forEach(id => {
-           updateDoc(doc(db, 'tasks', id), { isStacked: true }).catch(console.error);
-        });
-      }
+      dailyTasksToMarkMissed.forEach(id => {
+        updateDoc(doc(db, 'tasks', id), { isMissedDaily: true }).catch(console.error);
+      });
+
+      localStorage.setItem(resetKey, italyToday);
     };
 
     // Trigger on mount/change
@@ -348,7 +620,7 @@ export default function App() {
     // Heartbeat: Check for midnight transition every 60 seconds
     const interval = setInterval(checkDailyReset, 60000);
     return () => clearInterval(interval);
-  }, [userStats?.lastActiveDate, tasks.length]);
+  }, [tasks, user?.uid]);
 
   // Persistent Memory (Notes)
   const addNote = async (content: string) => {
@@ -362,12 +634,6 @@ export default function App() {
         updatedAt: new Date().toISOString()
       });
     } catch (e) { console.error('Error adding note:', e); }
-  };
-
-  const updateNote = async (id: string, updates: Partial<Note>) => {
-    try {
-      await updateDoc(doc(db, 'notes', id), { ...updates, updatedAt: new Date().toISOString() });
-    } catch (e) { console.error('Error updating note:', e); }
   };
 
   const deleteNote = async (id: string) => {
@@ -384,13 +650,13 @@ export default function App() {
       console.log("[Firebase Write] Attempting to add task:", payload);
       const docRef = await addDoc(collection(db, 'tasks'), payload);
       console.log("[Firebase Write] Task added successfully with ID:", docRef.id);
-      toast.success('Task created successfully');
+      toast.success('Task created.');
     } catch (error: any) {
       console.error('[Firebase Write] Error adding task:', error);
       if (error.code === 'permission-denied') {
-        toast.error('Access Denied: You must be signed in to save tasks to the cloud.');
+        toast.error('Please sign in to save tasks to the cloud.');
       } else {
-        toast.error('Failed to create task: ' + error.message);
+        toast.error('Could not create task.');
       }
     }
   };
@@ -402,24 +668,14 @@ export default function App() {
 
       if (status === 'done' && task?.status !== 'done') {
         updates.lastCompletedAt = new Date().toISOString();
-        let xpReward = 10;
-        if (task.taskCategory === 'daily') xpReward = 15;
-        if (task.taskCategory === 'long-term') xpReward = 50;
-        
-        // Catch-up bonus for stacked tasks
-        if (task.isStacked) {
-          xpReward += 5;
-          updates.isStacked = false;
-        }
-
-        await awardEXP(xpReward);
+        updates.isMissedDaily = false;
       }
 
       await updateDoc(doc(db, 'tasks', taskId), updates);
-      toast.success(`Task status updated`);
+      toast.success('Task status updated.');
     } catch (error) {
       console.error('Error updating task status:', error);
-      toast.error('Failed to update status');
+      toast.error('Could not update task status.');
     }
   };
 
@@ -428,27 +684,24 @@ export default function App() {
       const task = tasks.find(t => t.id === taskId);
       if (updates.status === 'done' && task?.status !== 'done') {
         updates.lastCompletedAt = new Date().toISOString();
-        let xpReward = 10;
-        if (task?.taskCategory === 'daily') xpReward = 15;
-        if (task?.taskCategory === 'long-term') xpReward = 50;
-        await awardEXP(xpReward);
+        updates.isMissedDaily = false;
       }
 
       await updateDoc(doc(db, 'tasks', taskId), updates);
-      toast.success('Task updated');
+      toast.success('Task updated.');
     } catch (error) {
       console.error('Error updating task:', error);
-      toast.error('Failed to update task');
+      toast.error('Could not update task.');
     }
   };
 
   const deleteTask = async (taskId: string) => {
     try {
       await deleteDoc(doc(db, 'tasks', taskId));
-      toast.success('Task removed');
+      toast.success('Task deleted.');
     } catch (error) {
       console.error('Error deleting task:', error);
-      toast.error('Failed to remove task');
+      toast.error('Could not delete task.');
     }
   };
 
@@ -459,10 +712,10 @@ export default function App() {
         uid: user?.uid || null,
         createdAt: new Date().toISOString()
       });
-      toast.success('Transaction logged');
+      toast.success('Transaction saved.');
     } catch (error) {
       console.error('Error adding transaction:', error);
-      toast.error('Failed to log transaction');
+      toast.error('Could not save transaction.');
     }
   };
 
@@ -473,39 +726,10 @@ export default function App() {
         uid: user?.uid || null,
         createdAt: new Date().toISOString()
       });
-      toast.success('Exercise session logged');
+      toast.success('Exercise session saved.');
     } catch (error) {
       console.error('Error adding exercise session:', error);
-      toast.error('Failed to log exercise');
-    }
-  };
-
-  const addCryptoHolding = async (holding: Omit<CryptoHolding, 'id' | 'last_updated'>) => {
-    try {
-      const holdingId = cryptoHoldings.find(h => h.asset === holding.asset)?.id || `holding_${holding.asset}_${user?.uid}`;
-      await setDoc(doc(db, 'crypto_holdings', holdingId), {
-        ...holding,
-        uid: user?.uid || null,
-        last_updated: new Date().toISOString()
-      }, { merge: true });
-      toast.success('Holding updated');
-    } catch (error) {
-      console.error('Error adding crypto holding:', error);
-      toast.error('Failed to update holding');
-    }
-  };
-
-  const addCryptoTrade = async (trade: Omit<CryptoTrade, 'id'>) => {
-    try {
-      await addDoc(collection(db, 'crypto_trades'), {
-        ...trade,
-        uid: user?.uid || null,
-        createdAt: new Date().toISOString()
-      });
-      toast.success('Trade logged');
-    } catch (error) {
-      console.error('Error adding crypto trade:', error);
-      toast.error('Failed to log trade');
+      toast.error('Could not save exercise session.');
     }
   };
 
@@ -517,12 +741,18 @@ export default function App() {
             tasks={tasks} 
             transactions={transactions} 
             budgets={budgets}
-            userStats={userStats}
             onViewTasks={() => setActiveTab('tasks')}
             onViewExpenses={() => setActiveTab('expenses')}
+            onAddTask={() => {
+              setEditingTask(null);
+              setIsTaskModalOpen(true);
+            }}
+            onAddExpense={() => {
+              setEditingTransaction(null);
+              setIsExpenseModalOpen(true);
+            }}
             onAddClick={handleAddClick}
-            userName={user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || undefined}
-            onUpdateTaskStatus={updateTaskStatus}
+            tradeSnapshot={tradeBufferState}
           />
         );
       case 'tasks':
@@ -530,7 +760,6 @@ export default function App() {
           <Tasks 
             tasks={tasks} 
             notes={notes}
-            userStats={userStats}
             onUpdateStatus={updateTaskStatus} 
             onAddTask={() => {
               setEditingTask(null);
@@ -542,9 +771,7 @@ export default function App() {
             }}
             onDeleteTask={deleteTask}
             onAddNote={addNote}
-            onUpdateNote={updateNote}
             onDeleteNote={deleteNote}
-            onUpdateTask={updateTask}
           />
         );
       case 'expenses':
@@ -562,17 +789,23 @@ export default function App() {
             }}
             onDeleteExpense={deleteTransaction}
             onUpsertBudget={upsertBudget}
+            globalMonthlyBudget={monthlyBudget}
+            onSetGlobalBudget={setGlobalBudget}
           />
         );
       case 'exercises':
         return <Exercises sessions={exerciseSessions} onLogSession={() => setIsExerciseModalOpen(true)} />;
       case 'trade-tracker':
         return <TradeTracker />;
+      case 'api-check':
+        return <TempApiKeyCheck />;
       case 'settings':
         return (
           <Settings 
             user={user}
             onLogin={handleLogin}
+            onSystemReset={handleSystemReset}
+            onOpenApiCheck={() => setActiveTab('api-check')}
           />
         );
       default:
@@ -581,26 +814,20 @@ export default function App() {
             tasks={tasks} 
             transactions={transactions}
             budgets={budgets}
-            userStats={userStats}
             onViewTasks={() => setActiveTab('tasks')}
             onViewExpenses={() => setActiveTab('expenses')}
+            onAddTask={() => {
+              setEditingTask(null);
+              setIsTaskModalOpen(true);
+            }}
+            onAddExpense={() => {
+              setEditingTransaction(null);
+              setIsExpenseModalOpen(true);
+            }}
             onAddClick={handleAddClick}
-            userName={user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || undefined}
-            onUpdateTaskStatus={updateTaskStatus}
+            tradeSnapshot={tradeBufferState}
           />
         );
-    }
-  };
-
-  const getTitle = () => {
-    switch (activeTab) {
-      case 'dashboard': return 'System Overview';
-      case 'tasks': return 'Mission Control';
-      case 'expenses': return 'Financial Ledger';
-      case 'exercises': return 'Physical Audit';
-      case 'trade-tracker': return 'Market Intelligence';
-      case 'settings': return 'System Preferences';
-      default: return 'TaskOS';
     }
   };
 
@@ -619,35 +846,30 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
-      const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
-      const provider = new GoogleAuthProvider();
-      // Add custom parameters to handle common issues
-      provider.setCustomParameters({ prompt: 'select_account' });
-      
-      await signInWithPopup(auth, provider);
-      toast.success('Signed in successfully');
+      await signInWithGoogle();
+      toast.success('Signed in successfully.');
     } catch (error: any) {
       console.error('Error signing in:', error);
       
       if (error.code === 'auth/unauthorized-domain') {
-        toast.error('Localhost not authorized. Please add "localhost" to your Firebase Console Authorized Domains.', {
+        toast.error('This domain is not authorized. Add it in Firebase Console > Authentication > Authorized domains.', {
           duration: 10000,
         });
       } else if (error.code === 'auth/popup-blocked') {
-        toast.error('Sign-in popup was blocked by your browser. Please allow popups for this site.');
+        toast.error('The sign-in popup was blocked. Please allow popups and try again.');
       } else {
-        toast.error('Failed to sign in: ' + (error.message || 'Unknown error'));
+        toast.error('Could not sign in. Please try again.');
       }
     }
   };
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
-      toast.success('Signed out successfully');
+      await logout();
+      toast.success('Signed out successfully.');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
+      toast.error('Could not sign out.');
     }
   };
 
@@ -655,36 +877,29 @@ export default function App() {
     <div className="min-h-screen bg-bg text-ink/90 selection:bg-accent/30 selection:text-white">
       <Sidebar 
         activeTab={activeTab} 
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setIsSidebarOpen(false);
-        }} 
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        setActiveTab={setActiveTab}
         user={user}
         onLogout={handleLogout}
       />
       
-      <main className="lg:ml-64 min-h-screen relative p-4 lg:p-10">
+      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
         <div>
           {isLoading ? (
-            <div className="flex items-center justify-center h-[70vh]">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 border-2 border-accent/20 rounded-2xl" />
-                <div className="absolute inset-0 border-2 border-accent border-t-transparent rounded-2xl animate-spin shadow-[0_0_20px_rgba(99,102,241,0.2)]" />
-              </div>
-            </div>
-          ) : renderContent()}
+            <TabSkeleton activeTab={activeTab} />
+          ) : (
+            <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
+              {renderContent()}
+            </Suspense>
+          )}
         </div>
       </main>
 
       {/* Mobile bottom nav */}
       <MobileNav 
         activeTab={activeTab} 
-        setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
-        onMenuClick={() => setIsSidebarOpen(true)}
+        setActiveTab={setActiveTab}
       />
 
       <div className="fixed inset-0 z-[200] pointer-events-none">
@@ -700,6 +915,11 @@ export default function App() {
             editingTransaction={editingTransaction}
             categories={categories}
             merchantToCategory={merchantToCategory}
+            onLearnMerchantCategory={learnMerchantCategory}
+            uniqueMerchants={uniqueMerchants}
+            sourceOptions={customSources}
+            onAddCategory={addCustomCategory}
+            onAddSource={addCustomSource}
           />
 
           <TaskModal 
@@ -720,8 +940,7 @@ export default function App() {
         </div>
       </div>
 
-      <Toast toasts={toasts} onRemove={removeToast} />
-      <Toaster position="bottom-left" theme="dark" />
+      <Toaster position="bottom-left" theme="light" />
     </div>
   );
 }

@@ -1,5 +1,22 @@
 # Goal Description
 
+## 2026-04-04 Implementation Update
+
+Completed a focused cleanup and settings consolidation pass:
+
+1. Removed dead code paths (unused listeners/state/functions/props), including deletion of `FloatingTimer`.
+2. Simplified mobile navigation architecture by removing sidebar mobile overlay/open-state behavior.
+3. Standardized auth action entrypoints in app shell to `firebase.ts` helpers (`signInWithGoogle`, `logout`).
+4. Extended active settings persistence in `app_settings` to include:
+    - `monthlyBudget`
+    - `deepWork`
+    - `notifications`
+    - `merchantCategoryMap`
+    - `updatedAt`
+5. Connected Settings toggles to persisted `app_settings` values for authenticated users.
+6. Added login-only Settings mode for logged-out users.
+7. Connected expense logging flow to learn and persist merchant->category mappings.
+
 Transform TaskOS from a standard Kanban board into a high-performance, gamified productivity engine. The goal is to introduce distinct task categories (Dailies, Persistent Notes, Long-Term Plans) and implement a sleek, "engineered" gamification system on the Dashboard to incentivize daily engagement without resorting to cartoonish aesthetics.
 
 ## Inspiration & Paradigm Shift
@@ -33,7 +50,7 @@ We need to update our core data definitions to support the new logic.
 - **Note [NEW]**: A new type for persistent reminders: `content`, `color`, `pinned`.
 
 #### [MODIFY] `src/App.tsx`
-- Implement new Firestore listeners for `notes` and `user_stats`.
+- Implement new Firestore listeners for `notes` and `app_settings`.
 - Add the core logic function: `awardEXP(amount)` which automatically checks if the user levels up and updates their stats in Firebase.
 
 ---

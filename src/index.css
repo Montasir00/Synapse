@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@import "./theme/tokens.css";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -8,26 +9,28 @@
   --font-headline: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Calm Futuristic Palette */
-  --color-bg: #0f1115;          /* Deep Charcoal */
-  --color-bg-gradient: #0a0c10;
-  --color-surface: #16191e;     /* Layer Surface */
-  --color-ink: #f1f5f9;         /* Soft White */
-  --color-accent: #6366f1;      /* Electric Indigo */
-  --color-accent-hover: #818cf8;
-  --color-secondary: #94a3b8;
-  --color-success: #34d399;     /* Soft Green */
-  --color-alert: #f87171;       /* Clean Red */
-  --color-warning: #fbbf24;     /* Amber */
-  --color-muted: #475569;
-  --color-dark-border: #1e293b;
-  --color-border: #1e293b;
+  /* Soft minimalism palette */
+  --color-bg: var(--ds-color-bg);
+  --color-bg-gradient: var(--ds-color-surface-subtle);
+  --color-surface: var(--ds-color-surface);
+  --color-surface-subtle: var(--ds-color-surface-subtle);
+  --color-ink: var(--ds-color-text-primary);
+  --color-accent: var(--ds-color-primary);
+  --color-accent-secondary: var(--ds-color-secondary);
+  --color-accent-hover: var(--ds-color-primary-hover);
+  --color-secondary: var(--ds-color-text-secondary);
+  --color-success: var(--ds-color-success);
+  --color-alert: var(--ds-color-danger);
+  --color-warning: var(--ds-color-warning);
+  --color-muted: var(--ds-color-text-muted);
+  --color-dark-border: var(--ds-color-border-strong);
+  --color-border: var(--ds-color-border);
 
   /* Semantic Aliases */
   --color-primary: var(--color-accent);
   --color-on-surface: var(--color-ink);
   --color-on-surface-variant: var(--color-muted);
-  --color-teal: #2dd4bf;
+  --color-teal: #06b6d4;
 
   /* Fluid Geometry */
   --glass-bg: rgba(22, 25, 30, 0.4);
@@ -51,13 +54,10 @@
   }
 
   body {
-    @apply font-sans bg-bg text-ink/90 antialiased;
-    background:
-      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(52, 211, 153, 0.02) 0%, transparent 50%),
-      var(--color-bg);
-    min-height: 100vh;
-    letter-spacing: -0.01em;
+    @apply font-sans bg-bg text-ink antialiased;
+    background: var(--color-bg);
+    min-height: 100dvh;
+    letter-spacing: -0.015em;
     padding-bottom: env(safe-area-inset-bottom);
   }
 
@@ -69,39 +69,98 @@
   button, input, select, textarea {
     @apply transition-all duration-200;
   }
-}
 
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: saturate(0.7);
+  }
+}
+/* Global focus-visible outline */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
 @layer utilities {
   .serif-display {
     @apply font-display font-black;
   }
 
   .micro-label {
-    @apply font-sans text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted/60;
+    @apply font-sans text-xs uppercase tracking-[0.08em] font-semibold text-muted;
   }
 
-  .glass-card {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    @apply rounded-[32px] transition-all duration-500 ease-out hover:border-accent/20 hover:shadow-[0_20px_60px_rgba(0,0,0,0.3),0_0_30px_rgba(99,102,241,0.03)] p-8;
-  }
+.glass-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  @apply rounded-[var(--radius)] transition-all duration-300 ease-out hover:border-dark-border hover:shadow-[0_4px_12px_rgba(16,24,40,0.08)] p-4;
+}
 
   .pill-container {
-    @apply rounded-full px-8 py-4 bg-white/[0.02] border border-white/5 flex items-center gap-4 transition-all hover:bg-white/[0.04];
+    @apply rounded-full px-3 sm:px-6 py-2 sm:py-3 bg-surface-subtle border border-border flex items-center gap-2 sm:gap-3 transition-all hover:bg-white;
   }
 
   .precise-border {
-    border: 1px solid var(--glass-border);
-    @apply rounded-3xl;
+    border: 1px solid var(--color-border);
+    @apply rounded-xl;
   }
 
   .precise-button {
-    @apply px-10 py-3 bg-accent text-white font-bold text-[11px] uppercase tracking-[0.15em] rounded-full hover:bg-accent-hover active:scale-[0.95] transition-all shadow-2xl shadow-accent/20 border border-white/10;
+  @apply px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 bg-accent text-white font-semibold text-xs sm:text-sm uppercase tracking-[0.08em] rounded-[var(--radius)] hover:bg-accent-hover active:scale-[0.98] transition-all shadow-sm border border-transparent;
+}
+
+  .precise-button:disabled {
+    @apply bg-muted/80 text-white/90 border-transparent;
+    transform: none;
+    box-shadow: none;
   }
 
   .input-field {
-    @apply bg-black/10 border border-white/5 rounded-full px-8 py-4 text-sm text-white focus:border-accent focus:ring-1 focus:ring-accent/10 outline-none transition-all placeholder:text-muted/20;
+    @apply bg-white border border-border rounded-full px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-sm sm:text-base text-ink focus:border-accent focus:ring-2 focus:ring-accent/15 outline-none transition-all placeholder:text-muted;
   }
+
+  /* Shadcn-like Utility Cards */
+  .soothing-card {
+  @apply bg-surface border border-border rounded-[var(--radius)] overflow-hidden transition-all duration-300;
+}
+
+  .glass-surface {
+    @apply bg-surface/90 backdrop-blur-xl border-border;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-surface-subtle) 92%, transparent) 25%,
+      color-mix(in srgb, var(--color-surface) 95%, white) 50%,
+      color-mix(in srgb, var(--color-surface-subtle) 92%, transparent) 75%
+    );
+    background-size: 220% 100%;
+    animation: skeleton-wave 1.3s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-wave {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Typography guardrail: normalize tiny ad hoc sizes for readability */
+:where(.text-\[9px\], .text-\[10px\], .text-\[11px\]) {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+:where(.sm\:text-\[11px\], .md\:text-\[10px\]) {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
 }
 
 /* Custom scrollbar — thin & geometric */
@@ -110,14 +169,16 @@
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-surface-subtle);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(114, 137, 253, 0.1);
+  background: var(--color-accent);
+  border: 1px solid var(--color-surface-subtle);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(114, 137, 253, 0.2);
+  background: var(--color-accent-hover);
 }
 
 .no-scrollbar::-webkit-scrollbar {

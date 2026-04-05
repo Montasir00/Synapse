@@ -1,19 +1,24 @@
-import * as functions from 'firebase-functions/v2';
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from 'firebase-admin';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import axios from 'axios';
 import * as crypto from 'crypto';
-import { google } from 'googleapis';
 
+// Initialize Firebase Admin once
 admin.initializeApp();
 const db = admin.firestore();
 
 const app = express();
 
-// Enable CORS for frontend during local dev, but for Firebase Hosting rewrites it's often the same origin.
-app.use(cors({ origin: true, credentials: true }));
+// Standard Express middlewares
+app.use(cors({ 
+  origin: true, 
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(cookieParser());
 app.use(express.json());
 
@@ -38,25 +43,30 @@ const verifyToken = async (req: express.Request, res: express.Response, next: ex
 // Binance API Proxy
 app.post('/api/binance/proxy', verifyToken, async (req, res) => {
   const user = (req as any).user;
-  const { method, endpoint, params, baseUrl } = req.body;
+  const { method, endpoint, params, baseUrl, apiKey: rawApiKey, apiSecret: rawApiSecret } = req.body;
 
   try {
-    // Fetch Binance credentials securely from Firestore
-    // Path matches what we will save from the frontend: user_secrets/{uid}
-    const secretDoc = await db.collection('user_secrets').doc(user.uid).get();
-    
-    if (!secretDoc.exists) {
-      return res.status(400).json({ error: 'Binance credentials not configured for this user.' });
-    }
+    let apiKey = String(rawApiKey || '').trim();
+    let apiSecret = String(rawApiSecret || '').trim();
 
-    const { binanceApiKey: apiKey, binanceApiSecret: apiSecret } = secretDoc.data()!;
+    if (!apiKey || !apiSecret) {
+      const secretDoc = await db.collection('user_secrets').doc(user.uid).get();
+
+      if (!secretDoc.exists) {
+        return res.status(400).json({ error: 'Binance credentials not configured for this user.' });
+      }
+
+      const data = secretDoc.data() || {};
+      apiKey = String((data as any).binanceApiKey || '').trim();
+      apiSecret = String((data as any).binanceApiSecret || '').trim();
+    }
 
     if (!apiKey || !apiSecret) {
       return res.status(400).json({ error: 'API Key and Secret are required' });
     }
 
-    const cleanKey = apiKey.trim();
-    const cleanSecret = apiSecret.trim();
+    const cleanKey = apiKey;
+    const cleanSecret = apiSecret;
     const finalBaseUrl = baseUrl || 'https://api.binance.com';
 
     const timestamp = Date.now();
@@ -90,18 +100,71 @@ app.post('/api/binance/proxy', verifyToken, async (req, res) => {
   } catch (error: any) {
     const binanceError = error.response?.data;
     const status = error.response?.status || 500;
-    res.status(status).json(binanceError || { msg: error.message });
+    res.status(status).json(binanceError || { msg: error.message || 'Proxy request failed.' });
+  }
+});
+
+// Endpoint used by API Check flow to validate raw credentials before saving.
+app.post('/api/binance/validate', verifyToken, async (req, res) => {
+  const { apiKey, apiSecret, baseUrl } = req.body || {};
+
+  const cleanKey = String(apiKey || '').trim();
+  const cleanSecret = String(apiSecret || '').trim();
+  const finalBaseUrl = baseUrl || 'https://api.binance.com';
+
+  if (!cleanKey || !cleanSecret) {
+    return res.status(400).json({ ok: false, msg: 'API key and secret are required.' });
+  }
+
+  try {
+    const timestamp = Date.now();
+    const params = { timestamp, recvWindow: 60000 };
+
+    const queryString = new URLSearchParams(
+      Object.keys(params)
+        .sort()
+        .reduce((acc: Record<string, string>, key) => {
+          acc[key] = String((params as Record<string, number>)[key]);
+          return acc;
+        }, {})
+    ).toString();
+
+    const signature = crypto
+      .createHmac('sha256', cleanSecret)
+      .update(queryString)
+      .digest('hex');
+
+    const url = `${finalBaseUrl}/api/v3/account?${queryString}&signature=${signature}`;
+
+    await axios.get(url, {
+      headers: {
+        'X-MBX-APIKEY': cleanKey,
+      },
+    });
+
+    return res.json({ ok: true, msg: 'Credentials are valid.' });
+  } catch (error: any) {
+    const binanceError = error.response?.data;
+    const status = error.response?.status || 500;
+
+    return res.status(status).json({
+      ok: false,
+      code: binanceError?.code ?? null,
+      msg: binanceError?.msg || error.message || 'Validation failed.',
+    });
   }
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'TaskOS Cloud Functions API' });
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', app: 'TaskOS Cloud Functions API', version: '2.0.1' });
 });
 
-// --- GOOGLE OAUTH CONFIGURATION ---
-const createOAuthClient = () => {
-  // Use Firebase environment config or env variables. In v2 functions process.env handles .env files correctly.
+// --- GOOGLE OAUTH CONFIGURATION (LAZY LOAD GOOGLEAPIS) ---
+const createOAuthClient = async () => {
+  // Lazy-load googleapis to reduce discovery timeout issues
+  const { google } = await import('googleapis');
+  
   const clientID = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback";
@@ -115,8 +178,8 @@ const createOAuthClient = () => {
   }
 };
 
-app.get("/api/auth/google", (req, res) => {
-  const client = createOAuthClient();
+app.get("/api/auth/google", async (_req, res) => {
+  const client = await createOAuthClient();
   if (!client) {
     return res.status(400).send("Google OAuth credentials missing. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.");
   }
@@ -133,8 +196,8 @@ app.get("/api/auth/google", (req, res) => {
   res.redirect(url);
 });
 
-app.get("/api/auth/google/url", (req, res) => {
-  const client = createOAuthClient();
+app.get("/api/auth/google/url", async (_req, res) => {
+  const client = await createOAuthClient();
   if (!client) {
     return res.status(400).json({ error: "Google OAuth credentials missing" });
   }
@@ -152,7 +215,7 @@ app.get("/api/auth/google/url", (req, res) => {
 
 app.get("/api/auth/google/callback", async (req, res) => {
   const { code } = req.query;
-  const client = createOAuthClient();
+  const client = await createOAuthClient();
   
   if (!client || !code) {
     return res.send(`<script>window.opener.postMessage({ type: 'OAUTH_AUTH_ERROR', provider: 'google' }, '*'); window.close();</script>`);
@@ -160,7 +223,6 @@ app.get("/api/auth/google/callback", async (req, res) => {
 
   try {
     const { tokens } = await client.getToken(code as string);
-    // Determine if production from environment
     const isProd = process.env.NODE_ENV === 'production' || process.env.GCP_PROJECT !== undefined;
     
     res.cookie('google_tokens', JSON.stringify(tokens), { 
@@ -191,5 +253,13 @@ app.get("/api/auth/google/status", (req, res) => {
   res.json({ connected: !!tokens });
 });
 
-// Export the Express API wrapped in Cloud Functions HTTPS trigger
-export const api = functions.https.onRequest(app);
+// Export the Express API wrapped in Cloud Functions HTTPS trigger (v2)
+export const api = onRequest({
+  region: 'europe-west1',
+  cors: true,
+  invoker: 'public',
+  serviceAccount: 'project-166720b8-9694-4ef7-b97@appspot.gserviceaccount.com',
+  maxInstances: 10,
+  memory: '256MiB',
+  timeoutSeconds: 60
+}, app);

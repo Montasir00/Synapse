@@ -4,14 +4,18 @@ import { BinanceTrade, Position } from '../types/binance';
 export const fetchBinanceTrades = async (
   idToken: string,
   symbol: string,
-  baseUrl: string = 'https://api.binance.com'
+  baseUrl: string = 'https://api.binance.com',
+  apiKey?: string,
+  apiSecret?: string
 ): Promise<BinanceTrade[]> => {
   try {
     const response = await axios.post('/api/binance/proxy', {
       method: 'GET',
       endpoint: '/api/v3/myTrades',
       params: { symbol },
-      baseUrl
+      baseUrl,
+      apiKey,
+      apiSecret,
     }, {
       headers: { Authorization: `Bearer ${idToken}` }
     });
@@ -24,20 +28,52 @@ export const fetchBinanceTrades = async (
 
 export const fetchBinanceAccount = async (
   idToken: string,
-  baseUrl: string = 'https://api.binance.com'
+  baseUrl: string = 'https://api.binance.com',
+  apiKey?: string,
+  apiSecret?: string
 ): Promise<any> => {
   try {
     const response = await axios.post('/api/binance/proxy', {
       method: 'GET',
       endpoint: '/api/v3/account',
       params: {},
-      baseUrl
+      baseUrl,
+      apiKey,
+      apiSecret,
     }, {
       headers: { Authorization: `Bearer ${idToken}` }
     });
     return response.data;
   } catch (error) {
     console.error('Error fetching account:', error);
+    throw error;
+  }
+};
+
+export const validateBinanceCredentials = async (
+  idToken: string,
+  apiKey: string,
+  apiSecret: string,
+  baseUrl: string = 'https://api.binance.com'
+): Promise<{ ok: boolean; msg?: string; code?: number | null }> => {
+  try {
+    const response = await axios.post('/api/binance/validate', {
+      apiKey,
+      apiSecret,
+      baseUrl,
+    }, {
+      headers: { 
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      },
+      withCredentials: false
+    });
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.data) {
+      return error.response.data;
+    }
     throw error;
   }
 };

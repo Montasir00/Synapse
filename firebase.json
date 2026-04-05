@@ -2,8 +2,11 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "hosting": {
+    "hosting": {
     "public": "dist",
+    "predeploy": [
+      "npm run build"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -12,7 +15,10 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "function": "api"
+        "function": {
+          "functionId": "api",
+          "region": "europe-west1"
+        }
       },
       {
         "source": "**",
