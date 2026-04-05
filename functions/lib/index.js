@@ -126,7 +126,7 @@ app.post('/api/binance/proxy', verifyToken, async (req, res) => {
         res.status(status).json(binanceError || { msg: error.message || 'Proxy request failed.' });
     }
 });
-// Temporary endpoint used by the API checker page to validate raw credentials before saving.
+// Endpoint used by API Check flow to validate raw credentials before saving.
 app.post('/api/binance/validate', verifyToken, async (req, res) => {
     var _a, _b, _c;
     const { apiKey, apiSecret, baseUrl } = req.body || {};
