@@ -17,7 +17,7 @@ Completed a focused cleanup and settings consolidation pass:
 6. Added login-only Settings mode for logged-out users.
 7. Connected expense logging flow to learn and persist merchant->category mappings.
 
-Transform TaskOS from a standard Kanban board into a high-performance, gamified productivity engine. The goal is to introduce distinct task categories (Dailies, Persistent Notes, Long-Term Plans) and implement a sleek, "engineered" gamification system on the Dashboard to incentivize daily engagement without resorting to cartoonish aesthetics.
+Transform Synapse from a standard Kanban board into a high-performance, gamified productivity engine. The goal is to introduce distinct task categories (Dailies, Persistent Notes, Long-Term Plans) and implement a sleek, "engineered" gamification system on the Dashboard to incentivize daily engagement without resorting to cartoonish aesthetics.
 
 ## Inspiration & Paradigm Shift
 

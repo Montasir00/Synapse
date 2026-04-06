@@ -1,5 +1,5 @@
 {
-  "name": "Crypto Trade Tracker",
-  "description": "A lightweight, personal tool that automatically pulls your Binance spot trading history into a clear dashboard for review and learning.",
+  "name": "Synapse",
+  "description": "A lightweight, personal tool for tracking tasks, trades, and health data within a neural mission control interface.",
   "requestFramePermissions": []
 }

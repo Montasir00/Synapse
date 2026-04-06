@@ -33,7 +33,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
         {/* Logo */}
         <div className="px-6 mb-8 flex items-center">
           <div>
-            <h1 className="text-2xl font-display font-black text-ink tracking-tighter uppercase">Task<span className="text-accent ring-accent/30 drop-shadow-[0_0_8px_rgba(99,102,241,0.3)]">OS</span></h1>
+            <h1 className="text-2xl font-display font-black text-ink tracking-tighter uppercase">Syna<span className="text-accent font-black drop-shadow-[0_0_8px_rgba(99,102,241,0.3)]">pse</span></h1>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
           <div className="flex items-center gap-3">
             <div className="relative shrink-0">
               <img
-                src={user?.photoURL || `https://api.dicebear.com/7.x/shapes/svg?seed=taskos`}
+                src={user?.photoURL || `https://api.dicebear.com/7.x/shapes/svg?seed=synapse`}
                 alt="User"
                 className="w-9 h-9 rounded-full border border-white/10 object-cover grayscale hover:grayscale-0 transition-all duration-300"
                 referrerPolicy="no-referrer"
@@ -106,7 +106,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
                   </span>
                 </div>
               </div>
-              <p className="micro-label opacity-60 truncate">{user ? 'Cloud Sync Mode' : 'Local Data Mode'}</p>
+              <p className="text-[10px] font-semibold text-muted/70 truncate tracking-wide mt-0.5">{user ? 'Cloud Sync Mode' : 'Local Data Mode'}</p>
             </div>
           </div>
 

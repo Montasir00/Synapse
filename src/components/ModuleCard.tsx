@@ -75,8 +75,8 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 
       <div className={`p-4 transition-all duration-500 overflow-y-auto scrollbar-custom ${isExpanded ? 'max-h-[400px]' : ''}`}>
         {!hasItems ? (
-          <div className="py-8 text-center text-[9px] font-black text-muted/10 uppercase tracking-widest">
-            No data protocol initialized
+          <div className="py-8 text-center text-[9px] font-black text-muted/50 uppercase tracking-widest">
+            Nothing here yet
           </div>
         ) : (
           <motion.div 
@@ -87,7 +87,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             {displayedItems}
             {!isExpanded && canExpand && (
                <div className="pt-1 text-center">
-                  <span className="text-[8px] font-bold text-muted/20 uppercase tracking-widest">
+                  <span className="text-[8px] font-bold text-muted/40 uppercase tracking-widest">
                      + {items.length - maxItems} More Encrypted
                   </span>
                </div>

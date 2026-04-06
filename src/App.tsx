@@ -22,7 +22,24 @@ import { Task, Transaction, Budget, Note } from './types';
 import { Toaster, toast } from 'sonner';
 import { auth, db, signInWithGoogle, logout } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { collection, query, onSnapshot, doc, setDoc, deleteDoc, updateDoc, addDoc, where, getDocs } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  onSnapshot, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc, 
+  addDoc, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
+import { 
+  PersistedMetrics, 
+  TradeSyncMetadata, 
+  Position as BinancePosition 
+} from './types/binance';
+import { performGlobalTradeSync } from './services/tradeSyncService';
 
 const ITALY_TIME_ZONE = 'Europe/Rome';
 
@@ -192,12 +209,12 @@ export default function App() {
   // Dynamic Merchant & Category Logic
   const categories = useMemo(() => {
     const defaultCats = ['Technology', 'Dining', 'Lifestyle', 'Housing', 'Travel', 'Income', 'Health', 'Education'];
-    const activeCats = new Set([...defaultCats, ...customCategories, ...transactions.map(t => t.category), ...budgets.map(b => b.category)]);
+    const activeCats = new Set([...defaultCats, ...(customCategories || []), ...(transactions || []).map(t => t.category), ...(budgets || []).map(b => b.category)]);
     return Array.from(activeCats).sort();
   }, [transactions, budgets, customCategories]);
 
   const uniqueMerchants = useMemo(() => {
-    const merchants = transactions
+    const merchants = (transactions || [])
       .map(t => t.merchant)
       .filter((m): m is string => !!m);
     
@@ -238,14 +255,25 @@ export default function App() {
 
   // Fetch Data from Firestore
   useEffect(() => {
-    // We always want to fetch data. If guest, we fetch where uid == null.
+    // We only attach cloud listeners if a user is authenticated.
+    // Guest mode relies on local state (empty) or future local persistence.
+    if (!user) {
+      setTasks([]);
+      setTransactions([]);
+      setBudgets([]);
+      setExerciseSessions([]);
+      setNotes([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    const currentUid = user?.uid || null;
+    const currentUid = user.uid;
 
     // Tasks Listener
     const tasksQuery = query(collection(db, 'tasks'), where('uid', '==', currentUid));
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
-      console.log(`[Firebase Sync] Received ${snapshot.docs.length} tasks for user ${user?.uid || 'Guest'}`);
+      console.log(`[Firebase Sync] Received ${snapshot.docs.length} tasks for user ${currentUid}`);
       const tasksData: Task[] = [];
       snapshot.forEach((doc) => tasksData.push({ ...doc.data(), id: doc.id } as Task));
       setTasks(tasksData);
@@ -339,52 +367,44 @@ export default function App() {
 
   // Trade tracker persisted-state listeners for dashboard buffer cards.
   useEffect(() => {
-    if (!user?.uid) {
-      setTradeBufferState({
-        openPositions: 0,
-        closedPositions: 0,
-        totalNetPnl: 0,
-        lastSyncAt: null,
-        hasError: false,
-      });
-      return;
-    }
+    if (!user?.uid) return;
 
     const metricsRef = doc(db, 'binance_metrics', user.uid);
     const syncRef = doc(db, 'user_trades_sync', user.uid);
     const positionsRef = collection(db, 'binance_positions', user.uid, 'items');
 
     const unsubscribeMetrics = onSnapshot(metricsRef, (snap) => {
-      const data = snap.data() as { totalNetPnl?: number } | undefined;
+      const data = snap.data() as PersistedMetrics | undefined;
       setTradeBufferState((prev) => ({
         ...prev,
-        totalNetPnl: typeof data?.totalNetPnl === 'number' ? data.totalNetPnl : 0,
+        totalNetPnl: data?.totalNetPnl || 0,
+        totalFees: data?.totalFees || 0,
+        avgHoldDuration: {
+          winner: data?.avgHoldTimeWinner || 0,
+          loser: data?.avgHoldTimeLoser || 0
+        },
+        tagPerformance: data?.tagPerformance || {},
       }));
     });
 
     const unsubscribeSync = onSnapshot(syncRef, (snap) => {
-      const data = snap.data() as { lastSyncTime?: number; hasError?: boolean } | undefined;
+      const data = snap.data() as TradeSyncMetadata | undefined;
       setTradeBufferState((prev) => ({
         ...prev,
-        lastSyncAt: typeof data?.lastSyncTime === 'number' ? data.lastSyncTime : null,
-        hasError: Boolean(data?.hasError),
+        lastSyncAt: data?.lastSyncTime || null,
+        hasError: !!data?.hasError,
+        closedPositions: data?.positionsCount || 0
       }));
     });
 
     const unsubscribePositions = onSnapshot(positionsRef, (snap) => {
-      let openPositions = 0;
-      let closedPositions = 0;
-
+      let openCount = 0;
       snap.forEach((docSnap) => {
-        const status = (docSnap.data() as { status?: string }).status;
-        if (status === 'OPEN') openPositions += 1;
-        if (status === 'CLOSED') closedPositions += 1;
+        if (docSnap.data().status === 'OPEN') openCount++;
       });
-
       setTradeBufferState((prev) => ({
         ...prev,
-        openPositions,
-        closedPositions,
+        openPositions: openCount,
       }));
     });
 
@@ -394,6 +414,45 @@ export default function App() {
       unsubscribePositions();
     };
   }, [user?.uid]);
+
+  // Global background sync on app entry (sessions-based lock)
+  useEffect(() => {
+    if (!user || !isAuthReady) return;
+
+    const SESSION_SYNC_KEY = `synapse_session_sync_${user.uid}`;
+    const isAlreadySynced = sessionStorage.getItem(SESSION_SYNC_KEY);
+
+    if (isAlreadySynced) {
+      console.log("[Sync Service] Active session sync detected. Skipping background trigger.");
+      return;
+    }
+
+    const triggerSync = async () => {
+      try {
+        const idToken = await user.getIdToken();
+        console.log("[Sync Service] Triggering automated background sync...");
+        const result = await performGlobalTradeSync(idToken, user.uid);
+        
+        if (result.success) {
+          sessionStorage.setItem(SESSION_SYNC_KEY, 'true');
+          console.log(`[Sync Service] Background sync complete. Captured ${result.tradeCount} trades.`);
+        } else {
+          console.error("[Sync Service] Background sync failed:", result.error);
+        }
+      } catch (err) {
+        console.error("[Sync Service] Error in automated trigger:", err);
+      }
+    };
+
+    // Trigger the sync as soon as auth is ready, prioritizing latest data.
+    const timer = setTimeout(triggerSync, 100);
+    return () => clearTimeout(timer);
+  }, [user, isAuthReady]);
+
+  // Navigation Scroll-to-Top Protocol
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   const upsertAppSettings = async (updates: Record<string, unknown>) => {
     if (!user?.uid) return false;
@@ -524,8 +583,9 @@ export default function App() {
   const handleSystemReset = async () => {
     const currentUid = user?.uid || null;
     try {
-      const collections = ['tasks', 'transactions', 'budgets', 'notes', 'exercises'];
+      const collections = ['tasks', 'transactions', 'budgets', 'notes', 'exercises', 'trade_journals', 'crypto_holdings'];
       
+      // 1. Purge standard collections
       for (const collName of collections) {
         const q = query(collection(db, collName), where('uid', '==', currentUid));
         const snapshot = await getDocs(q);
@@ -534,8 +594,22 @@ export default function App() {
         const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, collName, d.id)));
         await Promise.all(deletePromises);
       }
-      
-      if (user?.uid) {
+
+      // 2. Target specific trade-related documents and sub-collections
+      if (currentUid) {
+        // Delete metrics and sync status
+        try {
+          await deleteDoc(doc(db, 'binance_metrics', currentUid));
+          await deleteDoc(doc(db, 'user_trades_sync', currentUid));
+          
+          // Delete positions items sub-collection
+          const posRef = collection(db, 'binance_positions', currentUid, 'items');
+          const posSnap = await getDocs(posRef);
+          await Promise.all(posSnap.docs.map(d => deleteDoc(doc(db, 'binance_positions', currentUid, 'items', d.id))));
+        } catch (e) {
+          console.warn("[System Reset] Partial failure during trade document purge (might not exist yet):", e);
+        }
+
         await upsertAppSettings({
           monthlyBudget: 0,
           deepWork: true,
@@ -557,7 +631,7 @@ export default function App() {
   useEffect(() => {
     if (tasks.length === 0) return;
 
-    const resetKey = `taskos_last_recurrence_reset_${user?.uid || 'guest'}`;
+    const resetKey = `synapse_last_recurrence_reset_${user?.uid || 'guest'}`;
 
     const checkDailyReset = () => {
       const italyToday = getItalyDateKey(new Date());
@@ -569,7 +643,7 @@ export default function App() {
 
       const todayObj = new Date();
 
-      tasks.forEach(t => {
+      (tasks || []).forEach(t => {
         if (t.taskCategory !== 'daily') return;
 
         if (t.status === 'done') {
@@ -882,7 +956,7 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pt-[env(safe-area-inset-top)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
         <div>

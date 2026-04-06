@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "synapse",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Synapse — High-performance neural dashboard for personal execution and financial auditing.",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -2,7 +2,7 @@ import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Do
 import { motion, AnimatePresence } from 'motion/react';
 import { Transaction, Budget } from '../types';
 import { useState, useMemo } from 'react';
-import { format, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, startOfYear, isWithinInterval, endOfDay, parseISO, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
+import { format, subMonths, startOfMonth, startOfYear, isWithinInterval, endOfDay, parseISO, eachMonthOfInterval } from 'date-fns';
 import { BarChart, Bar, ResponsiveContainer, Cell, Tooltip, PieChart as RechartsPieChart, Pie, Legend } from 'recharts';
 
 interface ExpensesProps {
@@ -15,8 +15,6 @@ interface ExpensesProps {
   globalMonthlyBudget: number;
   onSetGlobalBudget: (limit: number) => void;
 }
-
-type TimePeriod = 'weekly' | 'monthly' | 'ytd';
 
 const NoirTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -34,8 +32,8 @@ const NoirTooltip = ({ active, payload }: any) => {
 };
 
 export default function Expenses({
-  transactions,
-  budgets,
+  transactions = [],
+  budgets = [],
   onAddExpense,
   onEditExpense,
   onDeleteExpense,
@@ -43,7 +41,6 @@ export default function Expenses({
   globalMonthlyBudget,
   onSetGlobalBudget,
 }: ExpensesProps) {
-  const [timePeriod] = useState<TimePeriod>('monthly');
   const [savingsGoal, setSavingsGoal] = useState(5000);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState('5000');
@@ -83,15 +80,12 @@ export default function Expenses({
   // Filter transactions based on time period
   const filteredTransactions = useMemo(() => {
     const now = new Date();
-    let start: Date;
-    if (timePeriod === 'weekly') start = startOfWeek(now);
-    else if (timePeriod === 'monthly') start = startOfMonth(now);
-    else start = startOfYear(now);
+    const start = startOfMonth(now);
     return transactions.filter(t => {
       const tDate = parseISO(t.date);
       return isWithinInterval(tDate, { start, end: endOfDay(now) });
     });
-  }, [transactions, timePeriod]);
+  }, [transactions]);
 
   // Search filter for the ledger
   const searchedTransactions = useMemo(() => {
@@ -113,33 +107,19 @@ export default function Expenses({
   const cashflowData = useMemo(() => {
     const now = new Date();
     const data: { name: string; net: number }[] = [];
-    if (timePeriod === 'weekly') {
-      const weeks = eachWeekOfInterval({ start: subWeeks(now, 5), end: now });
-      weeks.forEach(weekStart => {
-        const weekEnd = endOfDay(endOfWeek(weekStart));
-        const periodTx = transactions.filter(t => {
-          const d = parseISO(t.date);
-          return isWithinInterval(d, { start: weekStart, end: weekEnd });
-        });
-        const inc = periodTx.reduce((a, t) => t.type === 'income' ? a + t.amount : a, 0);
-        const exp = periodTx.reduce((a, t) => t.type === 'expense' ? a + t.amount : a, 0);
-        data.push({ name: format(weekStart, 'MMM d'), net: inc - exp });
+    const months = eachMonthOfInterval({ start: subMonths(now, 5), end: now });
+    months.forEach(monthStart => {
+      const monthEnd = endOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0));
+      const periodTx = transactions.filter(t => {
+        const d = parseISO(t.date);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
       });
-    } else {
-      const months = eachMonthOfInterval({ start: subMonths(now, 5), end: now });
-      months.forEach(monthStart => {
-        const monthEnd = endOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0));
-        const periodTx = transactions.filter(t => {
-          const d = parseISO(t.date);
-          return isWithinInterval(d, { start: monthStart, end: monthEnd });
-        });
-        const inc = periodTx.reduce((a, t) => t.type === 'income' ? a + t.amount : a, 0);
-        const exp = periodTx.reduce((a, t) => t.type === 'expense' ? a + t.amount : a, 0);
-        data.push({ name: format(monthStart, 'MMM'), net: inc - exp });
-      });
-    }
+      const inc = periodTx.reduce((a, t) => t.type === 'income' ? a + t.amount : a, 0);
+      const exp = periodTx.reduce((a, t) => t.type === 'expense' ? a + t.amount : a, 0);
+      data.push({ name: format(monthStart, 'MMM'), net: inc - exp });
+    });
     return data;
-  }, [transactions, timePeriod]);
+  }, [transactions]);
 
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -181,7 +161,7 @@ export default function Expenses({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `taskos_ledger_${timePeriod}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute("download", `synapse_ledger_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -191,13 +171,12 @@ export default function Expenses({
     <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
       {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
 
-      {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-5 lg:gap-6">
         {[
           { label: 'Inflow', value: `$${totalIncome.toLocaleString()}`, icon: ArrowUpRight, color: 'text-success' },
           { label: 'Outflow', value: `$${totalSpent.toLocaleString()}`, icon: ArrowDownRight, color: 'text-alert' },
           { label: 'Net', value: `${netBalance >= 0 ? '+' : '-'}$${Math.abs(netBalance).toLocaleString()}`, icon: Landmark, color: netBalance >= 0 ? 'text-success' : 'text-alert' },
-          { label: 'Efficiency', value: `${savingsRate.toFixed(0)}%`, icon: TrendingUp, color: 'text-accent' },
+          { label: 'Efficiency', value: `${(savingsRate || 0).toFixed(0)}%`, icon: TrendingUp, color: 'text-accent' },
         ].map((m, i) => (
           <motion.div
             key={i}
@@ -216,7 +195,88 @@ export default function Expenses({
         ))}
       </div>
 
-      {/* 3. Strategic Buffer - HISTORICAL RESERVES */}
+      {/* Registry Section */}
+      <div className="soothing-card !p-0 overflow-hidden flex flex-col bg-surface">
+        <div className="p-4 sm:p-6 border-b border-border space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-display font-black text-ink uppercase tracking-tighter">Registry</h3>
+              <p className="text-[9px] font-black text-muted/40 uppercase tracking-widest mt-1">Live buffer sync active</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsFocusedLedgerOpen(true)} 
+                className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-lg shadow-black/20"
+                aria-label="Expand focused ledger"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={onAddExpense} 
+                className="precise-button !px-4 md:!px-6 !py-2 md:!py-3 flex items-center gap-2 group/btn relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
+                <Plus className="w-3.5 md:w-4 h-3.5 md:h-4 group-hover/btn:rotate-90 transition-transform relative z-10" />
+                <span className="relative z-10 hidden sm:inline">New Entry</span>
+                <span className="relative z-10 sm:hidden">Add</span>
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 md:gap-4 bg-surface-subtle px-4 md:px-6 py-2.5 md:py-3 rounded-full border border-border focus-within:border-accent/30 transition-all">
+            <Search className="w-3.5 md:w-4 h-3.5 md:h-4 text-muted" />
+            <input
+              type="text"
+              placeholder="Registry search..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="bg-transparent border-none outline-none text-xs md:text-sm text-ink w-full placeholder:text-muted font-semibold"
+            />
+          </div>
+        </div>
+        <div className="overflow-y-auto h-[300px] sm:h-[400px] scrollbar-custom">
+          <div className="divide-y divide-white/[0.02]">
+            {searchedTransactions.length > 0 ? (
+              searchedTransactions.slice(0, 50).map(t => {
+                const Icon = getIcon(t.category);
+                const tDate = parseISO(t.date);
+                return (
+                  <div key={t.id} className="p-2.5 sm:p-4 flex items-start sm:items-center justify-between gap-2 sm:gap-3 group hover:bg-white/[0.02]">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-accent/5 group-hover:border-accent/20">
+                        <Icon className="w-4 h-4 text-muted group-hover:text-accent transition-colors" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-ink mb-1 group-hover:translate-x-1 transition-transform truncate max-w-[140px] sm:max-w-none">{t.merchant || t.category}</p>
+                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-muted">
+                          <span>{t.category}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                          <span>{format(tDate, 'MMM d')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
+                      <span className={`text-sm sm:text-xl font-mono font-black ${t.type === 'income' ? 'text-success' : 'text-ink'}`}>${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => onEditExpense(t)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/10 transition-all" aria-label="Edit transaction"><Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
+                        <button onClick={() => setTransactionToDelete(t.id)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-alert hover:bg-alert/10 transition-all" aria-label="Delete transaction"><Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="p-12 sm:p-20 text-center space-y-4" role="status">
+                <Search className="w-8 h-8 mx-auto text-muted" />
+                <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted">
+                  {searchTerm ? `No registry matches for "${searchTerm}"` : 'Archived Record Empty'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Historical Reserves (Audit Buffer) */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -281,100 +341,13 @@ export default function Expenses({
         </div>
       </motion.div>
 
-      {/* 4. Two‑Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
-        {/* LEFT COLUMN: Ledger */}
-        <div className="lg:col-span-7">
-          <div className="soothing-card !p-0 overflow-hidden flex flex-col h-full bg-surface">
-            <div className="p-4 sm:p-6 border-b border-border space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h3 className="text-xl sm:text-2xl font-display font-black text-ink uppercase tracking-tighter">Registry</h3>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <button 
-                    onClick={() => setIsFocusedLedgerOpen(true)} 
-                    className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-lg shadow-black/20"
-                    aria-label="Expand focused ledger"
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={onAddExpense} 
-                    className="precise-button !px-4 md:!px-6 !py-2 md:!py-3 flex items-center gap-2 group/btn relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
-                    <Plus className="w-3.5 md:w-4 h-3.5 md:h-4 group-hover/btn:rotate-90 transition-transform relative z-10" />
-                    <span className="relative z-10 hidden sm:inline">New Entry</span>
-                    <span className="relative z-10 sm:hidden">Add</span>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 md:gap-4 bg-surface-subtle px-4 md:px-6 py-2.5 md:py-3 rounded-full border border-border focus-within:border-accent/30 transition-all">
-                <Search className="w-3.5 md:w-4 h-3.5 md:h-4 text-muted" />
-                <input
-                  type="text"
-                  placeholder="Registry search..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs md:text-sm text-ink w-full placeholder:text-muted font-semibold"
-                />
-              </div>
-            </div>
-            <div className="overflow-y-auto h-[300px] sm:h-[400px] scrollbar-custom">
-              <div className="divide-y divide-white/[0.02]">
-                {searchedTransactions.length > 0 ? (
-                  searchedTransactions.slice(0, 50).map(t => {
-                    const Icon = getIcon(t.category);
-                    const tDate = parseISO(t.date);
-                    return (
-                      <div key={t.id} className="p-2.5 sm:p-4 flex items-start sm:items-center justify-between gap-2 sm:gap-3 group hover:bg-white/[0.02]">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-accent/5 group-hover:border-accent/20">
-                            <Icon className="w-4 h-4 text-muted group-hover:text-accent transition-colors" aria-hidden="true" />
-                          </div>
-                          <div>
-                            <p className="text-xs sm:text-sm font-bold text-ink mb-1 group-hover:translate-x-1 transition-transform truncate max-w-[140px] sm:max-w-none">{t.merchant || t.category}</p>
-                            <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-muted">
-                              <span>{t.category}</span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                              <span>{format(tDate, 'MMM d')}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
-                          <span className={`text-sm sm:text-xl font-mono font-black ${t.type === 'income' ? 'text-success' : 'text-ink'}`}>${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}</span>
-                          <div className="flex items-center gap-1.5 sm:gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => onEditExpense(t)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/10 transition-all" aria-label="Edit transaction"><Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
-                            <button onClick={() => setTransactionToDelete(t.id)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-alert hover:bg-alert/10 transition-all" aria-label="Delete transaction"><Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="p-12 sm:p-20 text-center space-y-4" role="status">
-                    <Search className="w-8 h-8 mx-auto text-muted" />
-                    <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted">
-                      {searchTerm ? `No registry matches for "${searchTerm}"` : 'Archived Record Empty'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Visualizations */}
-        <div className="lg:col-span-5 space-y-5 sm:space-y-8">
-          {/* Cashflow Trend Chart */}
-          <div className="soothing-card p-5 sm:p-6 h-[250px] sm:h-[280px] flex flex-col">
-            <div className="flex items-center justify-between mb-5 sm:mb-6">
+      {/* Visual Analytics Stack */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
+          <div className="soothing-card p-5 sm:p-6 h-[280px] flex flex-col">
+            <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Net Performance</h3>
                 <p className="micro-label mt-1">Cashflow Velocity Trend</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                <span className="text-[10px] font-bold text-muted uppercase tracking-wide">Net Positive</span>
               </div>
             </div>
             <div className="flex-1 w-full min-h-0">
@@ -383,11 +356,7 @@ export default function Expenses({
                   <Tooltip content={<NoirTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                   <Bar dataKey="net" radius={[4, 4, 0, 0]}>
                     {cashflowData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.net >= 0 ? 'var(--color-accent)' : 'var(--color-alert)'} 
-                        fillOpacity={0.8}
-                      />
+                      <Cell key={`cell-${index}`} fill={entry.net >= 0 ? 'var(--color-accent)' : 'var(--color-alert)'} fillOpacity={0.8} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -395,174 +364,24 @@ export default function Expenses({
             </div>
           </div>
 
-          {/* Budget Monthly Auditor - FIX: Flex-wrap header to prevent mobile collision */}
-          <div className="soothing-card p-5 sm:p-6 min-h-[360px] sm:min-h-[400px] flex flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-y-4 sm:gap-y-6 gap-x-4 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-white/[0.03]">
-              <div className="flex flex-col min-w-[140px]">
-                <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight">Audit Monthly</h3>
-                <p className="micro-label mt-1">System Performance Status</p>
-              </div>
-
-              <div className="flex items-center bg-surface-subtle rounded-full px-3 sm:px-4 py-2 border border-border gap-3 h-10">
-                <button 
-                  onClick={() => setSelectedBudgetDate(subMonths(selectedBudgetDate, 1))} 
-                  className="p-1 hover:text-accent transition-colors"
-                  aria-label="Previous month"
-                >
-                  <ChevronDown className="w-4 h-4 rotate-90" />
-                </button>
-                <span className="text-[10px] font-black uppercase tracking-widest min-w-[70px] text-center whitespace-nowrap">
-                  {format(selectedBudgetDate, 'MMM yy')}
-                </span>
-                <button 
-                  onClick={() => setSelectedBudgetDate(subMonths(selectedBudgetDate, -1))} 
-                  className="p-1 hover:text-accent transition-colors"
-                  aria-label="Next month"
-                >
-                  <ChevronDown className="w-4 h-4 -rotate-90" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                 <button onClick={() => setIsAllocationModalOpen(true)} className="p-2.5 rounded-full bg-white/5 border border-white/5 text-muted hover:text-accent transition-all"><KeyRound className="w-3.5 h-3.5" /></button>
-              </div>
+          <div className="soothing-card p-6 md:p-8 flex flex-col items-center justify-center gap-6">
+            <div className="flex-1">
+              <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Spending Volume</h3>
+              <p className="micro-label mt-1 uppercase tracking-widest">Structural Portfolio Analysis</p>
             </div>
-
-            {/* Global Progress Bar */}
-            <div className="mb-8 sm:mb-10 px-1 sm:px-2">
-              <div className="flex flex-wrap items-end justify-between gap-2 mb-3">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Total Monthly Pulse</span>
-                <span className="text-[10px] sm:text-[11px] font-mono font-black text-ink whitespace-nowrap">
-                   ${totalSpent.toLocaleString()} / <span className="text-accent">${globalMonthlyBudget.toLocaleString()}</span>
-                </span>
-              </div>
-                  <div className="h-2 bg-surface-subtle rounded-full border border-border overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, (totalSpent / (globalMonthlyBudget || 1)) * 100)}%` }}
-                  className={`h-full ${totalSpent > globalMonthlyBudget && globalMonthlyBudget > 0 ? 'bg-alert shadow-[0_0_12px_rgba(244,63,94,0.3)]' : 'bg-accent shadow-[0_0_12px_rgba(99,102,241,0.3)]'}`}
-                />
-              </div>
-            </div>
-
-            <div className="h-[230px] sm:h-[250px] overflow-y-auto scrollbar-custom pr-2">
-              <div className="grid grid-cols-2 gap-3 md:gap-8">
-                {budgets.length > 0 ? (
-                  budgets.map(budget => {
-                    const spent = budgetPeriodTotals.find(([cat]) => cat === budget.category)?.[1] || 0;
-                    const limit = budget.monthly_limit;
-                    const percent = limit > 0 ? (spent / limit) * 100 : 0;
-                    const over = spent > limit;
-                    return (
-                      <div key={budget.category} className="flex flex-col items-center gap-4 group">
-                        <div className="relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center">
-                          <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                            <circle cx="16" cy="16" r="14" className="fill-none stroke-white/[0.03] stroke-[4]" />
-                            <motion.circle
-                              cx="16" cy="16" r="14"
-                              className={`fill-none stroke-[4] ${over ? 'stroke-alert animate-pulse' : 'stroke-accent'}`}
-                              strokeDasharray="88"
-                              initial={{ strokeDashoffset: 88 }}
-                              animate={{ strokeDashoffset: 88 - (88 * Math.min(percent / 100, 1)) }}
-                              transition={{ duration: 1.5, ease: 'circOut' }}
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className={`text-[9px] md:text-[10px] font-mono font-black ${over ? 'text-alert' : 'text-ink'}`}>{percent.toFixed(0)}%</span>
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-black uppercase tracking-wide sm:tracking-widest text-ink group-hover:text-accent transition-colors truncate max-w-[84px] sm:max-w-[100px]">{budget.category}</p>
-                          <p className="text-[10px] font-mono text-muted">${spent.toLocaleString()} / <span className="text-muted">${limit.toLocaleString()}</span></p>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                    <div className="col-span-2 flex flex-col items-center justify-center py-12 sm:py-16 text-center space-y-6">
-                    <div className="w-16 h-16 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center">
-                      <Settings2 className="w-6 h-6 text-muted animate-spin-slow" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted mb-2 font-display">System Idle: No Benchmarks Set</p>
-                      <p className="text-[11px] text-muted lowercase tracking-wide sm:tracking-widest leading-relaxed mb-6">Allocate categorical limits to activate structural pulse monitoring.</p>
-                      <button 
-                        onClick={() => setIsAllocationModalOpen(true)}
-                        className="text-xs font-bold text-accent underline underline-offset-8 decoration-accent/30 hover:text-ink transition-colors"
-                      >
-                        Initialize Strategic Mapping
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="w-full md:w-[300px] h-[250px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie data={categoryTotals.map(([name, value]) => ({ name, value }))} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                    {categoryTotals.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<NoirTooltip />} />
+                </RechartsPieChart>
+              </ResponsiveContainer>
             </div>
           </div>
-
-          {/* Spending Analysis - PieChart */}
-          <div className="soothing-card p-6 md:p-8 flex-1 flex flex-col">
-            <h3 className="text-lg font-display font-bold text-ink uppercase mb-2">Spending Volume</h3>
-            <p className="micro-label mb-4 md:mb-8 uppercase tracking-widest">Structural Analysis (Top Categories)</p>
-            
-            <div className="flex-1 w-full min-h-[250px] md:min-h-[300px] relative">
-              {categoryTotals.length > 0 ? (
-                <div className="absolute inset-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={categoryTotals.map(([name, value]) => ({ name, value }))}
-                        cx="50%"
-                        cy="45%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {categoryTotals.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="soothing-card p-3 shadow-md !bg-surface border-border">
-                                <p className="text-[10px] font-black text-muted uppercase mb-1">{payload[0].name}</p>
-                                <p className="text-sm font-mono font-black text-accent">${payload[0].value.toLocaleString()}</p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend 
-                        verticalAlign="bottom" 
-                        align="center"
-                        content={({ payload }) => (
-                          <div className="flex flex-wrap justify-center gap-4 mt-8">
-                            {payload?.map((entry: any, index: number) => (
-                              <div key={`item-${index}`} className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                <span className="text-[10px] font-black uppercase text-muted tracking-wide sm:tracking-widest">{entry.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-70">
-                  <PieChart className="w-8 h-8 mb-3" />
-                  <p className="text-[10px] uppercase tracking-wide sm:tracking-widest font-bold">Inflow Outflow Neutral</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Allocation Modal */}

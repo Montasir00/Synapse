@@ -8,10 +8,36 @@ export interface BinanceTrade {
   quoteQty: string;
   commission: string;
   commissionAsset: string;
+  commissionUSD?: number; // Normalized to USD during ingestion
   time: number;
   isBuyer: boolean;
   isMaker: boolean;
   isBestMatch: boolean;
+}
+
+export interface PositionLot {
+  qty: number;
+  costUSD: number; // Normalized USD value after numeraire layer
+  time: number;
+  tradeId: number;
+}
+
+export interface JournalEntry {
+  id: string; // Matches Position.id
+  uid: string;
+  symbol: string;
+  entryReason?: string;
+  exitReason?: string;
+  emotionTag?: 'FOMO' | 'REVENGE' | 'DISCIPLINED' | 'UNCERTAIN';
+  setupType?: string;
+  plannedStopUSD?: number;
+  plannedTargetUSD?: number;
+  followedPlan: boolean;
+  rating: number; // 1-5
+  rMultiple?: number; // (RealizedPnL / PlannedRisk)
+  notes?: string;   // Legacy notes migration
+  tags: string[];   // Legacy tags migration
+  updatedAt: unknown;
 }
 
 export interface Position {
@@ -22,7 +48,9 @@ export interface Position {
   avgExitPrice?: number;
   totalQty: number;
   remainingQty: number;
-  realizedPnl: number;
+  grossRealizedPnl: number;
+  realizedPnl: number; // Net after fees
+  totalFees: number;
   realizedPnlPercentage: number;
   trades: BinanceTrade[];
   entryTime: number;
@@ -30,6 +58,7 @@ export interface Position {
   holdingPeriod?: string;
   notes?: string;
   tags?: string[];
+  lots: PositionLot[];
 }
 
 export interface TradeNote {
@@ -49,6 +78,10 @@ export interface DashboardMetrics {
   profitableTrades: number;
   largestWinner: number;
   largestLoser: number;
+  totalFees?: number;
+  avgHoldTimeWinner?: number;
+  avgHoldTimeLoser?: number;
+  tagPerformance?: Record<string, { pnl: number; count: number }>;
   performanceByPair: Record<string, number>;
 }
 
@@ -66,6 +99,7 @@ export interface PersistedBinanceTrade {
   quoteQty: number;
   commission: number;
   commissionAsset: string;
+  commissionUSD?: number;
   time: number;
   isBuyer: boolean;
   isMaker: boolean;
@@ -82,13 +116,16 @@ export interface PersistedPosition {
   avgExitPrice?: number;
   totalQty: number;
   remainingQty: number;
+  grossRealizedPnl: number;
   realizedPnl: number;
+  totalFees: number;
   realizedPnlPercentage: number;
   entryTime: number;
   exitTime?: number;
   holdingPeriod?: string;
   notes?: string;
   tags?: string[];
+  lots: PositionLot[];
   tradeIds: string[];
   tradesCount: number;
   calculationVersion: number;
@@ -105,6 +142,10 @@ export interface PersistedMetrics {
   profitableTrades: number;
   largestWinner: number;
   largestLoser: number;
+  totalFees?: number;
+  avgHoldTimeWinner?: number;
+  avgHoldTimeLoser?: number;
+  tagPerformance?: Record<string, { pnl: number; count: number }>;
   performanceByPair: Record<string, number>;
   calculationVersion: number;
   computedAt: number;
@@ -122,4 +163,5 @@ export interface TradeSyncMetadata {
   hasError: boolean;
   lastError?: string;
   updatedAt: unknown;
+  status?: 'SYNCING' | 'COMPLETED';
 }

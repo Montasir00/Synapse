@@ -76,7 +76,7 @@ const verifyToken = async (req, res, next) => {
 };
 // Binance API Proxy
 app.post('/api/binance/proxy', verifyToken, async (req, res) => {
-    var _a, _b;
+    var _a, _b, _c;
     const user = req.user;
     const { method, endpoint, params, baseUrl, apiKey: rawApiKey, apiSecret: rawApiSecret } = req.body;
     try {
@@ -123,7 +123,16 @@ app.post('/api/binance/proxy', verifyToken, async (req, res) => {
     catch (error) {
         const binanceError = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data;
         const status = ((_b = error.response) === null || _b === void 0 ? void 0 : _b.status) || 500;
-        res.status(status).json(binanceError || { msg: error.message || 'Proxy request failed.' });
+        console.error('[Proxy Error]', {
+            status,
+            message: error.message,
+            binanceMsg: binanceError === null || binanceError === void 0 ? void 0 : binanceError.msg,
+            endpoint: (_c = req.body) === null || _c === void 0 ? void 0 : _c.endpoint
+        });
+        res.status(status).json(binanceError || {
+            msg: error.message || 'Proxy request failed.',
+            details: 'Check Firebase function logs for full trace'
+        });
     }
 });
 // Endpoint used by API Check flow to validate raw credentials before saving.
@@ -169,7 +178,7 @@ app.post('/api/binance/validate', verifyToken, async (req, res) => {
 });
 // Health check
 app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', app: 'TaskOS Cloud Functions API', version: '2.0.1' });
+    res.json({ status: 'ok', app: 'Synapse Cloud Functions API', version: '2.0.1' });
 });
 // --- GOOGLE OAUTH CONFIGURATION (LAZY LOAD GOOGLEAPIS) ---
 const createOAuthClient = async () => {

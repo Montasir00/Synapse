@@ -1,5 +1,5 @@
 :root {
-  /* Design system color tokens (single source of truth) */
+  /* Design system color tokens (Soft Pearl - High Performance Light) */
   --ds-color-bg: #f7f8fa;
   --ds-color-surface: #ffffff;
   --ds-color-surface-subtle: #f3f5f7;
@@ -16,8 +16,8 @@
   --ds-color-primary-active: #3730a3;
   --ds-color-primary-soft: #eef0ff;
 
-  --ds-color-secondary: #0f766e;
-  --ds-color-secondary-hover: #115e59;
+  --ds-color-secondary: #00d4aa;
+  --ds-color-secondary-hover: #00b38f;
   --ds-color-secondary-soft: #e8f7f5;
 
   --ds-color-success: #15803d;

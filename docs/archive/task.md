@@ -1,4 +1,4 @@
-# Implementation Checklist: TaskOS Gamified Overhaul
+# Implementation Checklist: Synapse Gamified Overhaul
 
 ## 2026-04-04 Cleanup + Settings Consolidation (Implemented)
 

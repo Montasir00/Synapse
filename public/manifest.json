@@ -1,0 +1,17 @@
+{
+  "name": "Synapse | Neural Dashboard",
+  "short_name": "Synapse",
+  "description": "High-performance gamified productivity engine.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#f7f8fa",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

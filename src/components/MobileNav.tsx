@@ -1,5 +1,5 @@
 import { LayoutDashboard, CheckCircle2, CreditCard, Dumbbell, LineChart, Settings } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface MobileNavProps {
   activeTab: string;
@@ -18,14 +18,14 @@ const navItems = [
 export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[80] lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[80] lg:hidden bg-bg"
       style={{
         paddingBottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
       }}
     >
-      <div className="bg-surface/95 backdrop-blur-2xl border border-border px-1 sm:px-4 pt-2 pb-2 flex items-center justify-around shadow-md mx-1 sm:mx-3 mb-2 sm:mb-4 rounded-full pill-container">
+      <div className="bg-surface/95 backdrop-blur-2xl border border-border flex items-center justify-around shadow-md mx-2 sm:mx-3 mb-2 sm:mb-4 rounded-full overflow-hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -34,36 +34,22 @@ export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className="relative isolate flex flex-col items-center justify-center gap-0.5 sm:gap-1 flex-1 h-[56px] sm:h-[64px] transition-all duration-300 focus-visible-outline overflow-hidden"
+              className="relative isolate flex items-center justify-center flex-1 h-[4.5rem] transition-all duration-300 focus-visible-outline overflow-hidden"
               aria-label={`Navigate to ${item.label}`}
               aria-current={isActive ? 'page' : undefined}
             >
               {isActive && (
                 <motion.div
                   layoutId="mobile-nav-pill"
-                  className="absolute inset-1 bg-accent/20 rounded-full border border-accent/40 shadow-[0_0_24px_rgba(99,102,241,0.35)]"
+                  className="absolute inset-[4px] bg-accent/10 rounded-full border border-accent/30"
                   transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
-              <div className="relative z-10 flex flex-col items-center justify-center gap-1">
-                <Icon
-                  className={`transition-all duration-300 ${
-                    isActive ? 'text-accent scale-110 w-5 h-5 sm:w-6 sm:h-6 drop-shadow-[0_0_12px_rgba(99,102,241,0.45)]' : 'text-muted/80 w-4.5 h-4.5 sm:w-5 sm:h-5'
-                  }`}
-                  aria-hidden="true"
+              <div className={`p-2 transition-all duration-500 scale-110 ${isActive ? 'text-accent drop-shadow-[0_0_12px_rgba(var(--accent-rgb),0.4)]' : 'text-muted/30'}`}>
+                <Icon 
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                  className="w-6 h-6 transition-all duration-500" 
                 />
-                <AnimatePresence mode="wait">
-                  {isActive && (
-                    <motion.span
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      className="text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.08em] text-accent leading-none"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
               </div>
             </button>
           );

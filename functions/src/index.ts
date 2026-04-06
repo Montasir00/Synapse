@@ -100,7 +100,18 @@ app.post('/api/binance/proxy', verifyToken, async (req, res) => {
   } catch (error: any) {
     const binanceError = error.response?.data;
     const status = error.response?.status || 500;
-    res.status(status).json(binanceError || { msg: error.message || 'Proxy request failed.' });
+    
+    console.error('[Proxy Error]', {
+      status,
+      message: error.message,
+      binanceMsg: binanceError?.msg,
+      endpoint: req.body?.endpoint
+    });
+
+    res.status(status).json(binanceError || { 
+      msg: error.message || 'Proxy request failed.',
+      details: 'Check Firebase function logs for full trace'
+    });
   }
 });
 
@@ -157,7 +168,7 @@ app.post('/api/binance/validate', verifyToken, async (req, res) => {
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'TaskOS Cloud Functions API', version: '2.0.1' });
+  res.json({ status: 'ok', app: 'Synapse Cloud Functions API', version: '2.0.1' });
 });
 
 // --- GOOGLE OAUTH CONFIGURATION (LAZY LOAD GOOGLEAPIS) ---

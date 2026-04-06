@@ -27,15 +27,21 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
 
   return (
     <div className="pt-6 sm:pt-8 lg:pt-12 pb-20 sm:pb-24 lg:pb-16 px-3 sm:px-4 md:px-8 lg:px-10 w-full min-h-screen">
-      {/* Page Header Removed */}
-        <button 
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface border border-border rounded-2xl p-4 sm:p-6 lg:p-8 mb-10 lg:mb-16">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-ink tracking-tighter">Exercises</h1>
+          <p className="micro-label mt-1">Track your sessions and weekly progress</p>
+        </div>
+        <button
           onClick={onLogSession}
-          className="precise-button w-full md:w-auto px-10 py-4 shadow-xl active:scale-95 mb-10 lg:mb-16"
+          className="precise-button px-8 py-3 w-full sm:w-auto shadow-sm active:scale-95"
           aria-label="Log new exercise session"
         >
-          <PlusCircle className="w-5 h-5" aria-hidden="true" />
+          <PlusCircle className="w-4 h-4" aria-hidden="true" />
           <span className="ml-2">Log Session</span>
         </button>
+      </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
         {stats.map((stat, i) => (
@@ -47,7 +53,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
               {stat.unit && <span className="text-[10px] sm:text-sm font-mono font-bold text-muted uppercase opacity-40">{stat.unit}</span>}
             </div>
             {stat.progress !== undefined ? (
-              <div className="w-full bg-white/[0.03] h-1 rounded-full overflow-hidden">
+              <div className="w-full bg-surface-subtle h-1.5 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(stat.progress, 100)}%` }}
@@ -56,7 +62,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                 />
               </div>
             ) : (
-              <p className="text-[9px] text-muted font-bold uppercase tracking-widest opacity-30">{stat.sub}</p>
+              <p className="text-[10px] text-muted font-bold uppercase tracking-widest opacity-60">{stat.sub}</p>
             )}
           </div>
         ))}
@@ -120,15 +126,15 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
               <span className="text-[10px] font-black text-ink uppercase tracking-[0.2em]">Alpha Volume</span>
               <span className="text-[9px] font-bold text-accent px-2.5 py-1 bg-accent/5 rounded-full uppercase tracking-widest border border-accent/10">W-LOAD</span>
             </div>
-            <div className="h-40 flex items-end gap-3 mb-6 px-2">
+            <div className="h-40 flex items-end gap-3 mb-3 px-2">
               {[0.5, 0.75, 0.33, 0.66, 0.9, 0.5, 0.66].map((h, i) => (
-                <div key={i} className="w-full bg-white/[0.03] rounded-full group relative overflow-hidden" style={{ height: `${h * 100}%` }}>
+                <div key={i} className="w-full bg-surface-subtle rounded-full group relative overflow-hidden" style={{ height: `${h * 100}%` }}>
                   {i === 4 && <div className="absolute inset-0 bg-accent shadow-[0_0_15px_rgba(114,137,253,0.4)]" />}
                   <div className="absolute inset-0 bg-accent/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-[8px] font-black text-muted uppercase tracking-[0.2em] px-1 opacity-30">
+            <div className="flex justify-between text-[9px] font-black text-muted uppercase tracking-[0.15em] px-1 opacity-50">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
                 <span key={d} className={i === 4 ? 'text-accent opacity-100' : ''}>{d}</span>
               ))}

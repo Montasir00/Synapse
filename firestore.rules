@@ -32,91 +32,87 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Strict ownership check: UID must match request.auth.uid
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // For this app, we'll allow authenticated users to access their data.
-    // Since we don't have a 'uid' field on every document yet, we'll assume
-    // that for now, any authenticated user can read/write.
-    // TODO: Add 'uid' field to all documents and restrict access by uid.
+    // Deep ownership check for documents containing a 'uid' field
+    function isDocOwned(doc) {
+      return isAuthenticated() && (doc == null || doc.data.uid == request.auth.uid);
+    }
 
-    function isUserOwned(docData) {
-      return isAuthenticated() && docData.data.uid == request.auth.uid;
+    // ===============================================================
+    // Global Data Modules
+    // ===============================================================
+
+    // Fail-Safe: No access by default
+    match /{path=**} {
+      allow read, write: if false;
     }
 
     match /tasks/{taskId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
     match /transactions/{transactionId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
     match /budgets/{budgetId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
     match /exercises/{exerciseId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
     match /tradeNotes/{noteId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
-    }
-
-    match /crypto_holdings/{holdingId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
-    }
-
-    match /crypto_trades/{tradeId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
     match /notes/{noteId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
-    match /app_settings/{statId} {
-      allow read, delete: if isUserOwned(resource);
-      allow create: if isUserOwned(request.resource);
-      allow update: if isUserOwned(resource) && isUserOwned(request.resource);
+    match /app_settings/{settingId} {
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
+    }
+
+    match /trade_journals/{journalId} {
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
+    }
+
+    match /user_settings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ===============================================================
+    // Precision Trading Buffers (Isolated by UID)
+    // ===============================================================
+
+    match /binance_trades/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /binance_positions/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /binance_metrics/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /user_trades_sync/{userId} {
+      allow read, write: if isOwner(userId);
     }
 
     match /user_secrets/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    match /binance_trades/{userId}/{document=**} {
-      allow read, write, delete: if isOwner(userId);
-    }
-
-    match /binance_positions/{userId}/{document=**} {
-      allow read, write, delete: if isOwner(userId);
-    }
-
-    match /binance_metrics/{userId} {
-      allow read, write, delete: if isOwner(userId);
-    }
-
-    match /user_trades_sync/{userId} {
-      allow read, write, delete: if isOwner(userId);
+    match /binance_balances/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

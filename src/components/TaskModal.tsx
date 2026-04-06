@@ -13,13 +13,13 @@ interface TaskModalProps {
 export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<Task['priority']>('Medium');
+  const [priority, setPriority] = useState<Task['priority']>('Low');
   const [status, setStatus] = useState<Task['status']>('todo');
   const [dueDate, setDueDate] = useState('');
-  const [taskCategory, setTaskCategory] = useState<Task['taskCategory']>('standard');
+  const [taskCategory, setTaskCategory] = useState<Task['taskCategory']>('daily');
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
-  const [recurrence, setRecurrence] = useState<NonNullable<Task['recurrence']>>({ type: 'daily' });
+  const [recurrence, setRecurrence] = useState<NonNullable<Task['recurrence']>>({ type: 'none' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dialogRef = React.useRef<HTMLDivElement>(null);
@@ -48,12 +48,12 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
     } else {
       setTitle('');
       setDescription('');
-      setPriority('Medium');
+      setPriority('Low');
       setStatus('todo');
       setDueDate(new Date().toISOString().split('T')[0]);
       setTaskCategory('daily');
       setSubtasks([]);
-      setRecurrence({ type: 'daily' });
+      setRecurrence({ type: 'none' });
     }
     setSubmitAttempted(false);
   }, [task, isOpen]);

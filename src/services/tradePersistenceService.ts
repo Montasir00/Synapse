@@ -71,13 +71,14 @@ const toPersistedPosition = (uid: string, syncId: string, position: Position): P
     avgExitPrice: position.avgExitPrice,
     totalQty: position.totalQty,
     remainingQty: position.remainingQty,
+    grossRealizedPnl: position.grossRealizedPnl,
     realizedPnl: position.realizedPnl,
+    totalFees: position.totalFees,
     realizedPnlPercentage: position.realizedPnlPercentage,
     entryTime: position.entryTime,
     exitTime: position.exitTime,
     holdingPeriod: position.holdingPeriod,
-    notes: position.notes,
-    tags: position.tags ?? [],
+    lots: position.lots || [],
     tradeIds,
     tradesCount: position.trades.length,
     calculationVersion: TRADE_CALCULATION_VERSION,
@@ -116,13 +117,29 @@ const toSyncMetadata = (
   updatedAt: serverTimestamp(),
 });
 
+// Recursively remove undefined values from Firestore documents
+const sanitize = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(sanitize);
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, sanitize(v)])
+    );
+  }
+  return obj;
+};
+
 const commitInChunks = async (entries: Array<{ ref: DocumentReference; data: unknown }>) => {
   let batch = writeBatch(db);
   let opCount = 0;
   const commits: Array<Promise<void>> = [];
 
   const enqueue = (ref: DocumentReference, data: unknown) => {
-    batch.set(ref, data as Record<string, unknown>, { merge: true });
+    // Crucial: Sanitize data to remove 'undefined' fields before Firestore set
+    const sanitizedData = sanitize(data);
+    batch.set(ref, sanitizedData as Record<string, unknown>, { merge: true });
     opCount += 1;
 
     if (opCount >= BATCH_LIMIT) {
@@ -150,8 +167,10 @@ export const persistTradeSyncSnapshot = async (args: {
   trades: BinanceTrade[];
   positions: Position[];
   metrics: DashboardMetrics;
+  balances?: any[];
+  status: 'SYNCING' | 'COMPLETED';
 }) => {
-  const { uid, syncId, symbolsSynced, trades, positions, metrics } = args;
+  const { uid, syncId, symbolsSynced, trades, positions, metrics, balances, status } = args;
 
   const entries: Array<{ ref: DocumentReference; data: unknown }> = [];
 
@@ -177,12 +196,34 @@ export const persistTradeSyncSnapshot = async (args: {
     data: toPersistedMetrics(uid, syncId, metrics),
   });
 
+  if (balances && balances.length > 0) {
+    entries.push({
+      ref: doc(db, 'binance_balances', uid),
+      data: {
+        uid,
+        items: balances,
+        syncId,
+        updatedAt: serverTimestamp()
+      }
+    });
+  }
+
   entries.push({
     ref: doc(db, 'user_trades_sync', uid),
-    data: toSyncMetadata(uid, syncId, symbolsSynced, trades.length, positions.length, false),
+    data: {
+      ...toSyncMetadata(uid, syncId, symbolsSynced, trades.length, positions.length, false),
+      status
+    },
   });
 
   await commitInChunks(entries);
+};
+
+export const loadPersistedBalances = async (uid: string): Promise<any[]> => {
+  const snap = await getDoc(doc(db, 'binance_balances', uid));
+  if (!snap.exists()) return [];
+  const data = snap.data();
+  return data.items || [];
 };
 
 export const persistTradeSyncError = async (args: {
@@ -199,6 +240,55 @@ export const persistTradeSyncError = async (args: {
       data: toSyncMetadata(uid, syncId, symbolsSynced, 0, 0, true, lastError),
     },
   ]);
+};
+
+const deleteInChunks = async (refs: DocumentReference[]) => {
+  let batch = writeBatch(db);
+  let opCount = 0;
+  const commits: Array<Promise<void>> = [];
+
+  for (const ref of refs) {
+    batch.delete(ref);
+    opCount += 1;
+
+    if (opCount >= BATCH_LIMIT) {
+      commits.push(batch.commit());
+      batch = writeBatch(db);
+      opCount = 0;
+    }
+  }
+
+  if (opCount > 0) {
+    commits.push(batch.commit());
+  }
+
+  await Promise.all(commits);
+};
+
+export const prunePersistedTrades = async (uid: string) => {
+  let hasMore = true;
+  while (hasMore) {
+    const q = query(collection(db, 'binance_trades', uid, 'items'), limit(400));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      hasMore = false;
+    } else {
+      await deleteInChunks(snapshot.docs.map(d => d.ref));
+    }
+  }
+};
+
+export const prunePersistedPositions = async (uid: string) => {
+  let hasMore = true;
+  while (hasMore) {
+    const q = query(collection(db, 'binance_positions', uid, 'items'), limit(400));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      hasMore = false;
+    } else {
+      await deleteInChunks(snapshot.docs.map(d => d.ref));
+    }
+  }
 };
 
 export const loadPersistedPositions = async (uid: string): Promise<Position[]> => {
@@ -220,18 +310,25 @@ export const loadPersistedPositions = async (uid: string): Promise<Position[]> =
       avgExitPrice: typeof data.avgExitPrice === 'number' ? data.avgExitPrice : undefined,
       totalQty: Number(data.totalQty || 0),
       remainingQty: Number(data.remainingQty || 0),
+      grossRealizedPnl: Number(data.grossRealizedPnl || 0),
       realizedPnl: Number(data.realizedPnl || 0),
+      totalFees: Number(data.totalFees || 0),
       realizedPnlPercentage: Number(data.realizedPnlPercentage || 0),
       trades: [],
       entryTime: data.entryTime,
       exitTime: typeof data.exitTime === 'number' ? data.exitTime : undefined,
       holdingPeriod: data.holdingPeriod,
-      notes: data.notes,
-      tags: data.tags || [],
+      lots: data.lots || [],
     });
   });
 
   return positions.sort((a, b) => b.entryTime - a.entryTime);
+};
+
+export const loadPersistedLastSyncMetadata = async (uid: string): Promise<TradeSyncMetadata | null> => {
+  const snap = await getDoc(doc(db, 'user_trades_sync', uid));
+  if (!snap.exists()) return null;
+  return snap.data() as TradeSyncMetadata;
 };
 
 export const loadPersistedLastSync = async (uid: string): Promise<number | null> => {
@@ -261,16 +358,3 @@ export const loadPersistedMetrics = async (uid: string): Promise<DashboardMetric
   };
 };
 
-export const prunePersistedTrades = async (uid: string, olderThanMs: number): Promise<number> => {
-  const tradesRef = collection(db, 'binance_trades', uid, 'items');
-  const q = query(tradesRef, where('time', '<', olderThanMs), limit(PRUNE_BATCH_LIMIT));
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    return 0;
-  }
-
-  const deletions = snap.docs.map((d) => deleteDoc(d.ref));
-  await Promise.all(deletions);
-  return snap.size;
-};

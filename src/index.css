@@ -48,17 +48,22 @@
     box-sizing: border-box;
   }
 
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    @apply bg-bg;
   }
 
   body {
     @apply font-sans bg-bg text-ink antialiased;
     background: var(--color-bg);
-    min-height: 100dvh;
     letter-spacing: -0.015em;
-    padding-bottom: env(safe-area-inset-bottom);
   }
 
   h1, h2, h3, h4, h5, h6 {
