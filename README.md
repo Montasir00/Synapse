@@ -12,30 +12,30 @@
 
 ---
 
-## 🧠 Overview
+## Overview
 
 **Synapse** is a high-performance neural dashboard designed to bridge the gap between your most critical systems: productivity, finance, and health. Like a neural junction, it coordinates information flow across multiple domains, providing a unified "command center" for the modern operator.
 
-## 🛠️ Neural Modules
+## Neural Modules
 
-### 🗼 The Core (Dashboard)
+### The Core (Dashboard)
 A real-time overview of your system's output. It visualizes daily progress, execution metrics, and financial status in a high-density, technical interface.
 
-### ⚡ Execution Engine (Tasks)
+### Execution Engine (Tasks)
 A specialized task management layer that classifies objectives by priority and frequency (Dailies, Strategic Roadmaps, Persistent Notes).
 
-### 📉 Ledger Audit (Finances & Trades)
+### Ledger Audit (Finances & Trades)
 High-precision tracking of capital flow. Includes deep integration for **Binance Spot History**, allowing for retrospective trade auditing and algorithmic market learning.
 
-### 🔋 Resource Auditor (Expenses)
+### Resource Auditor (Expenses)
 Monitor your monthly "depletion rate" with categorized spending analysis and automated merchant mapping.
 
-### 🏋️ Hardware Status (Exercises)
+### Hardware Status (Exercises)
 Consistency tracking for physical performance, ensuring the biological component of your system remains at peak efficiency.
 
 ---
 
-## 💻 Tech Stack
+## Tech Stack
 
 - **Architectural Layer**: React 19 + Vite 6
 - **Interface Design**: Tailwind CSS 4 (Oxide Engine)
@@ -46,7 +46,7 @@ Consistency tracking for physical performance, ensuring the biological component
 
 ---
 
-## 📥 Deployment
+## Deployment
 
 1. **Clone Mission Assets**
    ```bash
