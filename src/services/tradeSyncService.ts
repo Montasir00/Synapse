@@ -12,6 +12,8 @@ import {
   persistTradeSyncSnapshot,
   persistTradeSyncError,
 } from './tradePersistenceService';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export interface SyncResult {
   success: boolean;
@@ -31,8 +33,23 @@ export const performGlobalTradeSync = async (
   
   // 1. Get configurations from localStorage
   const baseUrl = localStorage.getItem('binance_base_url') || 'https://api.binance.com';
-  const apiKey = localStorage.getItem('binance_api_key') || undefined;
-  const apiSecret = localStorage.getItem('binance_api_secret') || undefined;
+  let encryptedApiKey: string | undefined = undefined;
+  let encryptedApiSecret: string | undefined = undefined;
+
+  try {
+    const secretDoc = await getDoc(doc(db, 'user_secrets', uid));
+    if (secretDoc.exists()) {
+      const data = secretDoc.data();
+      encryptedApiKey = data?.binanceApiKey;
+      encryptedApiSecret = data?.binanceApiSecret;
+    }
+  } catch (err) {
+    console.warn('[Sync Service] Failed to read user_secrets via client SDK', err);
+  }
+
+  if (!encryptedApiKey || !encryptedApiSecret) {
+    return { success: false, tradeCount: 0, error: 'Binance credentials not found in vault. Please save them in Settings first.' };
+  }
   
   // 1. Load Cloud Infrastructure (Stale Lock check + Symbol Discovery + Metadata Preservation)
   let existingPositions: Position[] = [];
@@ -92,7 +109,7 @@ export const performGlobalTradeSync = async (
     // Stage 2: Wallet-Asset Discovery (Strict Order)
     let activeAssets = new Set<string>();
     try {
-      const account = await fetchBinanceAccount(idToken, baseUrl, apiKey, apiSecret);
+      const account = await fetchBinanceAccount(idToken, baseUrl, encryptedApiKey, encryptedApiSecret);
       finalBalances = account.balances || [];
       activeAssets = new Set(finalBalances
         .filter((b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
@@ -123,7 +140,7 @@ export const performGlobalTradeSync = async (
     
     for (const symbolS of syncList) {
       try {
-        const trades = await fetchBinanceTrades(idToken, symbolS, baseUrl, apiKey, apiSecret);
+        const trades = await fetchBinanceTrades(idToken, symbolS, baseUrl, encryptedApiKey, encryptedApiSecret);
         if (trades.length > 0) allTrades.push(...trades);
         await sleep(250); // Safety Throttle
       } catch (err) {

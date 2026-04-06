@@ -1,24 +1,19 @@
 <div align="center">
-  <img width="180" height="180" alt="Synapse Logo" src="public/apple-touch-icon.png" style="border-radius: 40px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);" />
+  <img width="120" height="120" alt="Synapse Intel" src="public/icons/intelligence.png" style="border-radius: 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.1);" />
   
   # Synapse | Neural Dashboard
   ### The Executive Command Center for Personal Optimization
-  
-  [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-  [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-  [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 </div>
 
 ---
 
-## 🚩 The Problem
+## The Problem
 As life becomes increasingly complex, our most vital data—**productivity**, **financial capital**, and **physical health**—ends up scattered across fragmented apps and spreadsheets. This fragmentation creates a "data noise" that leads to executive paralysis, wasted resources, and a lack of clear direction.
 
-## ⚡ The Solution
+## The Solution
 **Synapse** is a unified "Neural Dashboard" designed for the modern high-performer. It serves as a central executive layer that bridges the gap between disparate life systems. By consolidating tasks, trading history, expense auditing, and physical activity into a single, high-fidelity interface, Synapse provides the professional clarity needed to make rapid, informed decisions.
 
-## 🧠 How It Works (The Neural Flow)
+## How It Works (The Neural Flow)
 
 1. **Intake Layer (The Dendrites)**  
    Captures raw data from multiple inputs: automated **Binance Spot** trading history, manual life logging (tasks/expenses), and cloud-synced physical metrics.
@@ -29,19 +24,19 @@ As life becomes increasingly complex, our most vital data—**productivity**, **
 
 ---
 
-## 🖥️ System Preview
+## System Preview
 
-### 🗼 Mission Control (Dashboard)
+### Mission Control (Dashboard)
 The central nervous system. It provides a real-time visualization of your "Operator Status," current tasks (Protocols), and a high-level financial snapshot.
 ![Dashboard Preview](public/screenshots/dashboard.png)
 
-### 📊 Financial Auditor (Expenses)
+### <img width="24" height="24" src="public/icons/analysis.png" style="vertical-align: middle; margin-right: 8px;" /> Financial Auditor (Expenses)
 A deep-dive ledger designed for auditing "Resource Depletion." It helps you visualize where capital is flowing and syncs against your monthly budget in real-time.
 ![Expenses Preview](public/screenshots/expenses.png)
 
 ---
 
-## 🛠️ Main Modules
+## Main Modules
 
 *   **Execution Engine (Tasks)**: A gamified system that categorizes objectives into Dailies (Protocols), Strategic Epics (Long-term), and Persistent Notes.
 *   **Trade Lattice (Trade Tracker)**: Post-trade analysis platform with automated Binance sync for algorithmic review and learning.
@@ -50,7 +45,7 @@ A deep-dive ledger designed for auditing "Resource Depletion." It helps you visu
 
 ---
 
-## 💻 Tech Architecture
+## Tech Architecture
 
 - **Foundation**: React 19 + Vite 6
 - **Styling**: Tailwind CSS 4 (Oxide Engine) — Delivering a "Soft Pearl" minimalist aesthetic.
@@ -60,7 +55,7 @@ A deep-dive ledger designed for auditing "Resource Depletion." It helps you visu
 
 ---
 
-## 📥 Installation & Deployment
+## Installation & Deployment
 
 1. **Clone the Neural Codebase**
    ```bash

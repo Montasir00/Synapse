@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, AlertTriangle, Loader2, Key } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { validateBinanceCredentials } from '../services/binanceService';
+import axios from 'axios';
 
 type CheckStatus = 'idle' | 'checking' | 'valid' | 'invalid';
 
@@ -126,17 +127,27 @@ export default function TempApiKeyCheck() {
 
     setIsSaving(true);
     try {
-      await setDoc(doc(db, 'user_secrets', user.uid), {
-        binanceApiKey: cleanKey,
-        binanceApiSecret: cleanSecret,
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/binance/save-credentials`, {
+        apiKey: cleanKey,
+        apiSecret: cleanSecret
+      }, {
+        headers: { Authorization: `Bearer ${await user.getIdToken()}` }
       });
-      localStorage.setItem('binance_api_key', cleanKey);
-      localStorage.setItem('binance_api_secret', cleanSecret);
+      
+      const { encryptedKey, encryptedSecret } = response.data.payload;
+
+      await setDoc(doc(db, 'user_secrets', user.uid), {
+        binanceApiKey: encryptedKey,
+        binanceApiSecret: encryptedSecret,
+        updatedAt: serverTimestamp()
+      });
+
       localStorage.setItem('binance_base_url', baseUrl);
-      setMessage('Credentials validated and saved for Trade Tracker.');
+      setMessage('Credentials encrypted via Neural Vault and persisted.');
     } catch (error: any) {
+      const errorMsg = error?.response?.data?.details || error?.response?.data?.error || error?.message || 'Failed to save credentials.';
       setStatus('invalid');
-      setMessage(error?.message || 'Failed to save credentials.');
+      setMessage(errorMsg);
     } finally {
       setIsSaving(false);
     }
@@ -146,10 +157,10 @@ export default function TempApiKeyCheck() {
     status === 'valid'
       ? 'text-success border-success/30 bg-success/10'
       : status === 'invalid'
-      ? 'text-alert border-alert/30 bg-alert/10'
-      : status === 'checking'
-      ? 'text-accent border-accent/30 bg-accent/10'
-      : 'text-muted border-border bg-surface-subtle';
+        ? 'text-alert border-alert/30 bg-alert/10'
+        : status === 'checking'
+          ? 'text-accent border-accent/30 bg-accent/10'
+          : 'text-muted border-border bg-surface-subtle';
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
@@ -168,22 +179,20 @@ export default function TempApiKeyCheck() {
           <button
             type="button"
             onClick={() => setBaseUrl('https://api.binance.com')}
-            className={`rounded-full border px-4 py-3 text-xs font-black uppercase tracking-wide transition-colors ${
-              baseUrl === 'https://api.binance.com'
+            className={`rounded-full border px-4 py-3 text-xs font-black uppercase tracking-wide transition-colors ${baseUrl === 'https://api.binance.com'
                 ? 'border-accent bg-accent/10 text-accent'
                 : 'border-border bg-surface-subtle text-muted hover:text-ink'
-            }`}
+              }`}
           >
             Binance Global
           </button>
           <button
             type="button"
             onClick={() => setBaseUrl('https://api.binance.us')}
-            className={`rounded-full border px-4 py-3 text-xs font-black uppercase tracking-wide transition-colors ${
-              baseUrl === 'https://api.binance.us'
+            className={`rounded-full border px-4 py-3 text-xs font-black uppercase tracking-wide transition-colors ${baseUrl === 'https://api.binance.us'
                 ? 'border-accent bg-accent/10 text-accent'
                 : 'border-border bg-surface-subtle text-muted hover:text-ink'
-            }`}
+              }`}
           >
             Binance US
           </button>

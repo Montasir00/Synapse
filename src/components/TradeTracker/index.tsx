@@ -580,15 +580,11 @@ const TradeTracker = () => {
               {balances.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-[10px] font-bold text-muted/40 uppercase tracking-widest mb-3">
-                    {(!localStorage.getItem('binance_api_key') || !localStorage.getItem('binance_api_secret')) 
-                      ? 'Credentials Missing' 
-                      : 'Sync required'}
+                    Empty Buffer State
                   </p>
-                  {(!localStorage.getItem('binance_api_key') || !localStorage.getItem('binance_api_secret')) && (
-                    <p className="text-[9px] font-medium text-muted/30 uppercase leading-relaxed max-w-[200px] mx-auto">
-                      Configure your Binance API keys in Settings to authorize the Buffer State balance fetch.
-                    </p>
-                  )}
+                  <p className="text-[9px] font-medium text-muted/30 uppercase leading-relaxed max-w-[200px] mx-auto">
+                    Initialize the Sync Hub to fetch your latest Binance wallet distributions.
+                  </p>
                 </div>
               ) : (
                 balances

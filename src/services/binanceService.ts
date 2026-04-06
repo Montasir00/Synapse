@@ -44,8 +44,8 @@ export const fetchBinanceTrades = async (
   idToken: string,
   symbol: string,
   baseUrl: string = 'https://api.binance.com',
-  apiKey?: string,
-  apiSecret?: string
+  encryptedApiKey?: string,
+  encryptedApiSecret?: string
 ): Promise<BinanceTrade[]> => {
   const allTrades: BinanceTrade[] = [];
   let fromId: number | undefined = undefined;
@@ -58,8 +58,8 @@ export const fetchBinanceTrades = async (
         endpoint: '/api/v3/myTrades',
         params: { symbol, limit: 1000, fromId },
         baseUrl,
-        apiKey,
-        apiSecret,
+        encryptedApiKey,
+        encryptedApiSecret,
       }, {
         headers: { Authorization: `Bearer ${idToken}` }
       });
@@ -87,8 +87,8 @@ export const fetchBinanceTrades = async (
 export const fetchBinanceAccount = async (
   idToken: string,
   baseUrl: string = 'https://api.binance.com',
-  apiKey?: string,
-  apiSecret?: string
+  encryptedApiKey?: string,
+  encryptedApiSecret?: string
 ): Promise<any> => {
   try {
     const response = await axios.post('/api/binance/proxy', {
@@ -96,8 +96,8 @@ export const fetchBinanceAccount = async (
       endpoint: '/api/v3/account',
       params: {},
       baseUrl,
-      apiKey,
-      apiSecret,
+      encryptedApiKey,
+      encryptedApiSecret,
     }, {
       headers: { Authorization: `Bearer ${idToken}` }
     });

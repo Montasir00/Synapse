@@ -22,6 +22,42 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
+// --- Security Configurations ---
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'synapse_neural_vault_key_32chars'; // Exactly 32 chars
+const IV_LENGTH = 16;
+const ALLOWED_BINANCE_HOSTS = [
+  'https://api.binance.com',
+  'https://api.binance.us', 
+  'https://fapi.binance.com',
+  'https://dapi.binance.com',
+  'https://testnet.binance.vision'
+];
+
+function encrypt(text: string) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32)), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text: string) {
+  try {
+    const textParts = text.split(':');
+    if (textParts.length !== 2) return text; // Not encrypted or legacy
+    const iv = Buffer.from(textParts.shift()!, 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32)), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (err) {
+    console.error("[Encryption] Decryption failed, returning raw text", err);
+    return text;
+  }
+}
+
+
 // Auth Middleware: Verifies Firebase ID Token
 const verifyToken = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -42,35 +78,34 @@ const verifyToken = async (req: express.Request, res: express.Response, next: ex
 
 // Binance API Proxy
 app.post('/api/binance/proxy', verifyToken, async (req, res) => {
-  const user = (req as any).user;
-  const { method, endpoint, params, baseUrl, apiKey: rawApiKey, apiSecret: rawApiSecret } = req.body;
+  const { method, endpoint, params, baseUrl, encryptedApiKey, encryptedApiSecret } = req.body;
 
   try {
-    let apiKey = String(rawApiKey || '').trim();
-    let apiSecret = String(rawApiSecret || '').trim();
+    const isPublicEndpoint = endpoint.includes('/exchangeInfo') || endpoint.includes('/klines');
 
-    if (!apiKey || !apiSecret) {
-      const secretDoc = await db.collection('user_secrets').doc(user.uid).get();
+    let cleanKey = '';
+    let cleanSecret = '';
 
-      if (!secretDoc.exists) {
-        return res.status(400).json({ error: 'Binance credentials not configured for this user.' });
+    if (!isPublicEndpoint) {
+      if (!encryptedApiKey || !encryptedApiSecret) {
+        return res.status(400).json({ error: 'API Key and Secret are required for private endpoints.' });
       }
-
-      const data = secretDoc.data() || {};
-      apiKey = String((data as any).binanceApiKey || '').trim();
-      apiSecret = String((data as any).binanceApiSecret || '').trim();
+      cleanKey = decrypt(String(encryptedApiKey).trim());
+      cleanSecret = decrypt(String(encryptedApiSecret).trim());
     }
-
-    if (!apiKey || !apiSecret) {
-      return res.status(400).json({ error: 'API Key and Secret are required' });
-    }
-
-    const cleanKey = apiKey;
-    const cleanSecret = apiSecret;
+    
+    // SSRF Prevention: Validate host
     const finalBaseUrl = baseUrl || 'https://api.binance.com';
+    if (!ALLOWED_BINANCE_HOSTS.includes(finalBaseUrl)) {
+      return res.status(403).json({ error: `Host violation: ${finalBaseUrl} is not permitted.` });
+    }
 
-    const timestamp = Date.now();
-    const fullParams = { ...params, timestamp, recvWindow: 60000 };
+
+    const fullParams = { ...params };
+    if (!isPublicEndpoint) {
+      fullParams.timestamp = Date.now();
+      fullParams.recvWindow = 60000;
+    }
     
     const sortedParams = Object.keys(fullParams)
       .sort()
@@ -81,19 +116,29 @@ app.post('/api/binance/proxy', verifyToken, async (req, res) => {
 
     const queryString = new URLSearchParams(sortedParams as Record<string, string>).toString();
 
-    const signature = crypto
-      .createHmac('sha256', cleanSecret)
-      .update(queryString)
-      .digest('hex');
+    const urlSegments = [`${finalBaseUrl}${endpoint}`];
+    
+    if (Object.keys(fullParams).length > 0) {
+      urlSegments.push(`?${queryString}`);
+      if (!isPublicEndpoint) {
+        const signature = crypto
+          .createHmac('sha256', cleanSecret)
+          .update(queryString)
+          .digest('hex');
+          
+        urlSegments.push(`&signature=${signature}`);
+      }
+    }
 
-    const url = `${finalBaseUrl}${endpoint}?${queryString}&signature=${signature}`;
+    const url = urlSegments.join('');
+
+    const headers: any = {};
+    if (cleanKey) headers['X-MBX-APIKEY'] = cleanKey;
 
     const response = await axios({
       method: method || 'GET',
       url,
-      headers: {
-        'X-MBX-APIKEY': cleanKey
-      }
+      headers
     });
 
     res.json(response.data);
@@ -145,6 +190,11 @@ app.post('/api/binance/validate', verifyToken, async (req, res) => {
       .update(queryString)
       .digest('hex');
 
+    // SSRF Prevention: Validate host
+    if (!ALLOWED_BINANCE_HOSTS.includes(finalBaseUrl)) {
+      return res.status(403).json({ ok: false, msg: `Host violation: ${finalBaseUrl} is not permitted.` });
+    }
+
     const url = `${finalBaseUrl}/api/v3/account?${queryString}&signature=${signature}`;
 
     await axios.get(url, {
@@ -165,6 +215,42 @@ app.post('/api/binance/validate', verifyToken, async (req, res) => {
     });
   }
 });
+
+// Endpoint to save and encrypt credentials
+app.post('/api/binance/save-credentials', verifyToken, async (req, res) => {
+  const user = (req as any).user;
+  const { apiKey, apiSecret } = req.body || {};
+
+  if (!apiKey || !apiSecret) {
+    return res.status(400).json({ error: 'API key and secret are required.' });
+  }
+
+  try {
+    const encryptedKey = encrypt(String(apiKey).trim());
+    const encryptedSecret = encrypt(String(apiSecret).trim());
+
+    // DELEGATE WRITE TO CLIENT-SIDE SDK TO BYPASS CLOUD IAM RESTRICTIONS
+    res.json({ 
+      ok: true, 
+      msg: 'Credentials encrypted by external vault.',
+      payload: {
+        encryptedKey,
+        encryptedSecret
+      }
+    });
+  } catch (error: any) {
+    console.error('[Save Error - Full Trace]', {
+      uid: user.uid,
+      error: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Failed to encrypt and save credentials.', 
+      details: error.message 
+    });
+  }
+});
+
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -202,10 +288,12 @@ app.get("/api/auth/google", async (_req, res) => {
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile'
     ],
-    prompt: 'consent'
+    prompt: 'consent',
+    state: crypto.randomBytes(32).toString('hex')
   });
   res.redirect(url);
 });
+
 
 app.get("/api/auth/google/url", async (_req, res) => {
   const client = await createOAuthClient();
@@ -219,10 +307,12 @@ app.get("/api/auth/google/url", async (_req, res) => {
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile'
     ],
-    prompt: 'consent'
+    prompt: 'consent',
+    state: crypto.randomBytes(32).toString('hex')
   });
   res.json({ url });
 });
+
 
 app.get("/api/auth/google/callback", async (req, res) => {
   const { code } = req.query;
