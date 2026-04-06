@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="1200" height="400" alt="Synapse Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" style="border-radius: 12px; margin-bottom: 24px;" />
+  <img width="1200" height="400" alt="Synapse Banner" src="public\apple-touch-icon.png" style="border-radius: 12px; margin-bottom: 24px;" />
   
   # Synapse | Neural Dashboard
   ### The Central Connection for High-Performance Life Systems
