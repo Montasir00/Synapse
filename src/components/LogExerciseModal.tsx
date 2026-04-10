@@ -132,13 +132,16 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="relative bg-surface w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-[42px] shadow-2xl border border-border"
+            className="relative bg-surface w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-[42px] shadow-2xl border border-border"
           >
             <div className="p-4 sm:p-6 lg:p-10">
-                <div className="flex justify-between items-center mb-10">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                    <span className="text-xs font-black text-ink uppercase tracking-[0.12em] sm:tracking-[0.3em]">Protocol Session Entry</span>
+                <div className="flex items-start justify-between gap-4 mb-10">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                      <span className="text-xs font-black text-ink uppercase tracking-[0.12em] sm:tracking-[0.3em]">Log session</span>
+                    </div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/60">Use one entry per workout to keep the timeline readable.</p>
                   </div>
                   <button 
                     onClick={() => !isSubmitting && onClose()}
@@ -152,10 +155,11 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
 
               <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Session Title</label>
+                  <label htmlFor="exercise-title" className="micro-label text-muted">Session Title</label>
                   <div className="relative group">
                     <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                     <input 
+                      id="exercise-title"
                       type="text" 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
@@ -174,10 +178,11 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-3">
-                    <label className="micro-label text-muted">Classification</label>
+                    <label htmlFor="exercise-category" className="micro-label text-muted">Workout type</label>
                     <div className="relative group">
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                       <select 
+                        id="exercise-category"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full bg-surface-subtle rounded-full py-4 px-6 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
@@ -189,10 +194,12 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="micro-label text-muted">Duration (min)</label>
+                    <label htmlFor="exercise-duration" className="micro-label text-muted">Duration (min)</label>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/50">Use total active minutes for the session.</p>
                     <div className="relative group">
                       <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                       <input 
+                        id="exercise-duration"
                         type="number" 
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
@@ -211,10 +218,11 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                 </div>
 
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Load Intensity</label>
+                  <label htmlFor="exercise-intensity" className="micro-label text-muted">Intensity</label>
                   <div className="relative group">
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                     <select 
+                      id="exercise-intensity"
                       value={intensity}
                       onChange={(e) => setIntensity(e.target.value)}
                       className="w-full bg-surface-subtle rounded-full py-4 px-6 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
@@ -227,10 +235,11 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                 </div>
 
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Biometric Notes</label>
+                  <label htmlFor="exercise-notes" className="micro-label text-muted">Notes</label>
                   <div className="relative group">
                     <AlignLeft className="absolute left-4 top-4 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" />
                     <textarea 
+                      id="exercise-notes"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Feedback loop notes..." 

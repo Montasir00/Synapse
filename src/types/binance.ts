@@ -1,6 +1,6 @@
 export interface BinanceTrade {
   symbol: string;
-  id: number;
+  id: number | string;
   orderId: number;
   orderListId: number;
   price: string;
@@ -19,7 +19,7 @@ export interface PositionLot {
   qty: number;
   costUSD: number; // Normalized USD value after numeraire layer
   time: number;
-  tradeId: number;
+  tradeId: number | string;
 }
 
 export interface JournalEntry {
@@ -73,6 +73,10 @@ export interface TradeNote {
 
 export interface DashboardMetrics {
   totalNetPnl: number;
+  totalUnrealizedPnl: number;
+  totalEquityPnl: number;
+  profitFactor: number | null;
+  feeDragPct: number;
   winRate: number;
   totalTrades: number;
   profitableTrades: number;
@@ -91,9 +95,8 @@ export interface PersistedBinanceTrade {
   uid: string;
   symbol: string;
   baseAsset: string;
-  id: number;
+  id: number | string;
   orderId: number;
-  orderListId: number;
   price: number;
   qty: number;
   quoteQty: number;
@@ -103,7 +106,6 @@ export interface PersistedBinanceTrade {
   time: number;
   isBuyer: boolean;
   isMaker: boolean;
-  isBestMatch: boolean;
   syncId: string;
   fetchedAt: unknown;
 }
@@ -137,6 +139,10 @@ export interface PersistedPosition {
 export interface PersistedMetrics {
   uid: string;
   totalNetPnl: number;
+  totalUnrealizedPnl: number;
+  totalEquityPnl: number;
+  profitFactor: number | null;
+  feeDragPct: number;
   winRate: number;
   totalTrades: number;
   profitableTrades: number;

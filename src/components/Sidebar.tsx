@@ -83,6 +83,8 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
               <img
                 src={user?.photoURL || `https://api.dicebear.com/7.x/shapes/svg?seed=synapse`}
                 alt="User"
+                width={36}
+                height={36}
                 className="w-9 h-9 rounded-full border border-white/10 object-cover grayscale hover:grayscale-0 transition-all duration-300"
                 referrerPolicy="no-referrer"
               />

@@ -79,6 +79,14 @@ export default function Dashboard({
     });
   }, [safeTransactions]);
 
+   const recentCashflowTrend = useMemo(() => {
+      if (cashflowData.length < 2) return 0;
+      const previous = cashflowData[cashflowData.length - 2]?.net ?? 0;
+      const current = cashflowData[cashflowData.length - 1]?.net ?? 0;
+      const baseline = Math.abs(previous) > 0 ? Math.abs(previous) : 1;
+      return Math.round(((current - previous) / baseline) * 100);
+   }, [cashflowData]);
+
    const todoCount = safeTasks.filter(t => t.status !== 'done').length;
    const activeTradeSnapshot = tradeSnapshot || ({
       openPositions: 0,
@@ -96,11 +104,11 @@ export default function Dashboard({
       { label: 'Monthly Spend', value: `$${monthlySpend.toLocaleString()}`, trend: `${budgetUsagePercent}% limit`, trendIcon: AlertTriangle, color: budgetUsagePercent > 90 ? 'text-alert' : 'text-warning' },
       { label: 'To Do', value: todoCount.toString(), trend: `${safeTasks.length - todoCount}/${safeTasks.length} done`, trendIcon: ListChecks, color: 'text-accent' },
       {
-         label: 'Buffer States',
+         label: 'Open Trades',
          value: activeTradeSnapshot.openPositions.toString(),
          valueSuffix: 'Open',
          trend: activeTradeSnapshot.hasError
-            ? 'Sync attention needed'
+            ? 'Sync issue detected'
             : activeTradeSnapshot.lastSyncAt
             ? `Sync ${format(new Date(activeTradeSnapshot.lastSyncAt), 'MMM d HH:mm')}`
             : 'No sync yet',
@@ -110,44 +118,46 @@ export default function Dashboard({
    ] as Array<{ label: string; value: string; valueSuffix?: string; trend: string; trendIcon: any; color: string }>;
 
   return (
-   <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+   <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-8 sm:pb-10 lg:pb-16 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
 
       <div className="flex flex-row items-center justify-between gap-4">
-         <h2 className="text-xl sm:text-2xl font-black text-ink tracking-tight uppercase">Control</h2>
+         <h2 className="text-xl sm:text-2xl font-black text-ink tracking-tight uppercase">Overview</h2>
          <div className="flex gap-2 sm:gap-3">
-            <button onClick={onAddTask} className="precise-button !px-3 sm:!px-5 !py-2 flex items-center gap-2 group/btn">
-               <Plus className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform" />
-               <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest hidden sm:inline">Task</span>
+            <button
+               onClick={onAddTask}
+               aria-label="Add new task"
+               className="precise-button !px-3 sm:!px-5 !py-3 sm:!py-2 flex items-center gap-2 group/btn min-h-[44px]"
+            >
+               <Plus className="w-4 h-4 group-hover/btn:rotate-90 transition-transform" />
+               <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Task</span>
             </button>
-            <button onClick={onAddExpense} className="precise-button !px-3 sm:!px-5 !py-2 flex items-center gap-2 group/btn">
-               <Plus className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform" />
-               <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest hidden sm:inline">Expense</span>
+            <button
+               onClick={onAddExpense}
+               aria-label="Add new expense"
+               className="precise-button !px-3 sm:!px-5 !py-3 sm:!py-2 flex items-center gap-2 group/btn min-h-[44px]"
+            >
+               <Plus className="w-4 h-4 group-hover/btn:rotate-90 transition-transform" />
+               <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Expense</span>
             </button>
          </div>
       </div>
 
-      {/* 2. Top-Tier Stats (Condensed Grid) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      {/* 2. The Command Strip (System Vitals) */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full divide-y sm:divide-y-0 sm:divide-x divide-border/30 border border-border/50 rounded-2xl bg-surface-subtle/20 overflow-hidden shadow-sm">
         {stats.map((stat, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
-            className="soothing-card p-3 sm:p-4 min-h-[108px] sm:min-h-[120px] bg-surface group hover:border-accent/20 transition-all flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between mb-4">
-               <div className={`p-2 rounded-lg bg-surface-subtle border border-border transition-colors ${stat.color}`}>
-                  <stat.trendIcon className="w-4 h-4" />
+               <div key={i} className="p-4 sm:p-5 flex flex-col justify-center text-center sm:text-left hover:bg-surface/50 transition-colors relative group min-w-0">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-1 mb-2">
+               <span className="text-[10px] sm:text-[11px] font-bold text-muted/60 uppercase tracking-[0.14em]">{stat.label}</span>
+               <div className="flex items-center gap-1 opacity-70">
+                  <stat.trendIcon className={`w-3 h-3 ${stat.color}`} />
+                  <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${stat.color}`}>{stat.trend}</span>
                </div>
-               <span className="text-[9px] sm:text-[11px] font-bold text-muted text-right truncate ml-2">{stat.trend}</span>
             </div>
-            <p className="micro-label !text-muted mb-1">{stat.label}</p>
-            <div className="flex items-baseline gap-1.5">
-               <p className="text-xl sm:text-2xl font-mono font-black text-ink group-hover:text-accent transition-colors">{stat.value}</p>
-               {stat.valueSuffix && <span className="text-xs font-bold text-muted uppercase tracking-wide">{stat.valueSuffix}</span>}
+            <div className="flex items-baseline justify-center lg:justify-start gap-1.5">
+               <span className={`text-xl sm:text-2xl lg:text-3xl font-mono font-black tracking-tighter text-ink group-hover:text-accent transition-colors`}>{stat.value}</span>
+               {stat.valueSuffix && <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">{stat.valueSuffix}</span>}
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -158,16 +168,16 @@ export default function Dashboard({
                <h3 className="text-2xl font-black text-ink">Financial Snapshot</h3>
                <p className="micro-label mt-1">Real-time expenditure tracking</p>
             </div>
-            <button onClick={onViewExpenses} className="precise-button !pl-8 !pr-8 !py-3 w-full sm:w-auto">View Expenses</button>
+            <button onClick={onViewExpenses} aria-label="View all expenses" className="precise-button !pl-8 !pr-8 !py-3 w-full sm:w-full md:w-auto min-h-[44px]">View Expenses</button>
          </div>
 
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <motion.div whileHover={{ scale: 1.01 }} className="soothing-card p-5 sm:p-8 bg-surface border-border">
                <div className="flex justify-between items-start mb-10">
-                  <p className="micro-label !text-ink/40">Resource Depletion Rate (Monthly)</p>
+                  <p className="micro-label !text-ink/40">Monthly spend</p>
                   <div className="flex items-center gap-2 px-3 py-1 bg-accent/10 rounded-full">
                      <TrendingUp className="w-3 h-3 text-accent" />
-                     <span className="text-[10px] font-black text-accent uppercase tracking-wide">High Frequency</span>
+                     <span className="text-[10px] font-black text-accent uppercase tracking-wide">Current Month</span>
                   </div>
                </div>
                <div className="space-y-4">
@@ -186,17 +196,20 @@ export default function Dashboard({
                </div>
             </motion.div>
 
-            <div className="soothing-card p-5 sm:p-8 flex flex-col justify-between border-border bg-surface">
-               <div className="flex items-center justify-between">
-                  <p className="micro-label !text-ink/40">Temporal Cashflow Sync</p>
+            <div className="soothing-card p-5 sm:p-8 flex flex-col border-border bg-surface min-w-0">
+               <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Net Performance</h3>
+                    <p className="micro-label mt-1">Cashflow trend</p>
+                  </div>
                   <div className="flex items-center gap-1 px-3 py-1 bg-success/10 rounded-full">
                      <ArrowUpRight className="w-3 h-3 text-success" />
-                     <span className="text-[10px] font-black text-success uppercase">+12.4%</span>
+                     <span className="text-[10px] font-black text-success uppercase">{recentCashflowTrend >= 0 ? '+' : ''}{recentCashflowTrend}%</span>
                   </div>
                </div>
-                <div className="h-32 w-full mt-6 relative">
+                        <div className="flex-1 w-full min-w-0 min-h-[130px] sm:min-h-[180px] relative">
                    {cashflowData.some(d => d.net !== 0) ? (
-                     <ResponsiveContainer width="100%" height="100%">
+                               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={130}>
                        <BarChart data={cashflowData}>
                          <Bar dataKey="net">
                             {cashflowData.map((entry, index) => (
@@ -216,7 +229,7 @@ export default function Dashboard({
 
              <div className="soothing-card p-5 sm:p-6 lg:p-8 border-border bg-surface-subtle/40">
                 <div className="flex items-center justify-between mb-4">
-                   <p className="micro-label !text-ink/40">Trade Buffer States</p>
+                  <p className="micro-label !text-ink/40">Trade Snapshot</p>
                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted">
                       <RefreshCw className="w-3.5 h-3.5" />
                       {activeTradeSnapshot.lastSyncAt ? format(new Date(activeTradeSnapshot.lastSyncAt), 'MMM d HH:mm') : 'No Sync'}
@@ -234,7 +247,7 @@ export default function Dashboard({
                       </p>
                    </div>
                    <div className="rounded-2xl border border-border bg-surface-subtle p-4 border-alert/20">
-                      <p className="micro-label mb-2 text-alert/60">Realized Fee Drag</p>
+                      <p className="micro-label mb-2 text-alert">Fees Paid</p>
                       <p className="text-2xl font-mono font-black text-alert">-${(activeTradeSnapshot?.totalFees || 0).toFixed(2)}</p>
                    </div>
                 </div>
@@ -300,7 +313,7 @@ export default function Dashboard({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             onClick={scrollToTop}
-            className="lg:hidden fixed bottom-24 right-4 w-12 h-12 bg-surface/80 backdrop-blur-xl border border-border text-accent rounded-full shadow-2xl flex items-center justify-center z-[70] active:scale-90"
+                  className="lg:hidden fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 w-12 h-12 bg-surface/80 backdrop-blur-xl border border-border text-accent rounded-full shadow-2xl flex items-center justify-center z-[85] active:scale-90"
             aria-label="Back to top"
           >
             <ArrowUp className="w-5 h-5" />

@@ -103,6 +103,11 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // Explicit top-level metrics doc used by tradePersistenceService
+    match /binance_metrics/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
     match /user_trades_sync/{userId} {
       allow read, write: if isOwner(userId);
     }
@@ -112,6 +117,11 @@ service cloud.firestore {
     }
 
     match /binance_balances/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Explicit top-level balances doc used by tradePersistenceService
+    match /binance_balances/{userId} {
       allow read, write: if isOwner(userId);
     }
   }

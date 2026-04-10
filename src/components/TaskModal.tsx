@@ -164,10 +164,14 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="relative bg-surface w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl border border-border"
+            className="relative bg-surface w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-[42px] shadow-2xl border border-border"
           >
             <div className="p-4 sm:p-6 lg:p-10">
-              <div className="flex justify-end items-center mb-6">
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="space-y-1">
+                  <span className="text-xs font-black text-ink uppercase tracking-[0.12em] sm:tracking-[0.3em]">{task ? 'Edit task' : 'Create task'}</span>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/60">Daily tasks repeat. Long-term tasks unlock subtasks.</p>
+                </div>
                 <button 
                   onClick={() => !isSubmitting && onClose()}
                   aria-label="Close task modal"
@@ -180,10 +184,11 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
               <form className="space-y-8" onSubmit={handleSubmit}>
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Task Title</label>
+                  <label htmlFor="task-title" className="micro-label text-muted">Task Title</label>
                   <div className="relative group">
                     <Type className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                     <input 
+                      id="task-title"
                       type="text" 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
@@ -201,10 +206,11 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 </div>
 
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Description</label>
+                  <label htmlFor="task-description" className="micro-label text-muted">Description</label>
                   <div className="relative group">
                     <AlignLeft className="absolute left-4 top-4 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                     <textarea 
+                      id="task-description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Append supplemental details..." 
@@ -214,7 +220,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 </div>
 
                 <div className="space-y-3">
-                  <label className="micro-label text-muted">Task Category</label>
+                  <p className="micro-label text-muted">Task category</p>
                   <div className="grid grid-cols-2 gap-2">
 
                     <button
@@ -239,11 +245,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 {taskCategory === 'long-term' && (
                   <div className="space-y-4 p-4 sm:p-6 lg:p-8 bg-surface-subtle border border-border rounded-2xl sm:rounded-[32px]">
                     <div className="flex items-center justify-between">
-                      <label className="micro-label text-muted">Subtasks</label>
+                      <label htmlFor="task-subtask-input" className="micro-label text-muted">Subtasks</label>
                       <span className="text-xs font-bold text-muted uppercase tracking-widest">({subtasks.length} Checkpoints)</span>
                     </div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/50">Add checkpoints to break the project into smaller steps.</p>
                     <div className="flex gap-2">
                       <input 
+                        id="task-subtask-input"
                         type="text"
                         value={newSubtask}
                         onChange={(e) => setNewSubtask(e.target.value)}
@@ -281,11 +289,12 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                 {taskCategory === 'daily' && (
                   <div className="space-y-4 p-4 sm:p-6 lg:p-8 bg-surface-subtle border border-border rounded-2xl sm:rounded-[32px]">
-                    <label className="micro-label text-muted border-b border-border pb-2 block">Repeat Schedule</label>
+                    <label htmlFor="task-recurrence" className="micro-label text-muted border-b border-border pb-2 block">Repeat Schedule</label>
                     <div className="space-y-4">
                       <div className="relative group">
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" />
                         <select 
+                          id="task-recurrence"
                           value={recurrence.type}
                           onChange={(e) => setRecurrence({ ...recurrence, type: e.target.value as any })}
                           className="w-full bg-surface rounded-full py-4 px-6 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
@@ -322,8 +331,9 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                       {recurrence.type === 'monthly' && (
                         <div className="flex items-center gap-3">
-                          <label className="text-xs font-bold uppercase text-muted tracking-widest">Date:</label>
+                          <label htmlFor="task-recurrence-date" className="text-xs font-bold uppercase text-muted tracking-widest">Date:</label>
                           <input 
+                            id="task-recurrence-date"
                             type="number" min="1" max="31"
                             value={recurrence.dateOfMonth || 1}
                             onChange={(e) => setRecurrence({ ...recurrence, dateOfMonth: parseInt(e.target.value) })}
@@ -334,8 +344,9 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                       {recurrence.type === 'interval' && (
                         <div className="flex items-center gap-3">
-                          <label className="text-xs font-bold uppercase text-muted tracking-widest">Every:</label>
+                          <label htmlFor="task-recurrence-interval" className="text-xs font-bold uppercase text-muted tracking-widest">Every:</label>
                           <input 
+                            id="task-recurrence-interval"
                             type="number" min="2" max="365"
                             value={recurrence.intervalDays || 2}
                             onChange={(e) => setRecurrence({ ...recurrence, intervalDays: parseInt(e.target.value) })}
@@ -350,11 +361,12 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                   <div className="space-y-3">
-                    <label className="micro-label text-muted">Priority</label>
+                    <label htmlFor="task-priority" className="micro-label text-muted">Priority</label>
                     <div className="relative group">
                       <Flag className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                       <select 
+                        id="task-priority"
                         value={priority}
                         onChange={(e) => setPriority(e.target.value as Task['priority'])}
                         className="w-full bg-surface-subtle rounded-full py-4 pl-12 pr-10 text-sm font-medium focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
@@ -366,10 +378,11 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="micro-label text-muted">Due Date</label>
+                    <label htmlFor="task-due-date" className="micro-label text-muted">Due Date</label>
                     <div className="relative group">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                       <input 
+                        id="task-due-date"
                         type="date" 
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}

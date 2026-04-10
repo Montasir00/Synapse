@@ -81,10 +81,12 @@ export default function Expenses({
   const filteredTransactions = useMemo(() => {
     const now = new Date();
     const start = startOfMonth(now);
-    return transactions.filter(t => {
-      const tDate = parseISO(t.date);
-      return isWithinInterval(tDate, { start, end: endOfDay(now) });
-    });
+    return transactions
+      .filter(t => {
+        const tDate = parseISO(t.date);
+        return isWithinInterval(tDate, { start, end: endOfDay(now) });
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions]);
 
   // Search filter for the ledger
@@ -171,69 +173,61 @@ export default function Expenses({
     <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
       {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-5 lg:gap-6">
+      {/* The Command Strip (Intel Summary) */}
+      <div className="flex flex-wrap sm:flex-nowrap w-full divide-x divide-border/30 border border-border/50 rounded-2xl bg-surface-subtle/20 overflow-hidden shadow-sm">
         {[
-          { label: 'Inflow', value: `$${totalIncome.toLocaleString()}`, icon: ArrowUpRight, color: 'text-success' },
-          { label: 'Outflow', value: `$${totalSpent.toLocaleString()}`, icon: ArrowDownRight, color: 'text-alert' },
-          { label: 'Net', value: `${netBalance >= 0 ? '+' : '-'}$${Math.abs(netBalance).toLocaleString()}`, icon: Landmark, color: netBalance >= 0 ? 'text-success' : 'text-alert' },
-          { label: 'Efficiency', value: `${(savingsRate || 0).toFixed(0)}%`, icon: TrendingUp, color: 'text-accent' },
+          { label: 'Inflow', value: `$${totalIncome.toLocaleString()}`, color: 'text-success' },
+          { label: 'Outflow', value: `$${totalSpent.toLocaleString()}`, color: 'text-alert' },
+          { label: 'Net Balance', value: `${netBalance >= 0 ? '+' : '-'}$${Math.abs(netBalance).toLocaleString()}`, color: netBalance >= 0 ? 'text-success' : 'text-alert' },
+          { label: 'Savings Rate', value: `${(savingsRate || 0).toFixed(0)}%`, color: 'text-accent' },
         ].map((m, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.05 }}
-            className="soothing-card flex flex-col items-center justify-center p-2.5 sm:p-3 md:p-4 min-h-[98px] sm:min-h-[120px] md:min-h-[140px] border-border hover:border-accent/30 text-center"
-          >
-            <div className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center mb-2 md:mb-3`}
-            >
-              <m.icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${m.color}`} aria-hidden="true" />
+          <div key={i} className="flex-1 w-1/2 sm:w-auto p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors">
+            <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.2em] mb-1">{m.label}</span>
+            <div className="flex items-baseline gap-2">
+               <span className={`text-base sm:text-lg lg:text-xl font-mono font-black tracking-tighter ${m.color}`}>{m.value}</span>
             </div>
-            <p className="text-[10px] sm:micro-label !text-muted mb-0.5 md:mb-1 uppercase tracking-wide sm:tracking-widest">{m.label}</p>
-            <h3 className={`text-sm sm:text-lg md:text-2xl font-mono font-black ${m.color}`}>{m.value}</h3>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Registry Section */}
-      <div className="soothing-card !p-0 overflow-hidden flex flex-col bg-surface">
-        <div className="p-4 sm:p-6 border-b border-border space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        <div className="pb-4 sm:pb-6 border-b border-border/50">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <h3 className="text-xl sm:text-2xl font-display font-black text-ink uppercase tracking-tighter">Registry</h3>
-              <p className="text-[9px] font-black text-muted/40 uppercase tracking-widest mt-1">Live buffer sync active</p>
+                <h3 className="text-2xl sm:text-3xl font-display font-black text-ink uppercase tracking-tighter">Expense Ledger</h3>
+                <p className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">Current month transactions and budgets</p>
             </div>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsFocusedLedgerOpen(true)} 
-                className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-lg shadow-black/20"
+                className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
                 aria-label="Expand focused ledger"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={onAddExpense} 
-                className="precise-button !px-4 md:!px-6 !py-2 md:!py-3 flex items-center gap-2 group/btn relative overflow-hidden"
+                className="precise-button !px-6 !py-2.5 flex items-center gap-2 group/btn"
               >
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
-                <Plus className="w-3.5 md:w-4 h-3.5 md:h-4 group-hover/btn:rotate-90 transition-transform relative z-10" />
-                <span className="relative z-10 hidden sm:inline">New Entry</span>
-                <span className="relative z-10 sm:hidden">Add</span>
+                <Plus className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform" />
+                <span className="hidden sm:inline text-[10px] uppercase font-black tracking-widest">New Entry</span>
+                <span className="sm:hidden text-[10px] uppercase font-black tracking-widest">Add</span>
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 md:gap-4 bg-surface-subtle px-4 md:px-6 py-2.5 md:py-3 rounded-full border border-border focus-within:border-accent/30 transition-all">
-            <Search className="w-3.5 md:w-4 h-3.5 md:h-4 text-muted" />
+          <div className="flex items-center gap-3 mt-6 bg-surface-subtle/50 px-5 py-2.5 rounded-full border border-border focus-within:border-accent/40 transition-all w-full max-w-sm">
+            <Search className="w-4 h-4 text-muted" />
             <input
               type="text"
-              placeholder="Registry search..."
+              placeholder="Registry deeper search..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs md:text-sm text-ink w-full placeholder:text-muted font-semibold"
+              className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/60 font-medium"
             />
           </div>
         </div>
-        <div className="overflow-y-auto h-[300px] sm:h-[400px] scrollbar-custom">
+        <div className="w-full">
           <div className="divide-y divide-white/[0.02]">
             {searchedTransactions.length > 0 ? (
               searchedTransactions.slice(0, 50).map(t => {
@@ -268,7 +262,7 @@ export default function Expenses({
               <div className="p-12 sm:p-20 text-center space-y-4" role="status">
                 <Search className="w-8 h-8 mx-auto text-muted" />
                 <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted">
-                  {searchTerm ? `No registry matches for "${searchTerm}"` : 'Archived Record Empty'}
+                  {searchTerm ? `No matches for "${searchTerm}"` : 'No transactions logged yet'}
                 </p>
               </div>
             )}
@@ -300,6 +294,12 @@ export default function Expenses({
           <div className="flex-1 max-w-xl self-start lg:self-center w-full">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-3 md:mb-4">
                <div>
+              {allTimeSavings <= 0 && (
+                <div className="mt-4 p-4 rounded-xl border border-dashed border-border bg-bg/50 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60">No reserve growth yet</p>
+                  <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted/40 mt-1">Income will appear here as transactions are logged.</p>
+                </div>
+              )}
                  <p className="text-xs font-black uppercase text-ink tracking-wide sm:tracking-widest mb-1">Target Milestone</p>
                  <div className="flex items-baseline gap-2">
                    {isEditingGoal ? (
@@ -343,15 +343,15 @@ export default function Expenses({
 
       {/* Visual Analytics Stack */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
-          <div className="soothing-card p-5 sm:p-6 h-[280px] flex flex-col">
+          <div className="soothing-card p-5 sm:p-6 h-[280px] flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Net Performance</h3>
                 <p className="micro-label mt-1">Cashflow Velocity Trend</p>
               </div>
             </div>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 w-full min-w-0 min-h-[180px]">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
                 <BarChart data={cashflowData}>
                   <Tooltip content={<NoirTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                   <Bar dataKey="net" radius={[4, 4, 0, 0]}>
@@ -364,22 +364,29 @@ export default function Expenses({
             </div>
           </div>
 
-          <div className="soothing-card p-6 md:p-8 flex flex-col items-center justify-center gap-6">
+          <div className="soothing-card p-6 md:p-8 flex flex-col items-center justify-center gap-6 min-w-0">
             <div className="flex-1">
-              <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Spending Volume</h3>
-              <p className="micro-label mt-1 uppercase tracking-widest">Structural Portfolio Analysis</p>
+              <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Spending Breakdown</h3>
+              <p className="micro-label mt-1 uppercase tracking-widest">Category mix for the current month</p>
             </div>
-            <div className="w-full md:w-[300px] h-[250px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie data={categoryTotals.map(([name, value]) => ({ name, value }))} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                    {categoryTotals.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<NoirTooltip />} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
+            <div className="w-full md:w-[300px] h-[250px] min-w-0 min-h-[220px] relative">
+              {categoryTotals.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
+                  <RechartsPieChart>
+                    <Pie data={categoryTotals.map(([name, value]) => ({ name, value }))} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                      {categoryTotals.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<NoirTooltip />} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 border border-dashed border-border/40 rounded-[28px] bg-bg/40">
+                  <PieChart className="w-8 h-8 text-muted/40 mb-3" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60">No spending data yet</p>
+                </div>
+              )}
             </div>
           </div>
       </div>
@@ -484,7 +491,7 @@ export default function Expenses({
                   <Search className="w-5 h-5 text-muted" />
                   <input 
                     type="text" 
-                    placeholder="Deep search ledger..." 
+                    placeholder="Search ledger..." 
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="bg-transparent border-none outline-none text-sm text-ink w-full placeholder:text-muted font-bold"

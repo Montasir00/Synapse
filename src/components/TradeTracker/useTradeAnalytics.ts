@@ -3,9 +3,9 @@ import { format } from 'date-fns';
 import { Position, JournalEntry } from '../../types/binance';
 import { calculateMetrics } from '../../services/binanceService';
 
-export const useTradeAnalytics = (positions: Position[], journals: Record<string, JournalEntry>) => {
+export const useTradeAnalytics = (positions: Position[], journals: Record<string, JournalEntry>, currentPrices: Record<string, number> = {}) => {
   // 1. Core Metrics (Derived from raw positions)
-  const metrics = useMemo(() => calculateMetrics(positions), [positions]);
+  const metrics = useMemo(() => calculateMetrics(positions, currentPrices), [positions, currentPrices]);
 
   // 2. Equity Progression Graph (Derived from closed positions)
   const equityCurveData = useMemo(() => {

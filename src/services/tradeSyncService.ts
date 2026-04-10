@@ -5,20 +5,24 @@ import {
   processTradesIntoPositions, 
   calculateMetrics,
   STABLE_MAP,
-  getQuoteAsset
+  getQuoteAsset,
+  fetchTickerPrices
 } from './binanceService';
 import {
   createSyncId,
   persistTradeSyncSnapshot,
   persistTradeSyncError,
+  prunePersistedPositions,
+  prunePersistedTrades
 } from './tradePersistenceService';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, limit, query, where } from 'firebase/firestore';
 
 export interface SyncResult {
   success: boolean;
   tradeCount: number;
   balances?: any[];
+  currentPrices?: Record<string, number>;
   error?: string;
 }
 
@@ -120,13 +124,27 @@ export const performGlobalTradeSync = async (
       symbols.forEach(s => activeAssets.add(getQuoteAsset(s) === s ? s : s.replace(getQuoteAsset(s), '')));
     }
 
-    // Stage 3: Exchange Symbol Filtering
-    const discoverySymbols = new Set<string>(symbols);
+    // Stage 3: Exchange Symbol Filtering & Delisting Verification
+    const discoverySymbols = new Set<string>();
+    let validMarketPairs = new Set<string>();
     try {
       const { fetchBinanceExchangeInfo } = await import('./binanceService');
       const exchangeInfo = await fetchBinanceExchangeInfo(idToken, baseUrl);
       const quoteAssets = ['USDT', 'USDC', 'FDUSD', 'BTC', 'ETH', 'BNB', 'EUR', 'BUSD'];
       
+      // Map all mathematically valid + trading pairs
+      (exchangeInfo?.symbols || []).forEach((s: any) => {
+         if (s.status === 'TRADING') {
+            validMarketPairs.add(s.symbol);
+         }
+      });
+
+      // Filter raw manual symbols (prevents 400 Bad Request spam for delisted coins)
+      symbols.forEach(rawSym => {
+         if (validMarketPairs.has(rawSym)) discoverySymbols.add(rawSym);
+      });
+      
+      // Auto-discover unlisted quote equivalents for active assets
       (exchangeInfo?.symbols || []).forEach((s: any) => {
         if (activeAssets.has(s.baseAsset) && quoteAssets.includes(s.quoteAsset)) {
           discoverySymbols.add(s.symbol);
@@ -188,16 +206,164 @@ export const performGlobalTradeSync = async (
       } catch {}
     }
 
-    // Stage 6: P&L Handover
-    const processedPositions = processTradesIntoPositions(allTrades, historicalPricesMap, existingPositions);
-    const metricsSnapshot = calculateMetrics(processedPositions);
+    // Stage 5B: Tracking Epoch Filter
+    let epochMs = 0;
+    const epochStr = localStorage.getItem('binance_trade_epoch');
+    if (epochStr) {
+      const parsed = parseInt(epochStr, 10);
+      epochMs = Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    // Fallback for installed PWA/browser storage mismatch: use cloud app_settings epoch if local is missing.
+    if (epochMs <= 0) {
+      try {
+        const settingsQuery = query(collection(db, 'app_settings'), where('uid', '==', uid), limit(1));
+        const settingsSnap = await getDocs(settingsQuery);
+        if (!settingsSnap.empty) {
+          const settings = settingsSnap.docs[0].data() as Record<string, unknown>;
+          const cloudEpoch = Number(settings.tradeTrackerEpoch || 0);
+          if (Number.isFinite(cloudEpoch) && cloudEpoch > 0) {
+            epochMs = cloudEpoch;
+            localStorage.setItem('binance_trade_epoch', String(cloudEpoch));
+            localStorage.setItem('binance_last_pruned_epoch', String(cloudEpoch));
+          }
+        }
+      } catch (epochLookupErr) {
+        console.warn('[Sync Service] Failed to load cloud epoch fallback', epochLookupErr);
+      }
+    }
+
+    const epochFilteredTrades = allTrades.filter(t => t.time >= epochMs);
+
+    // Stage 6A: Daily Price Snapshot & Balances USD
+    // We must fetch prices FIRST so we can establish synthetic entry prices if an epoch reset occurred.
+    let currentPrices: Record<string, number> = {};
+    try {
+      const symbolsToFetch = new Set<string>();
+      const addQuoteCandidates = (asset: string) => {
+        if (!asset || STABLE_MAP[asset]) return;
+
+        const candidates = [`${asset}USDT`, `${asset}USDC`];
+        candidates.forEach((candidate) => {
+          // If we have populated valid pairs, strictly filter to prevent 400 Bad Request on delisted dust.
+          if (validMarketPairs.size > 0) {
+            if (validMarketPairs.has(candidate)) {
+              symbolsToFetch.add(candidate);
+            }
+          } else {
+            symbolsToFetch.add(candidate);
+          }
+        });
+      };
+
+      // Active-pairs-only pricing: open position assets + non-stable wallet assets for USD valuation.
+      existingPositions
+        .filter((p) => p.status === 'OPEN' && p.remainingQty > 0)
+        .forEach((p) => addQuoteCandidates(p.symbol));
+
+      finalBalances.forEach((b: any) => {
+        addQuoteCandidates(String(b.asset || ''));
+      });
+
+      currentPrices = await fetchTickerPrices(idToken, baseUrl, Array.from(symbolsToFetch));
+      if (Object.keys(currentPrices).length > 0) {
+        localStorage.setItem('binance_price_snapshot', JSON.stringify({ timestamp: Date.now(), prices: currentPrices }));
+      }
+
+      // Append USD value to balances
+      finalBalances = finalBalances.map((b: any) => {
+        const totalQty = parseFloat(b.free) + parseFloat(b.locked);
+        let usdValue = totalQty;
+        if (!STABLE_MAP[b.asset]) {
+           const price = currentPrices[`${b.asset}USDT`] || currentPrices[`${b.asset}USDC`] || 0;
+           usdValue = totalQty * price;
+        }
+        return { ...b, usdValue };
+      });
+    } catch (e) {
+      console.warn('[Sync Service] Failed to execute snapshot pricing', e);
+    }
+
+    const getBaseAssetFromSymbol = (symbol: string): string => {
+      const quote = getQuoteAsset(symbol);
+      return symbol.endsWith(quote) ? symbol.slice(0, -quote.length) : symbol;
+    };
+
+    const tradedAssets = new Set<string>(
+      allTrades
+        .map((t) => getBaseAssetFromSymbol(t.symbol))
+        .filter(Boolean)
+    );
+
+    // Stage 6B: Synthetic Epoch Baseline Injection
+    // Convert current wallet holdings into fresh "OPEN" positions exactly at the epoch reset time.
+    if (epochMs > 0) {
+        let baselineTrades: BinanceTrade[] = [];
+        const baselineSaved = localStorage.getItem('binance_baseline_trades');
+        
+        if (baselineSaved) {
+            try {
+                const parsed = JSON.parse(baselineSaved);
+                if (parsed.epoch === epochMs) {
+              const cached = Array.isArray(parsed.trades) ? parsed.trades : [];
+              baselineTrades = cached.filter((t: BinanceTrade) => tradedAssets.has(getBaseAssetFromSymbol(t.symbol)));
+                }
+            } catch (e) {}
+        }
+
+        // If no baseline exists for this epoch, take a snapshot right now and freeze it.
+        if (baselineTrades.length === 0) {
+           finalBalances.forEach((b: any) => {
+              if (!STABLE_MAP[b.asset] && tradedAssets.has(String(b.asset || ''))) {
+                 const totalQty = parseFloat(b.free) + parseFloat(b.locked);
+                 if (totalQty > 0.0001) {
+                    const usdtSymbol = `${b.asset}USDT`;
+                    const snapshotPrice = currentPrices[usdtSymbol] || 0;
+                    if (snapshotPrice > 0) {
+                       baselineTrades.push({
+                          symbol: usdtSymbol,
+                          id: `synthetic_${b.asset}_${epochMs}`,
+                          orderId: 0,
+                          orderListId: -1,
+                          price: String(snapshotPrice),
+                          qty: String(totalQty),
+                          quoteQty: String(totalQty * snapshotPrice),
+                          commission: "0",
+                          commissionAsset: b.asset,
+                          time: epochMs,
+                          isBuyer: true,
+                          isMaker: true,
+                          isBestMatch: true
+                       });
+                    }
+                 }
+              }
+           });
+           
+           if (baselineTrades.length > 0) {
+               localStorage.setItem('binance_baseline_trades', JSON.stringify({
+                   epoch: epochMs,
+                   trades: baselineTrades
+               }));
+           }
+        }
+
+        epochFilteredTrades.push(...baselineTrades);
+    }
+
+    // Ensure trades are sorted again just in case synthetic trades clash with exact milliseconds
+    const sortedFinalTrades = epochFilteredTrades.sort((a, b) => a.time - b.time);
+
+    // Stage 6C: P&L Handover
+    const processedPositions = processTradesIntoPositions(sortedFinalTrades, historicalPricesMap, existingPositions);
+    const metricsSnapshot = calculateMetrics(processedPositions, currentPrices);
 
     // Stage 7: Persistence Promotion
     await persistTradeSyncSnapshot({
       uid,
       syncId,
       symbolsSynced: Array.from(discoverySymbols),
-      trades: allTrades,
+      trades: sortedFinalTrades,
       positions: processedPositions,
       metrics: metricsSnapshot,
       balances: finalBalances,
@@ -205,7 +371,7 @@ export const performGlobalTradeSync = async (
     });
 
     localStorage.setItem('binance_last_synced', new Date().toISOString());
-    return { success: true, tradeCount: allTrades.length, balances: finalBalances };
+    return { success: true, tradeCount: sortedFinalTrades.length, balances: finalBalances, currentPrices };
 
   } catch (err: any) {
     const errorMsg = err?.response?.data?.msg || err?.message || 'Trade sync failed';

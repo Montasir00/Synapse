@@ -200,8 +200,9 @@ export default function TempApiKeyCheck() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="micro-label">API Key</label>
+            <label htmlFor="api-key" className="micro-label">API Key</label>
             <input
+              id="api-key"
               type="text"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
@@ -210,8 +211,9 @@ export default function TempApiKeyCheck() {
             />
           </div>
           <div className="space-y-2">
-            <label className="micro-label">API Secret</label>
+            <label htmlFor="api-secret" className="micro-label">API Secret</label>
             <input
+              id="api-secret"
               type="password"
               value={apiSecret}
               onChange={(e) => setApiSecret(e.target.value)}

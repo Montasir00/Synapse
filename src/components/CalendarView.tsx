@@ -89,7 +89,7 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
           <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight">
             {format(currentMonth, 'MMMM')} <span className="opacity-20 text-accent">{format(currentMonth, 'yyyy')}</span>
           </h3>
-          <p className="micro-label mt-0.5 opacity-30">Temporal Mapping</p>
+          <p className="micro-label mt-0.5 opacity-30">Task calendar</p>
         </div>
         <div className="flex items-center gap-2">
           <button 

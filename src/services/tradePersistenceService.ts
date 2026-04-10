@@ -46,16 +46,15 @@ const toPersistedTrade = (uid: string, syncId: string, trade: BinanceTrade): Per
     baseAsset: getBaseAsset(symbol),
     id: trade.id,
     orderId: trade.orderId,
-    orderListId: trade.orderListId,
     price: Number(trade.price),
     qty: Number(trade.qty),
     quoteQty: Number(trade.quoteQty),
     commission: Number(trade.commission),
     commissionAsset: trade.commissionAsset,
+    commissionUSD: trade.commissionUSD,
     time: trade.time,
     isBuyer: trade.isBuyer,
     isMaker: trade.isMaker,
-    isBestMatch: trade.isBestMatch,
     syncId,
     fetchedAt: serverTimestamp(),
   };
@@ -349,11 +348,18 @@ export const loadPersistedMetrics = async (uid: string): Promise<DashboardMetric
 
   return {
     totalNetPnl: data.totalNetPnl,
+    totalUnrealizedPnl: Number(data.totalUnrealizedPnl || 0),
+    totalEquityPnl: Number(data.totalEquityPnl || 0),
+    profitFactor: typeof data.profitFactor === 'number' ? data.profitFactor : null,
+    feeDragPct: Number(data.feeDragPct || 0),
     winRate: data.winRate,
     totalTrades: Number(data.totalTrades || 0),
     profitableTrades: Number(data.profitableTrades || 0),
     largestWinner: Number(data.largestWinner || 0),
     largestLoser: Number(data.largestLoser || 0),
+    totalFees: Number(data.totalFees || 0),
+    avgHoldTimeWinner: Number(data.avgHoldTimeWinner || 0),
+    avgHoldTimeLoser: Number(data.avgHoldTimeLoser || 0),
     performanceByPair: (data.performanceByPair || {}) as Record<string, number>,
   };
 };

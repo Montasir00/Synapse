@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BinanceTrade, Position, PositionLot } from '../types/binance';
+import { BinanceTrade, Position, PositionLot, DashboardMetrics } from '../types/binance';
 
 export const STABLE_MAP: Record<string, number> = { 'USDT': 1, 'USDC': 1, 'FDUSD': 1, 'BUSD': 1 };
 const DUST_THRESHOLD_USD = 0.10;
@@ -73,7 +73,7 @@ export const fetchBinanceTrades = async (
           fetching = false;
         } else {
           // Point to next id for recursive fetch
-          fromId = trades[trades.length - 1].id + 1;
+          fromId = (trades[trades.length - 1].id as number) + 1;
         }
       }
     }
@@ -156,6 +156,56 @@ export const fetchBinanceExchangeInfo = async (
   }
 };
 
+export const fetchTickerPrices = async (
+  idToken: string,
+  baseUrl: string = 'https://api.binance.com',
+  symbolsToFetch?: string[]
+): Promise<Record<string, number>> => {
+  const priceMap: Record<string, number> = {};
+  const batchSize = 10;
+  
+  // Since the cloud proxy enforces strict endpoint matching, /api/v3/ticker/price is rejected unless deployed.
+  // We bypass this entirely by using the /api/v3/klines endpoint which IS whitelisted globally,
+  // and asking for exactly 1 minute of the most recent candle for the specific symbols we care about.
+  if (!symbolsToFetch || symbolsToFetch.length === 0) return priceMap;
+  
+  const uniqueSymbols = Array.from(new Set(symbolsToFetch));
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  for (let i = 0; i < uniqueSymbols.length; i += batchSize) {
+    const batch = uniqueSymbols.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(async (symbol) => {
+      try {
+        const response = await axios.post('/api/binance/proxy', {
+          method: 'GET',
+          endpoint: '/api/v3/klines',
+          params: { symbol, interval: '1m', limit: 1 },
+          baseUrl
+        }, {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        
+        if (response.data && response.data.length > 0) {
+          return { symbol, price: parseFloat(response.data[0][4]) };
+        }
+      } catch (err) {
+        console.warn(`[Binance Service] Failed to fetch proxy kline for ${symbol}`, err);
+      }
+      return null;
+    }));
+
+    results.forEach(res => {
+      if (res) priceMap[res.symbol] = res.price;
+    });
+
+    if (i + batchSize < uniqueSymbols.length) {
+      await sleep(100);
+    }
+  }
+  
+  return priceMap;
+};
+
 export const getQuoteAsset = (symbol: string): string => {
   const quotes = ['USDT', 'USDC', 'FDUSD', 'BUSD', 'BNB', 'BTC', 'ETH', 'EUR', 'TRY', 'GBP'];
   for (const q of quotes) {
@@ -229,9 +279,10 @@ export const processTradesIntoPositions = (
       if (STABLE_MAP[commissionAsset]) {
         commissionUSD = commission;
       } else if (commissionAsset === base) {
-        // Fee paid in the asset being traded (e.g. JUP)
-        // Its USD value is (commission / rawQty) * normalizedEntryValueUSD
-        commissionUSD = rawQty > 0 ? (commission / rawQty) * normalizedEntryValueUSD : 0;
+        // Fee paid in the asset being traded (e.g. JUP). 
+        // We use the unit price of the CURRENT trade to value the fee fairly.
+        const unitPrice = rawQty > 0 ? (normalizedEntryValueUSD / rawQty) : 0;
+        commissionUSD = commission * unitPrice;
       } else {
         // Fee paid in something else (usually BNB)
         const feeKey = `${commissionAsset}USDT_${Math.floor(trade.time / 60000) * 60000}`;
@@ -284,14 +335,15 @@ export const processTradesIntoPositions = (
           currentPosition.trades!.push(trade);
           currentPosition.lots!.push(newLot);
           
-          // Re-calculate weighted avg for display
+          // Re-calculate weighted avg for display using lot quantities for maximum precision
           const totalBasis = currentPosition.lots!.reduce((acc, l) => acc + l.costUSD, 0);
-          currentPosition.avgEntryPrice = totalBasis / currentPosition.remainingQty!;
+          const totalInvQty = currentPosition.lots!.reduce((acc, l) => acc + l.qty, 0);
+          currentPosition.avgEntryPrice = totalInvQty > 0 ? totalBasis / totalInvQty : 0;
         }
       } else {
         // Seller logic - INSTITUTIONAL FIFO REFACOR
-        const rawExitValueUSD = normalizedEntryValueUSD - commissionUSD;
-        const sellPrice = rawExitValueUSD / effectiveQty; 
+        const grossExitValueUSD = normalizedEntryValueUSD;
+        const sellPrice = grossExitValueUSD / effectiveQty; 
 
         if (currentPosition && currentPosition.status === 'OPEN') {
           let remainingToSell = effectiveQty;
@@ -329,7 +381,7 @@ export const processTradesIntoPositions = (
             (currentPosition as any).totalExitValue = 0;
             (currentPosition as any).totalExitQty = 0;
           }
-          (currentPosition as any).totalExitValue += normalizedEntryValueUSD - commissionUSD;
+          (currentPosition as any).totalExitValue += normalizedEntryValueUSD;
           (currentPosition as any).totalExitQty += effectiveQty;
 
           const remainingValueUSD = currentPosition.remainingQty! * currentPosition.avgEntryPrice!;
@@ -362,14 +414,28 @@ export const processTradesIntoPositions = (
   return allPositions.sort((a, b) => b.entryTime - a.entryTime);
 };
 
-export const calculateMetrics = (positions: Position[]) => {
+export const calculateMetrics = (positions: Position[], currentPrices: Record<string, number> = {}): DashboardMetrics => {
   const closedPositions = positions.filter(p => p.status === 'CLOSED');
+  const openPositions = positions.filter(p => p.status === 'OPEN');
   
   const totalNetPnl = closedPositions.reduce((acc, p) => acc + p.realizedPnl, 0);
   const totalGrossPnl = closedPositions.reduce((acc, p) => acc + p.grossRealizedPnl, 0);
   const profitableTrades = closedPositions.filter(p => p.realizedPnl > 0).length;
   const winRate = closedPositions.length > 0 ? (profitableTrades / closedPositions.length) * 100 : 0;
   
+  let totalUnrealizedPnl = 0;
+  openPositions.forEach(pos => {
+    const priceKeyUSDT = `${pos.symbol}USDT`;
+    const priceKeyUSDC = `${pos.symbol}USDC`;
+    const cp = currentPrices[priceKeyUSDT] ?? currentPrices[priceKeyUSDC] ?? null;
+    
+    // Fallback to 0 P&L if price is missing, but explicitly handle the null price state
+    const unrealized = cp !== null ? (cp - pos.avgEntryPrice) * pos.remainingQty : 0;
+    totalUnrealizedPnl += unrealized;
+  });
+
+  const totalEquityPnl = totalNetPnl + totalUnrealizedPnl;
+
   const largestWinner = Math.max(...closedPositions.map(p => p.realizedPnl), 0);
   const largestLoser = Math.min(...closedPositions.map(p => p.realizedPnl), 0);
   
@@ -398,12 +464,13 @@ export const calculateMetrics = (positions: Position[]) => {
   const numLosers = closedPositions.length - profitableTrades;
   const avgHoldTimeLoser = numLosers > 0 ? (loserHoldSum / numLosers) : 0;
 
-  // PROFIT FACTOR GUARD: Return null if no losses to prevent Infinity
   const profitFactor = grossLoss === 0 ? null : grossProfit / grossLoss;
   const feeDragPct = totalGrossPnl > 0 ? (totalFees / totalGrossPnl) * 100 : 0;
 
   return {
     totalNetPnl,
+    totalUnrealizedPnl,
+    totalEquityPnl,
     totalGrossPnl,
     totalFees,
     winRate,
@@ -416,5 +483,5 @@ export const calculateMetrics = (positions: Position[]) => {
     avgHoldTimeWinner,
     avgHoldTimeLoser,
     performanceByPair
-  };
+  } as DashboardMetrics;
 };

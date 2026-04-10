@@ -40,6 +40,7 @@ import {
   Position as BinancePosition 
 } from './types/binance';
 import { performGlobalTradeSync } from './services/tradeSyncService';
+import { prunePersistedTrades, prunePersistedPositions } from './services/tradePersistenceService';
 
 const ITALY_TIME_ZONE = 'Europe/Rome';
 
@@ -176,12 +177,6 @@ export default function App() {
     'Cash',
     'Investments',
   ];
-  const legacySeededSources = [
-    'Freelance',
-    'Business',
-    'GCash',
-  ];
-
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -241,12 +236,39 @@ export default function App() {
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const currentUrl = new URL(window.location.href);
+    const nextTab = activeTab === 'dashboard' ? null : activeTab;
+    const currentTab = currentUrl.searchParams.get('tab');
+
+    if (nextTab === currentTab) return;
+
+    if (nextTab) currentUrl.searchParams.set('tab', nextTab);
+    else currentUrl.searchParams.delete('tab');
+
+    window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const nextTab = params.get('tab') || 'dashboard';
+      setActiveTab(nextTab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
 
 
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("[Firebase Auth] User Status Change:", user ? `Logged in as ${user.uid}` : "Logged out (Guest Mode)");
       setUser(user);
       setIsAuthReady(true);
     });
@@ -273,7 +295,6 @@ export default function App() {
     // Tasks Listener
     const tasksQuery = query(collection(db, 'tasks'), where('uid', '==', currentUid));
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
-      console.log(`[Firebase Sync] Received ${snapshot.docs.length} tasks for user ${currentUid}`);
       const tasksData: Task[] = [];
       snapshot.forEach((doc) => tasksData.push({ ...doc.data(), id: doc.id } as Task));
       setTasks(tasksData);
@@ -321,15 +342,20 @@ export default function App() {
         const settings = snapshot.docs[0].data();
         setMonthlyBudget(settings.monthlyBudget || 0);
 
+        const cloudTradeEpoch = Number(settings.tradeTrackerEpoch || 0);
+        if (Number.isFinite(cloudTradeEpoch) && cloudTradeEpoch > 0) {
+          localStorage.setItem('binance_trade_epoch', String(cloudTradeEpoch));
+          localStorage.setItem('binance_last_pruned_epoch', String(cloudTradeEpoch));
+        }
+
         setMerchantToCategory(settings.merchantCategoryMap ?? {});
         setCustomCategories(settings.customExpenseCategories ?? []);
 
         const persistedSources = Array.isArray(settings.sourceOptions)
           ? settings.sourceOptions.map((s: unknown) => String(s).trim()).filter(Boolean)
           : [];
-        const withoutLegacy = persistedSources.filter((s: string) => !legacySeededSources.includes(s));
-        const normalizedSources = withoutLegacy.length > 0
-          ? Array.from(new Set(withoutLegacy))
+        const normalizedSources = persistedSources.length > 0
+          ? Array.from(new Set(persistedSources))
           : defaultSourceOptions;
 
         setCustomSources(normalizedSources);
@@ -338,6 +364,7 @@ export default function App() {
         const defaultSettings = {
           uid: currentUid,
           monthlyBudget: 0,
+          tradeTrackerEpoch: 0,
           merchantCategoryMap: {},
           customExpenseCategories: [],
           sourceOptions: defaultSourceOptions,
@@ -378,12 +405,6 @@ export default function App() {
       setTradeBufferState((prev) => ({
         ...prev,
         totalNetPnl: data?.totalNetPnl || 0,
-        totalFees: data?.totalFees || 0,
-        avgHoldDuration: {
-          winner: data?.avgHoldTimeWinner || 0,
-          loser: data?.avgHoldTimeLoser || 0
-        },
-        tagPerformance: data?.tagPerformance || {},
       }));
     });
 
@@ -419,33 +440,34 @@ export default function App() {
   useEffect(() => {
     if (!user || !isAuthReady) return;
 
-    const SESSION_SYNC_KEY = `synapse_session_sync_${user.uid}`;
-    const isAlreadySynced = sessionStorage.getItem(SESSION_SYNC_KEY);
+    const SYNC_KEY = `synapse_last_auto_sync_${user.uid}`;
+    const lastSyncStr = localStorage.getItem(SYNC_KEY);
+    const lastSyncAt = lastSyncStr ? parseInt(lastSyncStr) : 0;
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-    if (isAlreadySynced) {
-      console.log("[Sync Service] Active session sync detected. Skipping background trigger.");
+    if (Date.now() - lastSyncAt < TWENTY_FOUR_HOURS) {
+      console.log("[Sync Service] Daily quota met. Skipping automated background sync.");
       return;
     }
 
     const triggerSync = async () => {
       try {
         const idToken = await user.getIdToken();
-        console.log("[Sync Service] Triggering automated background sync...");
+        console.log("[Sync Service] Triggering daily automated background sync...");
         const result = await performGlobalTradeSync(idToken, user.uid);
         
         if (result.success) {
-          sessionStorage.setItem(SESSION_SYNC_KEY, 'true');
-          console.log(`[Sync Service] Background sync complete. Captured ${result.tradeCount} trades.`);
+          localStorage.setItem(SYNC_KEY, Date.now().toString());
+          console.log(`[Sync Service] Daily background sync complete. Captured ${result.tradeCount} trades.`);
         } else {
-          console.error("[Sync Service] Background sync failed:", result.error);
+          console.error("[Sync Service] Daily background sync failed:", result.error);
         }
       } catch (err) {
-        console.error("[Sync Service] Error in automated trigger:", err);
+        console.error("[Sync Service] Error in daily automated trigger:", err);
       }
     };
 
-    // Trigger the sync as soon as auth is ready, prioritizing latest data.
-    const timer = setTimeout(triggerSync, 100);
+    const timer = setTimeout(triggerSync, 500); // Slight delay for main UI to settle
     return () => clearTimeout(timer);
   }, [user, isAuthReady]);
 
@@ -577,6 +599,37 @@ export default function App() {
       await upsertAppSettings({ sourceOptions: nextSources });
     } catch (error) {
       console.error('Error persisting source options:', error);
+    }
+  };
+
+  const handleTradeTrackerHardReset = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const resetEpoch = Date.now().toString();
+      const resetEpochNumber = Number(resetEpoch);
+      localStorage.setItem('binance_trade_epoch', resetEpoch);
+      localStorage.setItem('binance_last_pruned_epoch', resetEpoch);
+      localStorage.removeItem('binance_price_snapshot');
+      localStorage.removeItem('binance_baseline_trades');
+      
+      toast.promise(
+        Promise.all([
+          upsertAppSettings({ tradeTrackerEpoch: resetEpochNumber }),
+          prunePersistedTrades(user.uid),
+          prunePersistedPositions(user.uid),
+          deleteDoc(doc(db, 'user_trades_sync', user.uid)),
+          deleteDoc(doc(db, 'binance_metrics', user.uid))
+        ]),
+        {
+          loading: 'Executing Trade Tracker Hard Reset...',
+          success: 'Trade Tracker wiped clean. System at Time Zero.',
+          error: 'Hard reset failed. Please try again.'
+        }
+      );
+    } catch (error) {
+      console.error('Manual Reset Error:', error);
+      toast.error('Could not complete hard reset.');
     }
   };
 
@@ -876,9 +929,10 @@ export default function App() {
       case 'settings':
         return (
           <Settings 
-            user={user}
+            user={user} 
             onLogin={handleLogin}
             onSystemReset={handleSystemReset}
+            onTradeReset={handleTradeTrackerHardReset}
             onOpenApiCheck={() => setActiveTab('api-check')}
           />
         );
@@ -956,7 +1010,7 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pt-[env(safe-area-inset-top)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pt-[env(safe-area-inset-top)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
         <div>

@@ -237,25 +237,26 @@ export default function LogExpenseModal({
                     onClick={() => setType('expense')}
                     className={`flex-1 py-2.5 text-center rounded-full text-xs font-bold uppercase tracking-wider transition-all ${type === 'expense' ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
                   >
-                    Outflow
+                    Expense
                   </button>
                   <button 
                     type="button"
                     onClick={() => setType('income')}
                     className={`flex-1 py-2.5 text-center rounded-full text-xs font-bold uppercase tracking-wider transition-all ${type === 'income' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                   >
-                    Inflow
+                    Income
                   </button>
                 </div>
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
                   <div className="space-y-3 mb-8">
-                    <label className="block micro-label text-muted">Amount</label>
+                    <label htmlFor="expense-amount" className="block micro-label text-muted">Amount</label>
                     <div className="relative flex items-center">
                       <span className={`absolute left-1 top-1/2 -translate-y-1/2 text-4xl font-mono font-bold ${type === 'income' ? 'text-success' : 'text-ink'}`}>
                         {type === 'income' ? '+' : '-'}
                       </span>
                       <input 
+                        id="expense-amount"
                         type="number" 
                         step="0.01"
                         min="0.01"
@@ -277,19 +278,21 @@ export default function LogExpenseModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center">
-                        <label className="block micro-label text-muted">Merchant / Source</label>
+                        <label htmlFor="expense-merchant" className="block micro-label text-muted">Merchant or source</label>
                         <button 
                           type="button"
                           onClick={() => setIsAddingSource(!isAddingSource)}
                           className="text-xs font-bold uppercase tracking-wide text-accent hover:text-ink transition-colors"
                         >
-                          {isAddingSource ? 'Cancel' : '+ Add Source'}
+                          {isAddingSource ? 'Cancel' : '+ Add merchant'}
                         </button>
                       </div>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/50">Choosing a known merchant can suggest a category automatically.</p>
 
                       {isAddingSource ? (
                         <div className="flex gap-2">
                           <input 
+                            id="expense-merchant"
                             type="text"
                             value={newSource}
                             onChange={(e) => setNewSource(e.target.value)}
@@ -308,6 +311,7 @@ export default function LogExpenseModal({
                       ) : (
                         <div className="relative">
                           <input 
+                            id="expense-merchant"
                             type="text" 
                             value={merchant}
                             onChange={(e) => handleMerchantChange(e.target.value)}
@@ -331,10 +335,11 @@ export default function LogExpenseModal({
                       )}
                     </div>
                     <div className="space-y-2.5">
-                      <label className="block micro-label text-muted">Date</label>
+                      <label htmlFor="expense-date" className="block micro-label text-muted">Date</label>
                       <div className="relative">
                         <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                         <input 
+                          id="expense-date"
                           type="date" 
                           value={date}
                           onChange={(e) => setDate(e.target.value)}
@@ -346,15 +351,16 @@ export default function LogExpenseModal({
 
                   <div className="space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="block micro-label text-muted">Category</label>
+                      <label htmlFor="expense-category" className="block micro-label text-muted">Expense category</label>
                       <button 
                         type="button"
                         onClick={() => setIsAddingCategory(!isAddingCategory)}
                         className="text-xs font-bold uppercase tracking-wide text-accent hover:text-ink transition-colors"
                       >
-                        {isAddingCategory ? 'Cancel' : '+ Define New'}
+                        {isAddingCategory ? 'Cancel' : '+ New category'}
                       </button>
                     </div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/50">Pick an existing category or define a new one inline.</p>
                     
                     {isAddingCategory ? (
                       <div className="flex gap-2">
@@ -379,6 +385,7 @@ export default function LogExpenseModal({
                         <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" />
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                         <select 
+                          id="expense-category"
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
                           className="w-full bg-surface-subtle rounded-full py-3 pl-11 pr-10 text-sm font-semibold focus:border-accent/40 outline-none transition-all appearance-none cursor-pointer border border-border text-ink"
@@ -392,10 +399,11 @@ export default function LogExpenseModal({
                   </div>
 
                   <div className="space-y-2.5">
-                    <label className="block micro-label text-muted">Notes</label>
+                    <label htmlFor="expense-notes" className="block micro-label text-muted">Notes</label>
                     <div className="relative group">
                       <FileText className="absolute left-4 top-4 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" />
                       <textarea 
+                        id="expense-notes"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Mindful justification..." 
@@ -409,7 +417,7 @@ export default function LogExpenseModal({
                     disabled={isSubmitting}
                     className={`precise-button w-full py-3 text-xs tracking-[0.12em] sm:tracking-[0.3em] font-black mt-6 shadow-xl active:scale-[0.98] ${type === 'income' ? 'bg-success hover:bg-success/80 !text-white' : ''}`}
                   >
-                    {isSubmitting ? 'Saving...' : editingTransaction ? 'Save Changes' : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
+                    {isSubmitting ? 'Saving...' : editingTransaction ? 'Save Entry' : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
                   </button>
                 </form>
               </div>
