@@ -269,7 +269,8 @@ export default function LogLoanModal({
                         type="date" 
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
-                        className="w-full bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink appearance-none [color-scheme:light] tracking-widest"
+                        min={editingLoan ? undefined : new Date().toISOString().split('T')[0]}
+                        className="w-full bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink appearance-none tracking-widest"
                       />
                     </div>
                   </div>
@@ -295,7 +296,11 @@ export default function LogLoanModal({
                   <button 
                     type="submit"
                     disabled={isSubmitting}
-                    className="group relative w-full h-16 rounded-[24px] overflow-hidden shadow-lg active:scale-[0.98] transition-all bg-success"
+                    className={`group relative w-full h-16 rounded-[24px] overflow-hidden shadow-lg active:scale-[0.98] transition-all ${
+                      type === 'lent' 
+                        ? 'bg-accent shadow-accent/20' 
+                        : 'bg-alert shadow-alert/20'
+                    }`}
                   >
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="relative flex items-center justify-center gap-3">

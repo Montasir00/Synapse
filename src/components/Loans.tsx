@@ -40,6 +40,10 @@ export default function Loans({
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [loanToDelete, setLoanToDelete] = useState<string | null>(null);
 
+  // Settled loans toggle visibility states
+  const [showSettledLent, setShowSettledLent] = useState(false);
+  const [showSettledBorrowed, setShowSettledBorrowed] = useState(false);
+
   // Filtered lists based on search
   const filteredLoans = useMemo(() => {
     let list = [...loans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -54,6 +58,19 @@ export default function Loans({
     }
     return list;
   }, [loans, searchTerm]);
+
+  // Dynamic lists with visibility toggle filters applied
+  const displayedLentLoans = useMemo(() => {
+    return filteredLoans.filter(l => 
+      l.type === 'lent' && (l.status === 'pending' || showSettledLent)
+    );
+  }, [filteredLoans, showSettledLent]);
+
+  const displayedBorrowedLoans = useMemo(() => {
+    return filteredLoans.filter(l => 
+      l.type === 'borrowed' && (l.status === 'pending' || showSettledBorrowed)
+    );
+  }, [filteredLoans, showSettledBorrowed]);
 
   // Aggregate metrics (only active/pending loans reflect in total outstanding balances)
   const totalLent = useMemo(() => 
@@ -74,6 +91,31 @@ export default function Loans({
     loans.filter(l => l.status === 'settled').length,
     [loans]
   );
+
+  const settledLentCount = useMemo(() => 
+    loans.filter(l => l.type === 'lent' && l.status === 'settled').length,
+    [loans]
+  );
+
+  const settledBorrowedCount = useMemo(() => 
+    loans.filter(l => l.type === 'borrowed' && l.status === 'settled').length,
+    [loans]
+  );
+
+  const hasLentLoans = useMemo(() => loans.some(l => l.type === 'lent'), [loans]);
+  const hasBorrowedLoans = useMemo(() => loans.some(l => l.type === 'borrowed'), [loans]);
+
+  const lentEmptyText = useMemo(() => {
+    if (searchTerm) return "No counterparty match";
+    if (!hasLentLoans) return "No receivables logged";
+    return "All receivables settled";
+  }, [searchTerm, hasLentLoans]);
+
+  const borrowedEmptyText = useMemo(() => {
+    if (searchTerm) return "No counterparty match";
+    if (!hasBorrowedLoans) return "No payables logged";
+    return "All payables settled";
+  }, [searchTerm, hasBorrowedLoans]);
 
   const formatDateSafely = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -106,7 +148,7 @@ export default function Loans({
         }`}
       >
         {/* Glow orb background effect */}
-        <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] opacity-10 pointer-events-none ${
+        <div className={`absolute lg:right-0 right-[-30px] top-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-[100px] opacity-10 md:opacity-[0.07] pointer-events-none ${
           totalUnrealizedPnl >= 0 ? 'bg-success' : 'bg-alert'
         }`} />
         
@@ -212,8 +254,8 @@ export default function Loans({
 
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {filteredLoans.filter(l => l.type === 'lent').length > 0 ? (
-                filteredLoans.filter(l => l.type === 'lent').map((loan, idx) => (
+              {displayedLentLoans.length > 0 ? (
+                displayedLentLoans.map((loan, idx) => (
                   <LoanItemCard
                     key={loan.id}
                     loan={loan}
@@ -225,9 +267,20 @@ export default function Loans({
                   />
                 ))
               ) : (
-                <EmptyState icon={Coins} text={searchTerm ? "No counterparty match" : "No pending receivables logged"} />
+                <EmptyState icon={Coins} text={lentEmptyText} />
               )}
             </AnimatePresence>
+
+            {settledLentCount > 0 && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={() => setShowSettledLent(!showSettledLent)}
+                  className="px-4 py-2 rounded-full bg-surface border border-border text-[9px] font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
+                >
+                  {showSettledLent ? "Hide" : "Show"} {settledLentCount} Settled {settledLentCount === 1 ? "Loan" : "Loans"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,8 +298,8 @@ export default function Loans({
 
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
-              {filteredLoans.filter(l => l.type === 'borrowed').length > 0 ? (
-                filteredLoans.filter(l => l.type === 'borrowed').map((loan, idx) => (
+              {displayedBorrowedLoans.length > 0 ? (
+                displayedBorrowedLoans.map((loan, idx) => (
                   <LoanItemCard
                     key={loan.id}
                     loan={loan}
@@ -258,9 +311,20 @@ export default function Loans({
                   />
                 ))
               ) : (
-                <EmptyState icon={Scale} text={searchTerm ? "No counterparty match" : "No pending payables logged"} />
+                <EmptyState icon={Scale} text={borrowedEmptyText} />
               )}
             </AnimatePresence>
+
+            {settledBorrowedCount > 0 && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={() => setShowSettledBorrowed(!showSettledBorrowed)}
+                  className="px-4 py-2 rounded-full bg-surface border border-border text-[9px] font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
+                >
+                  {showSettledBorrowed ? "Hide" : "Show"} {settledBorrowedCount} Settled {settledBorrowedCount === 1 ? "Payable" : "Payables"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -285,7 +349,7 @@ export default function Loans({
               <h3 className="text-2xl font-display font-black text-ink mb-2 uppercase tracking-tight">Delete Loan?</h3>
               <p className="text-muted text-[11px] mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
               <div className="flex gap-4">
-                <button onClick={() => setLoanToDelete(null)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-full font-bold text-[9px] uppercase tracking-widest text-muted">Cancel</button>
+                <button onClick={() => setLoanToDelete(null)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-full font-bold text-[9px] uppercase tracking-widest text-ink/70">Cancel</button>
                 <button onClick={() => { onDeleteLoan(loanToDelete); setLoanToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-bold text-[9px] uppercase tracking-widest shadow-2xl shadow-alert/30">Confirm</button>
               </div>
             </motion.div>
@@ -319,7 +383,7 @@ function LoanItemCard({ loan: l, onToggle, onEdit, onDelete, formatDate }: LoanI
       transition={{ type: 'spring', stiffness: 350, damping: 25 }}
       className={`glass-card p-4 sm:p-5 flex items-center justify-between gap-4 border transition-all relative overflow-hidden ${
         isSettled 
-          ? 'opacity-50 bg-black/[0.02] border-border line-through' 
+          ? 'opacity-50 bg-black/[0.02] border-border' 
           : 'bg-white/[0.01] hover:bg-black/[0.01]'
       }`}
     >
@@ -327,19 +391,19 @@ function LoanItemCard({ loan: l, onToggle, onEdit, onDelete, formatDate }: LoanI
         {/* Settlement Check Box Toggle */}
         <button 
           onClick={() => onToggle(l.id, l.status)}
-          className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${
+          className={`group w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${
             isSettled 
               ? 'bg-success border-success text-white' 
               : 'border-border hover:border-accent'
           }`}
           aria-label={isSettled ? "Mark as active" : "Mark as settled"}
         >
-          {isSettled ? <RotateCcw className="w-3.5 h-3.5" /> : <Check className="w-4 h-4 opacity-0 hover:opacity-100 transition-opacity text-accent" />}
+          {isSettled ? <RotateCcw className="w-3.5 h-3.5" /> : <Check className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-accent" />}
         </button>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5 mb-1.5">
-            <span className={`text-sm sm:text-base font-black text-ink leading-none truncate ${isSettled ? 'text-muted' : ''}`}>
+            <span className={`text-sm sm:text-base font-black text-ink leading-none truncate ${isSettled ? 'text-muted line-through' : ''}`}>
               {l.personName}
             </span>
             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest leading-none ${

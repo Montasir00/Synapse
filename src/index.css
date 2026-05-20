@@ -49,19 +49,27 @@
 @layer utilities {
   .theme-tasks {
     --color-accent: var(--color-todo);
+    --color-accent-hover: var(--color-todo-hover);
     --color-accent-soft: var(--color-todo-tint);
+    --accent-rgb: 99, 102, 241;
   }
   .theme-expenses {
     --color-accent: var(--color-expense);
+    --color-accent-hover: var(--color-expense-hover);
     --color-accent-soft: var(--color-expense-tint);
+    --accent-rgb: 74, 137, 104;
   }
   .theme-trades {
     --color-accent: var(--color-trade);
+    --color-accent-hover: var(--color-trade-hover);
     --color-accent-soft: var(--color-trade-tint);
+    --accent-rgb: 216, 106, 73;
   }
   .theme-loans {
     --color-accent: var(--color-todo);
+    --color-accent-hover: var(--color-todo-hover);
     --color-accent-soft: var(--color-todo-tint);
+    --accent-rgb: 99, 102, 241;
   }
 }
 

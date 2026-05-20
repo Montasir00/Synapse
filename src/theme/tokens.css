@@ -10,12 +10,15 @@
 
   /* SECTION ACCENTS */
   --color-todo: oklch(0.55 0.20 265);          /* Periwinkle */
+  --color-todo-hover: oklch(0.48 0.22 265);    /* Periwinkle Hover */
   --color-todo-tint: oklch(0.92 0.06 265);     /* Periwinkle Tint */
 
   --color-expense: oklch(0.50 0.14 160);       /* Sage */
+  --color-expense-hover: oklch(0.43 0.15 160); /* Sage Hover */
   --color-expense-tint: oklch(0.92 0.05 160);  /* Sage Tint */
 
   --color-trade: oklch(0.55 0.16 38);          /* Terracotta */
+  --color-trade-hover: oklch(0.48 0.18 38);    /* Terracotta Hover */
   --color-trade-tint: oklch(0.93 0.05 38);     /* Terracotta Tint */
 
   /* SEMANTIC — STATUS */
@@ -30,8 +33,12 @@
 
   /* Aliases for Global System */
   --ds-color-primary: var(--color-todo);
+  --ds-color-primary-hover: var(--color-todo-hover);
   --ds-color-secondary: var(--color-expense);
   --ds-color-accent: var(--color-trade);
+
+  /* RGB version of active accent (default Periwinkle) */
+  --accent-rgb: 99, 102, 241;
 
   /* Spacing & radius */
   --spacing-unit: 8px;

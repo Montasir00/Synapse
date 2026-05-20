@@ -1402,6 +1402,7 @@ export default function App() {
       case 'dashboard': return 'top-[-100px] right-[-100px]';
       case 'tasks': return 'bottom-[-100px] right-[-100px]';
       case 'expenses': return 'top-[-100px] left-[-100px]';
+      case 'loans': return 'bottom-[10%] left-[-100px]';
       case 'exercises': return 'bottom-[-100px] left-[-100px]';
       case 'trade-tracker': return 'top-[20%] right-[10%]';
       default: return 'top-[-100px] right-[-100px]';
