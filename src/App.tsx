@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, lazy, Suspense, useMemo, Fragment } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 
@@ -15,13 +16,15 @@ const Exercises = lazy(() => import('./components/Exercises'));
 const TradeTracker = lazy(() => import('./components/TradeTracker'));
 const TempApiKeyCheck = lazy(() => import('./components/TempApiKeyCheck'));
 const Settings = lazy(() => import('./components/Settings'));
+const Loans = lazy(() => import('./components/Loans'));
 import LogExpenseModal from './components/LogExpenseModal';
 import TaskModal from './components/TaskModal';
 import LogExerciseModal from './components/LogExerciseModal';
-import { Task, Transaction, Budget, Note } from './types';
+import { Task, Transaction, Budget, Note, Loan } from './types';
 import { Toaster, toast } from 'sonner';
 import { auth, db, signInWithGoogle, logout } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { haptics } from './utils/haptics';
 import { 
   collection, 
   query, 
@@ -32,7 +35,12 @@ import {
   updateDoc, 
   addDoc, 
   where, 
-  getDocs 
+  getDocs,
+  getDoc,
+  orderBy,
+  limit,
+  writeBatch,
+  increment
 } from 'firebase/firestore';
 import { 
   PersistedMetrics, 
@@ -193,6 +201,8 @@ export default function App() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
+  const [isSyncingFinancials, setIsSyncingFinancials] = useState(false);
+  const [isSyncingTrades, setIsSyncingTrades] = useState(false);
 
   // Data state
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -225,15 +235,21 @@ export default function App() {
   const [merchantToCategory, setMerchantToCategory] = useState<Record<string, string>>({});
   const [exerciseSessions, setExerciseSessions] = useState<any[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [tradeBufferState, setTradeBufferState] = useState({
     openPositions: 0,
     closedPositions: 0,
     totalNetPnl: 0,
+    totalUnrealizedPnl: 0,
+    totalFees: 0,
+    avgHoldDuration: { winner: 0, loser: 0 },
+    tagPerformance: {} as Record<string, { pnl: number; count: number }>,
     lastSyncAt: null as number | null,
     hasError: false,
   });
   const [settingsDocId, setSettingsDocId] = useState<string | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [allTimeSavings, setAllTimeSavings] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -285,6 +301,7 @@ export default function App() {
       setBudgets([]);
       setExerciseSessions([]);
       setNotes([]);
+      setLoans([]);
       setIsLoading(false);
       return;
     }
@@ -292,23 +309,40 @@ export default function App() {
     setIsLoading(true);
     const currentUid = user.uid;
 
-    // Tasks Listener
-    const tasksQuery = query(collection(db, 'tasks'), where('uid', '==', currentUid));
+    // Tasks Listener — fetches all tasks for this user.
+    // Client-side filter excludes completed long-term tasks from state.
+    // Completed daily tasks are kept for midnight recurrence reset logic.
+    const tasksQuery = query(
+      collection(db, 'tasks'),
+      where('uid', '==', currentUid)
+    );
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const tasksData: Task[] = [];
-      snapshot.forEach((doc) => tasksData.push({ ...doc.data(), id: doc.id } as Task));
+      snapshot.forEach((doc) => {
+        const data = doc.data() as Task;
+        // Include active tasks OR completed daily tasks (needed for midnight reset logic).
+        // Completed long-term tasks are excluded — they are loaded on-demand in Tasks.tsx.
+        if (data.status !== 'done' || data.taskCategory === 'daily') {
+          tasksData.push({ ...data, id: doc.id } as Task);
+        }
+      });
       setTasks(tasksData);
     }, (error) => {
       console.error("[Firebase Sync] Tasks listener error:", error);
     });
 
-    // Transactions Listener
-    const transQuery = query(collection(db, 'transactions'), where('uid', '==', currentUid));
+    // Transactions Listener — limited to last 50 ordered by date.
+    // All-time totals are maintained separately in app_settings (allTimeSavings).
+    const transQuery = query(
+      collection(db, 'transactions'),
+      where('uid', '==', currentUid),
+      limit(100) // Increased slightly to ensure we catch enough recent ones without explicit order
+    );
     const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
       const transData: Transaction[] = [];
       snapshot.forEach((doc) => transData.push({ ...doc.data(), id: doc.id } as Transaction));
       setTransactions(transData);
-    }, (error) => console.error("Transactions listener error:", error));
+    }, (error) => console.error("[Firebase Sync] Transactions listener error:", error));
 
     // Budgets Listener
     const budgetsQuery = query(collection(db, 'budgets'), where('uid', '==', currentUid));
@@ -318,13 +352,18 @@ export default function App() {
       setBudgets(budgetsData);
     }, (error) => console.error("Budgets listener error:", error));
 
-    // Exercises Listener
-    const exercisesQuery = query(collection(db, 'exercises'), where('uid', '==', currentUid));
+    // Exercises Listener — limited to last 30 sessions.
+    const exercisesQuery = query(
+      collection(db, 'exercises'),
+      where('uid', '==', currentUid),
+      orderBy('createdAt', 'desc'),
+      limit(30)
+    );
     const unsubscribeExercises = onSnapshot(exercisesQuery, (snapshot) => {
       const exercisesData: any[] = [];
       snapshot.forEach((doc) => exercisesData.push({ ...doc.data(), id: doc.id }));
       setExerciseSessions(exercisesData);
-    }, (error) => console.error("Exercises listener error:", error));
+    }, (error) => console.error("[Firebase Sync] Exercises listener error:", error));
 
     // Notes Listener
     const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid));
@@ -334,13 +373,45 @@ export default function App() {
       setNotes(notesData);
     }, (error) => console.error("Notes listener error:", error));
 
-    // App Settings Listener (stores non-gamified settings such as monthly budget)
+    // Loans Listener
+    const loansQuery = query(collection(db, 'loans'), where('uid', '==', currentUid));
+    const unsubscribeLoans = onSnapshot(loansQuery, (snapshot) => {
+      const loansData: Loan[] = [];
+      snapshot.forEach((doc) => loansData.push({ ...doc.data(), id: doc.id } as Loan));
+      setLoans(loansData);
+    }, (error) => console.error("[Firebase Sync] Loans listener error:", error));
+
+    // App Settings Listener — also carries allTimeSavings aggregate.
     const appSettingsQuery = query(collection(db, 'app_settings'), where('uid', '==', currentUid));
     const unsubscribeSettings = onSnapshot(appSettingsQuery, (snapshot) => {
       if (!snapshot.empty) {
         setSettingsDocId(snapshot.docs[0].id);
         const settings = snapshot.docs[0].data();
         setMonthlyBudget(settings.monthlyBudget || 0);
+
+        // Read the pre-computed all-time savings aggregate.
+        // If the field doesn't exist yet, trigger one-time migration.
+        if (typeof settings.allTimeSavings === 'number') {
+          setAllTimeSavings(settings.allTimeSavings);
+        } else {
+          // One-time migration: sum all historical transactions and save total.
+          console.log('[BillingGuard] allTimeSavings missing — running one-time migration...');
+          getDocs(query(collection(db, 'transactions'), where('uid', '==', currentUid)))
+            .then((snap) => {
+              let total = 0;
+              snap.forEach((d) => {
+                const t = d.data() as Transaction;
+                total += t.type === 'income' ? t.amount : -t.amount;
+              });
+              setAllTimeSavings(total);
+              // Persist into settings so this never runs again.
+              updateDoc(doc(db, 'app_settings', snapshot.docs[0].id), {
+                allTimeSavings: total,
+              }).catch(console.error);
+              console.log(`[BillingGuard] Migration complete. allTimeSavings = $${total.toFixed(2)}`);
+            })
+            .catch(console.error);
+        }
 
         const cloudTradeEpoch = Number(settings.tradeTrackerEpoch || 0);
         if (Number.isFinite(cloudTradeEpoch) && cloudTradeEpoch > 0) {
@@ -364,6 +435,7 @@ export default function App() {
         const defaultSettings = {
           uid: currentUid,
           monthlyBudget: 0,
+          allTimeSavings: 0,
           tradeTrackerEpoch: 0,
           merchantCategoryMap: {},
           customExpenseCategories: [],
@@ -374,11 +446,12 @@ export default function App() {
       } else {
         setSettingsDocId(null);
         setMonthlyBudget(0);
+        setAllTimeSavings(0);
         setMerchantToCategory({});
         setCustomCategories([]);
         setCustomSources(defaultSourceOptions);
       }
-    }, (error) => console.error("App settings listener error:", error));
+    }, (error) => console.error("[Firebase Sync] App settings listener error:", error));
 
     setIsLoading(false);
 
@@ -388,51 +461,52 @@ export default function App() {
       unsubscribeBudgets();
       unsubscribeExercises();
       unsubscribeNotes();
+      unsubscribeLoans();
       unsubscribeSettings();
     };
   }, [user, isAuthReady]);
 
   // Trade tracker persisted-state listeners for dashboard buffer cards.
+  // NOTE: The binance_positions sub-collection listener has been REMOVED from here.
+  // openPositions count is now read from user_trades_sync metadata (1 doc instead of N docs).
   useEffect(() => {
     if (!user?.uid) return;
 
     const metricsRef = doc(db, 'binance_metrics', user.uid);
     const syncRef = doc(db, 'user_trades_sync', user.uid);
-    const positionsRef = collection(db, 'binance_positions', user.uid, 'items');
 
     const unsubscribeMetrics = onSnapshot(metricsRef, (snap) => {
       const data = snap.data() as PersistedMetrics | undefined;
       setTradeBufferState((prev) => ({
         ...prev,
         totalNetPnl: data?.totalNetPnl || 0,
+        totalUnrealizedPnl: data?.totalUnrealizedPnl || 0,
+        totalFees: data?.totalFees || 0,
+        avgHoldDuration: {
+          winner: data?.avgHoldTimeWinner || 0,
+          loser: data?.avgHoldTimeLoser || 0,
+        },
+        tagPerformance: data?.tagPerformance || {},
       }));
     });
 
+    // openPositions is now sourced from sync metadata (saved by the sync service)
+    // instead of reading every position document individually.
     const unsubscribeSync = onSnapshot(syncRef, (snap) => {
       const data = snap.data() as TradeSyncMetadata | undefined;
       setTradeBufferState((prev) => ({
         ...prev,
         lastSyncAt: data?.lastSyncTime || null,
         hasError: !!data?.hasError,
-        closedPositions: data?.positionsCount || 0
-      }));
-    });
-
-    const unsubscribePositions = onSnapshot(positionsRef, (snap) => {
-      let openCount = 0;
-      snap.forEach((docSnap) => {
-        if (docSnap.data().status === 'OPEN') openCount++;
-      });
-      setTradeBufferState((prev) => ({
-        ...prev,
-        openPositions: openCount,
+        closedPositions: data?.positionsCount || 0,
+        // openPositionsCount is not in TradeSyncMetadata yet; keep previous value.
+        openPositions: prev.openPositions,
       }));
     });
 
     return () => {
       unsubscribeMetrics();
       unsubscribeSync();
-      unsubscribePositions();
     };
   }, [user?.uid]);
 
@@ -451,10 +525,13 @@ export default function App() {
     }
 
     const triggerSync = async () => {
+      if (isSyncingTrades) return;
       try {
         const idToken = await user.getIdToken();
         console.log("[Sync Service] Triggering daily automated background sync...");
+        setIsSyncingTrades(true);
         const result = await performGlobalTradeSync(idToken, user.uid);
+        setIsSyncingTrades(false);
         
         if (result.success) {
           localStorage.setItem(SYNC_KEY, Date.now().toString());
@@ -496,8 +573,35 @@ export default function App() {
   };
 
   const deleteTransaction = async (id: string) => {
+    if (isSyncingFinancials) {
+      toast.error('Financial sync in progress. Please wait.');
+      return;
+    }
+    if (!settingsDocId) {
+      await deleteDoc(doc(db, 'transactions', id)).catch(console.error);
+      toast.success('Transaction deleted.');
+      return;
+    }
     try {
-      await deleteDoc(doc(db, 'transactions', id));
+      // Find the transaction in local state first.
+      // If not found (e.g. it's older than our limit(50) window), fetch it from Firestore.
+      let tx = transactions.find(t => t.id === id);
+      if (!tx) {
+        const snap = await getDoc(doc(db, 'transactions', id));
+        if (snap.exists()) {
+          tx = { ...snap.data(), id: snap.id } as Transaction;
+        }
+      }
+
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'transactions', id));
+      if (tx) {
+        const delta = tx.type === 'income' ? -tx.amount : tx.amount;
+        batch.update(doc(db, 'app_settings', settingsDocId), {
+          allTimeSavings: increment(delta),
+        });
+      }
+      await batch.commit();
       toast.success('Transaction deleted.');
     } catch (error) {
       console.error('Error deleting transaction:', error);
@@ -506,12 +610,88 @@ export default function App() {
   };
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
+    if (isSyncingFinancials) {
+      toast.error('Financial sync in progress. Please wait.');
+      return;
+    }
+    if (!settingsDocId) {
+      await updateDoc(doc(db, 'transactions', id), updates).catch(console.error);
+      toast.success('Transaction updated.');
+      return;
+    }
     try {
-      await updateDoc(doc(db, 'transactions', id), updates);
+      // Find locally first; fall back to Firestore if outside the limit(50) window.
+      let tx = transactions.find(t => t.id === id);
+      if (!tx && (updates.amount !== undefined || updates.type !== undefined)) {
+        const snap = await getDoc(doc(db, 'transactions', id));
+        if (snap.exists()) {
+          tx = { ...snap.data(), id: snap.id } as Transaction;
+        }
+      }
+
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'transactions', id), updates);
+
+      // Recalculate the aggregate delta if amount or type changed.
+      if (tx && (updates.amount !== undefined || updates.type !== undefined)) {
+        const oldContribution = tx.type === 'income' ? tx.amount : -tx.amount;
+        const newType = updates.type ?? tx.type;
+        const newAmount = updates.amount ?? tx.amount;
+        const newContribution = newType === 'income' ? newAmount : -newAmount;
+        const delta = newContribution - oldContribution;
+        if (delta !== 0) {
+          batch.update(doc(db, 'app_settings', settingsDocId), {
+            allTimeSavings: increment(delta),
+          });
+        }
+      }
+
+      await batch.commit();
       toast.success('Transaction updated.');
     } catch (error) {
       console.error('Error updating transaction:', error);
       toast.error('Could not update transaction.');
+    }
+  };
+
+  const handleRecalculateFinancials = async () => {
+    if (!user?.uid || !settingsDocId || isSyncingFinancials) return;
+    setIsSyncingFinancials(true);
+    try {
+      toast.info('Recalculating all-time savings...');
+      const snap = await getDocs(query(collection(db, 'transactions'), where('uid', '==', user.uid)));
+      let total = 0;
+      snap.forEach((d) => {
+        const t = d.data() as Transaction;
+        total += t.type === 'income' ? t.amount : -t.amount;
+      });
+      await updateDoc(doc(db, 'app_settings', settingsDocId), { allTimeSavings: total });
+      setAllTimeSavings(total);
+      toast.success(`Financials synchronized. Total savings: $${total.toFixed(2)}`);
+    } catch (error) {
+      console.error('Recalculation error:', error);
+      toast.error('Failed to recalculate financials.');
+    } finally {
+      setIsSyncingFinancials(false);
+    }
+  };
+
+  const loadTransactionsByRange = async (start: string, end: string) => {
+    if (!user?.uid) return [];
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, 'transactions'),
+          where('uid', '==', user.uid),
+          where('date', '>=', start),
+          where('date', '<=', end + 'T23:59:59')
+        )
+      );
+      return snap.docs.map(d => ({ ...d.data(), id: d.id } as Transaction));
+    } catch (error) {
+      console.error('Error loading historical range:', error);
+      toast.error('Could not load historical transactions.');
+      return [];
     }
   };
 
@@ -602,8 +782,32 @@ export default function App() {
     }
   };
 
+  const handleUpdateTradeEpoch = async (timestamp: number) => {
+    if (!user?.uid || isSyncingTrades) {
+      if (isSyncingTrades) toast.error('Sync in progress. Cannot change settings.');
+      return;
+    }
+    
+    try {
+      const resetEpoch = timestamp.toString();
+      localStorage.setItem('binance_trade_epoch', resetEpoch);
+      localStorage.setItem('binance_last_pruned_epoch', resetEpoch);
+      localStorage.removeItem('binance_price_snapshot');
+      localStorage.removeItem('binance_baseline_trades');
+      
+      await upsertAppSettings({ tradeTrackerEpoch: timestamp });
+      toast.success('Tracking start date updated.');
+    } catch (error) {
+      console.error('Epoch Update Error:', error);
+      toast.error('Could not update tracking start date.');
+    }
+  };
+
   const handleTradeTrackerHardReset = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || isSyncingTrades) {
+      if (isSyncingTrades) toast.error('Sync in progress. Cannot reset now.');
+      return;
+    }
     
     try {
       const resetEpoch = Date.now().toString();
@@ -665,6 +869,7 @@ export default function App() {
 
         await upsertAppSettings({
           monthlyBudget: 0,
+          allTimeSavings: 0,
           deepWork: true,
           notifications: false,
           merchantCategoryMap: {},
@@ -682,8 +887,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (tasks.length === 0) return;
-
     const resetKey = `synapse_last_recurrence_reset_${user?.uid || 'guest'}`;
 
     const checkDailyReset = () => {
@@ -691,10 +894,38 @@ export default function App() {
       if (!italyToday) return;
       if (localStorage.getItem(resetKey) === italyToday) return;
 
+      // Persist the reset marker even on empty task lists so newly created tasks
+      // later in the day are not immediately marked as missed.
+      if (tasks.length === 0) {
+        localStorage.setItem(resetKey, italyToday);
+        return;
+      }
+
       let dailyTasksToReset: string[] = [];
       let dailyTasksToMarkMissed: string[] = [];
 
       const todayObj = new Date();
+
+      const isScheduledToday = (task: Task) => {
+        if (!task.recurrence || task.recurrence.type === 'daily') return true;
+        if (task.recurrence.type === 'none') return false;
+        if (task.recurrence.type === 'weekly') {
+          return !!task.recurrence.daysOfWeek?.includes(todayObj.getDay());
+        }
+        if (task.recurrence.type === 'monthly') {
+          return !!task.recurrence.dateOfMonth && task.recurrence.dateOfMonth === todayObj.getDate();
+        }
+        if (task.recurrence.type === 'interval') {
+          if (!task.recurrence.intervalDays) return false;
+          if (!task.lastCompletedAt) return true;
+          const lastCompletedObj = new Date(task.lastCompletedAt);
+          if (Number.isNaN(lastCompletedObj.getTime())) return true;
+          const diffTime = Math.abs(todayObj.getTime() - lastCompletedObj.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays >= task.recurrence.intervalDays;
+        }
+        return false;
+      };
 
       (tasks || []).forEach(t => {
         if (t.taskCategory !== 'daily') return;
@@ -705,27 +936,18 @@ export default function App() {
           const italyCompletedDate = getItalyDateKey(t.lastCompletedAt);
           if (!italyCompletedDate || italyCompletedDate === italyToday) return;
 
-          let shouldReset = false;
-          if (!t.recurrence || t.recurrence.type === 'daily') {
-            shouldReset = true;
-          } else if (t.recurrence.type === 'weekly' && t.recurrence.daysOfWeek) {
-            shouldReset = t.recurrence.daysOfWeek.includes(todayObj.getDay());
-          } else if (t.recurrence.type === 'monthly' && t.recurrence.dateOfMonth) {
-            shouldReset = t.recurrence.dateOfMonth === todayObj.getDate();
-          } else if (t.recurrence.type === 'interval' && t.recurrence.intervalDays) {
-            const lastCompletedObj = new Date(t.lastCompletedAt);
-            const diffTime = Math.abs(todayObj.getTime() - lastCompletedObj.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            shouldReset = diffDays >= t.recurrence.intervalDays;
-          }
-
-          if (shouldReset) {
+          if (isScheduledToday(t)) {
             dailyTasksToReset.push(t.id);
           }
           return;
         }
 
         if (t.status === 'todo' && !t.isMissedDaily) {
+          if (!isScheduledToday(t)) return;
+
+          const createdItalyDate = t.createdAt ? getItalyDateKey(t.createdAt) : '';
+          if (createdItalyDate && createdItalyDate === italyToday) return;
+
           dailyTasksToMarkMissed.push(t.id);
         }
       });
@@ -789,20 +1011,39 @@ export default function App() {
   };
 
   const updateTaskStatus = async (taskId: string, status: Task['status']) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      const updates: Partial<Task> = { status };
+    // 1. Optimistic Update
+    const originalTasks = [...tasks];
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) return;
 
-      if (status === 'done' && task?.status !== 'done') {
+    const task = tasks[taskIndex];
+    const newTasks = [...tasks];
+    const updates: Partial<Task> = { status };
+
+    if (status === 'done' && task.status !== 'done') {
+      if (task.taskCategory === 'daily' && task.isMissedDaily) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        updates.lastCompletedAt = yesterday.toISOString();
+      } else {
         updates.lastCompletedAt = new Date().toISOString();
-        updates.isMissedDaily = false;
       }
+      updates.isMissedDaily = false;
+    }
 
+    newTasks[taskIndex] = { ...task, ...updates };
+    setTasks(newTasks);
+    haptics.light();
+
+    try {
       await updateDoc(doc(db, 'tasks', taskId), updates);
       toast.success('Task status updated.');
     } catch (error) {
+      // 2. Rollback on failure
+      setTasks(originalTasks);
       console.error('Error updating task status:', error);
       toast.error('Could not update task status.');
+      haptics.error();
     }
   };
 
@@ -823,26 +1064,64 @@ export default function App() {
   };
 
   const deleteTask = async (taskId: string) => {
+    // 1. Optimistic Update
+    const originalTasks = [...tasks];
+    setTasks(tasks.filter(t => t.id !== taskId));
+    haptics.heavy();
+
     try {
       await deleteDoc(doc(db, 'tasks', taskId));
       toast.success('Task deleted.');
     } catch (error) {
+      // 2. Rollback
+      setTasks(originalTasks);
       console.error('Error deleting task:', error);
       toast.error('Could not delete task.');
+      haptics.error();
     }
   };
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    if (isSyncingFinancials) {
+      toast.error('Financial sync in progress. Please wait.');
+      return;
+    }
+
+    // 1. Optimistic Update
+    const originalTransactions = [...transactions];
+    const optimisticTransaction: Transaction = {
+      ...transaction,
+      id: 'temp-' + Date.now(),
+      uid: user?.uid || null,
+      createdAt: new Date().toISOString(),
+    };
+    setTransactions([optimisticTransaction, ...transactions]);
+    haptics.light();
+
     try {
-      await addDoc(collection(db, 'transactions'), {
+      // Use a batch to atomically add the transaction AND update the aggregate.
+      const batch = writeBatch(db);
+      const newTransRef = doc(collection(db, 'transactions'));
+      batch.set(newTransRef, {
         ...transaction,
         uid: user?.uid || null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
+      // Update the running aggregate in app_settings.
+      if (settingsDocId) {
+        const delta = transaction.type === 'income' ? transaction.amount : -transaction.amount;
+        batch.update(doc(db, 'app_settings', settingsDocId), {
+          allTimeSavings: increment(delta),
+        });
+      }
+      await batch.commit();
       toast.success('Transaction saved.');
     } catch (error) {
+      // 2. Rollback
+      setTransactions(originalTransactions);
       console.error('Error adding transaction:', error);
       toast.error('Could not save transaction.');
+      haptics.error();
     }
   };
 
@@ -857,6 +1136,58 @@ export default function App() {
     } catch (error) {
       console.error('Error adding exercise session:', error);
       toast.error('Could not save exercise session.');
+    }
+  };
+
+  const addLoan = async (loan: Omit<Loan, 'id' | 'uid'>) => {
+    if (!user?.uid) return;
+    try {
+      await addDoc(collection(db, 'loans'), {
+        ...loan,
+        uid: user.uid,
+        createdAt: loan.createdAt || new Date().toISOString()
+      });
+      toast.success('Loan record added.');
+    } catch (error) {
+      console.error('Error adding loan:', error);
+      toast.error('Could not save loan record.');
+    }
+  };
+
+  const updateLoan = async (id: string, updates: Partial<Loan>) => {
+    try {
+      await updateDoc(doc(db, 'loans', id), {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      });
+      toast.success('Loan record updated.');
+    } catch (error) {
+      console.error('Error updating loan:', error);
+      toast.error('Could not update loan record.');
+    }
+  };
+
+  const deleteLoan = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'loans', id));
+      toast.success('Loan record deleted.');
+    } catch (error) {
+      console.error('Error deleting loan:', error);
+      toast.error('Could not delete loan record.');
+    }
+  };
+
+  const toggleLoanStatus = async (id: string, currentStatus: 'pending' | 'settled') => {
+    const nextStatus = currentStatus === 'pending' ? 'settled' : 'pending';
+    try {
+      await updateDoc(doc(db, 'loans', id), {
+        status: nextStatus,
+        updatedAt: new Date().toISOString()
+      });
+      toast.success(nextStatus === 'settled' ? 'Loan marked as settled.' : 'Loan marked as active.');
+    } catch (error) {
+      console.error('Error toggling loan status:', error);
+      toast.error('Could not update loan status.');
     }
   };
 
@@ -884,46 +1215,107 @@ export default function App() {
         );
       case 'tasks':
         return (
-          <Tasks 
-            tasks={tasks} 
-            notes={notes}
-            onUpdateStatus={updateTaskStatus} 
-            onAddTask={() => {
-              setEditingTask(null);
-              setIsTaskModalOpen(true);
-            }} 
-            onEditTask={(task) => {
-              setEditingTask(task);
-              setIsTaskModalOpen(true);
-            }}
-            onDeleteTask={deleteTask}
-            onAddNote={addNote}
-            onDeleteNote={deleteNote}
-          />
+          <div className="theme-tasks">
+            <Tasks 
+              tasks={tasks} 
+              notes={notes}
+              onUpdateStatus={updateTaskStatus} 
+              onAddTask={() => {
+                setEditingTask(null);
+                setIsTaskModalOpen(true);
+              }} 
+              onEditTask={(task) => {
+                setEditingTask(task);
+                setIsTaskModalOpen(true);
+              }}
+              onDeleteTask={deleteTask}
+              onAddNote={addNote}
+              onDeleteNote={deleteNote}
+              onLoadHistory={async () => {
+                if (!user?.uid) return [];
+                const snap = await getDocs(
+                  query(
+                    collection(db, 'tasks'),
+                    where('uid', '==', user.uid),
+                    where('status', '==', 'done'),
+                    where('taskCategory', '==', 'long-term'),
+                    orderBy('lastCompletedAt', 'desc'),
+                    limit(100)
+                  )
+                );
+                return snap.docs.map(d => ({ ...d.data(), id: d.id } as Task));
+              }}
+            />
+          </div>
         );
       case 'expenses':
         return (
-          <Expenses 
-            transactions={transactions} 
-            budgets={budgets}
-            onAddExpense={() => {
-              setEditingTransaction(null);
-              setIsExpenseModalOpen(true);
-            }} 
-            onEditExpense={(t) => {
-              setEditingTransaction(t);
-              setIsExpenseModalOpen(true);
-            }}
-            onDeleteExpense={deleteTransaction}
-            onUpsertBudget={upsertBudget}
-            globalMonthlyBudget={monthlyBudget}
-            onSetGlobalBudget={setGlobalBudget}
+          <div className="theme-expenses">
+            <Expenses 
+              transactions={transactions}
+              budgets={budgets}
+              onAddExpense={() => {
+                setEditingTransaction(null);
+                setIsExpenseModalOpen(true);
+              }}
+              onEditExpense={(t) => {
+                setEditingTransaction(t);
+                setIsExpenseModalOpen(true);
+              }}
+              onDeleteExpense={deleteTransaction}
+              onUpsertBudget={upsertBudget}
+              globalMonthlyBudget={monthlyBudget}
+              onSetGlobalBudget={(limit) => {
+                if (!settingsDocId) return;
+                updateDoc(doc(db, 'app_settings', settingsDocId), { monthlyBudget: limit });
+              }}
+              allTimeSavings={allTimeSavings}
+              onLoadRange={loadTransactionsByRange}
+              isSyncing={isSyncingFinancials}
+            />
+          </div>
+        );
+      case 'loans':
+        return (
+          <Loans
+            loans={loans}
+            onAddLoan={addLoan}
+            onEditLoan={updateLoan}
+            onDeleteLoan={deleteLoan}
+            onToggleStatus={toggleLoanStatus}
+            totalUnrealizedPnl={tradeBufferState.totalUnrealizedPnl}
           />
+        );
+      case 'trade-tracker':
+        return (
+          <div className="theme-trades">
+            <TradeTracker 
+              onSyncTrades={async () => {
+                if (isSyncingTrades) return;
+                const idToken = await user?.getIdToken();
+                if (idToken && user?.uid) {
+                  toast.info('Starting manual sync...');
+                  setIsSyncingTrades(true);
+                  try {
+                    const result = await performGlobalTradeSync(idToken, user.uid);
+                    if (result.success) {
+                      toast.success(result.tradeCount > 0 ? `Synced ${result.tradeCount} trades.` : 'No new trades found.');
+                    } else {
+                      toast.error(result.error || 'Sync failed.');
+                    }
+                  } catch {
+                    toast.error('Sync failed unexpectedly.');
+                  } finally {
+                    setIsSyncingTrades(false);
+                  }
+                }
+              }}
+              isSyncing={isSyncingTrades}
+            />
+          </div>
         );
       case 'exercises':
         return <Exercises sessions={exerciseSessions} onLogSession={() => setIsExerciseModalOpen(true)} />;
-      case 'trade-tracker':
-        return <TradeTracker />;
       case 'api-check':
         return <TempApiKeyCheck />;
       case 'settings':
@@ -933,7 +1325,11 @@ export default function App() {
             onLogin={handleLogin}
             onSystemReset={handleSystemReset}
             onTradeReset={handleTradeTrackerHardReset}
+            onUpdateTradeEpoch={handleUpdateTradeEpoch}
             onOpenApiCheck={() => setActiveTab('api-check')}
+            onRecalculateFinancials={handleRecalculateFinancials}
+            isSyncingFinancials={isSyncingFinancials}
+            isSyncingTrades={isSyncingTrades}
           />
         );
       default:
@@ -1001,8 +1397,22 @@ export default function App() {
     }
   };
 
+  const orbPosition = useMemo(() => {
+    switch (activeTab) {
+      case 'dashboard': return 'top-[-100px] right-[-100px]';
+      case 'tasks': return 'bottom-[-100px] right-[-100px]';
+      case 'expenses': return 'top-[-100px] left-[-100px]';
+      case 'exercises': return 'bottom-[-100px] left-[-100px]';
+      case 'trade-tracker': return 'top-[20%] right-[10%]';
+      default: return 'top-[-100px] right-[-100px]';
+    }
+  }, [activeTab]);
+
   return (
-    <div className="min-h-screen bg-bg text-ink/90 selection:bg-accent/30 selection:text-white">
+    <div className={`min-h-screen bg-bg text-ink/90 selection:bg-accent/30 selection:text-white theme-${activeTab}`}>
+      {/* Premium Background Elements */}
+      <div className={`premium-orb ${orbPosition} bg-accent`} />
+      <div className="contextual-glow" />
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
@@ -1010,16 +1420,31 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-4 md:p-6 lg:p-10 pt-[env(safe-area-inset-top)] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-3 md:p-5 lg:p-8 xl:p-10 pt-[env(safe-area-inset-top)] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
-        <div>
+        <div className="relative">
           {isLoading ? (
             <TabSkeleton activeTab={activeTab} />
           ) : (
-            <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
-              {renderContent()}
-            </Suspense>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                transition={{ 
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 20,
+                  mass: 0.5
+                }}
+              >
+                <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
+                  {renderContent()}
+                </Suspense>
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </main>
@@ -1056,7 +1481,12 @@ export default function App() {
               setIsTaskModalOpen(false);
               setEditingTask(null);
             }}
-            onSave={editingTask ? (updates) => updateTask(editingTask.id, updates) : addTask}
+            onSave={(payload) => {
+              if (editingTask) {
+                return updateTask(editingTask.id, payload as Partial<Task>);
+              }
+              return addTask(payload as Omit<Task, 'id'>);
+            }}
             task={editingTask || undefined}
           />
 
@@ -1068,7 +1498,7 @@ export default function App() {
         </div>
       </div>
 
-      <Toaster position="bottom-left" theme="light" />
+      <Toaster position="bottom-left" theme="light" toastOptions={{ style: { background: 'var(--color-surface)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' } }} />
     </div>
   );
 }

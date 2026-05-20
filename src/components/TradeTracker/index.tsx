@@ -22,13 +22,18 @@ import {
   loadPersistedBalances,
 } from '../../services/tradePersistenceService';
 import { db, auth } from '../../firebase';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 import { performGlobalTradeSync } from '../../services/tradeSyncService';
 import { useTradeAnalytics } from './useTradeAnalytics';
 
-const TradeTracker = () => {
+interface TradeTrackerProps {
+  onSyncTrades?: () => void;
+  isSyncing?: boolean;
+}
+
+const TradeTracker = ({ onSyncTrades, isSyncing }: TradeTrackerProps) => {
   const [baseUrl] = useState(localStorage.getItem('binance_base_url') || 'https://api.binance.com');
   const [symbols, setSymbols] = useState<string[]>(() => {
     const stored = localStorage.getItem('binance_symbols');
@@ -89,9 +94,11 @@ const TradeTracker = () => {
     let active = true;
     (async () => {
       try {
-        const persisted = await loadPersistedPositions(user.uid);
-        const persistedMetricSnapshot = await loadPersistedMetrics(user.uid);
-        const persistedBalances = await loadPersistedBalances(user.uid);
+        const [persisted, persistedMetricSnapshot, persistedBalances] = await Promise.all([
+          loadPersistedPositions(user.uid),
+          loadPersistedMetrics(user.uid),
+          loadPersistedBalances(user.uid)
+        ]);
         if (!active || persisted.length === 0) {
           if (active && persistedBalances.length > 0) setBalances(persistedBalances);
           return;
@@ -119,10 +126,13 @@ const TradeTracker = () => {
     };
   }, [user]);
 
-  // Sync Positions from Firestore in real-time
+  // Sync Positions from Firestore in real-time (Limit 30)
   useEffect(() => {
     if (!user) return;
-    const q = collection(db, 'binance_positions', user.uid, 'items');
+    const q = query(
+      collection(db, 'binance_positions', user.uid, 'items'),
+      limit(50)
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const livePositions: Position[] = [];
       snapshot.forEach((docSnap) => {
@@ -308,60 +318,60 @@ const TradeTracker = () => {
     <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
 
       {/* Header & Integrated Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-border/50 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 border-b border-border/50 pb-6">
          <div>
-            <h2 className="text-3xl font-black text-ink tracking-tight uppercase flex items-center gap-3">
+          <h2 className="text-2xl sm:text-3xl font-black text-ink tracking-tight uppercase flex flex-wrap items-center gap-2 sm:gap-3">
               Trade Tracker
-               {syncSource !== 'none' && (
-                 <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${
-                   syncSource === 'live' ? 'bg-success/5 border-success/20 text-success' : 'bg-accent/5 border-accent/20 text-accent'
-                 }`}>
-                   {syncSource === 'live' ? 'Live ' : 'Cached '}
-                   {lastSyncAt ? format(new Date(lastSyncAt), 'HH:mm') : ''}
-                 </span>
-               )}
+               {syncSource !== 'none' ? (
+               <span className={`text-xs px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${
+                    syncSource === 'live' ? 'bg-success/5 border-success/20 text-success' : 'bg-accent/5 border-accent/20 text-accent'
+                  }`}>
+                    {syncSource === 'live' ? 'Live ' : 'Cached '}
+                    {lastSyncAt ? format(new Date(lastSyncAt), 'HH:mm') : ''}
+                  </span>
+               ) : null}
             </h2>
-            <p className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] mt-2">Track open positions, closed trades, and live valuation</p>
+          <p className="text-[11px] sm:text-[10px] font-black text-muted/60 uppercase tracking-[0.08em] sm:tracking-[0.2em] mt-2">Track open positions, closed trades, and live valuation</p>
          </div>
          
-         <div className="flex flex-wrap items-center gap-3 mt-4 sm:mt-0">
+        <div className="flex w-full sm:w-auto flex-wrap items-start gap-2 sm:gap-3 mt-2 sm:mt-0">
             <button onClick={exportData} className="w-10 h-10 bg-surface-subtle hover:bg-surface border border-border rounded-full flex items-center justify-center transition-all active:scale-95 shadow-sm text-muted hover:text-ink">
               <Download className="w-4 h-4" />
             </button>
             <button 
-               onClick={() => toast.info('Manual Position Entry: Initializing structural update...')}
-               className="h-10 px-6 border bg-transparent border-accent/20 text-accent hover:bg-accent/5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+               onClick={() => toast.info('Manual Position Entry: Coming Soon')}
+            className="h-10 px-4 sm:px-6 border bg-transparent border-border text-muted hover:bg-surface-subtle rounded-full text-xs font-black uppercase tracking-widest transition-all cursor-not-allowed"
             >
-               Manual Log
+               Manual Log (Soon)
             </button>
             <button 
-               onClick={handleFetchTrades} 
-               disabled={isLoading}
-               className={`h-10 px-8 flex items-center gap-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${isLoading ? 'opacity-50 border-teal-500/10 text-teal-500 bg-transparent' : 'border-teal-500/30 text-teal-500 bg-teal-500/5 hover:bg-teal-500/10'}`}
+               onClick={onSyncTrades} 
+               disabled={isSyncing}
+            className={`h-10 px-4 sm:px-8 flex items-center gap-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-widest transition-all border ${isSyncing ? 'opacity-50 border-teal-500/10 text-teal-500 bg-transparent' : 'border-teal-500/30 text-teal-500 bg-teal-500/5 hover:bg-teal-500/10'}`}
             >
-               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Syncing' : 'Sync Trades'}
+               <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing' : 'Sync Trades'}
             </button>
          </div>
       </div>
 
-        {isLoading && (
+        {isLoading ? (
           <div className="rounded-2xl border border-teal-500/20 bg-teal-500/5 px-4 py-3 text-center">
-           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-500">Fetching latest trade data</p>
+           <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.2em] text-teal-500">Fetching latest trade data</p>
           </div>
-        )}
+        ) : null}
 
       {/* High-Density Flight Deck (Consolidated Top Metrics) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 w-full">
         {/* Left: Total Wealth Cluster */}
           <div className="lg:col-span-5 p-5 lg:p-6 rounded-2xl border border-border/50 bg-surface-subtle/30 flex flex-col justify-between shadow-sm group hover:border-accent/30 transition-colors">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-start justify-between gap-3 mb-4">
             <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">
                Total Liquid Wealth
             </span>
-            <span className="text-[8px] font-bold px-2 py-0.5 rounded bg-teal-500/10 text-teal-500 uppercase tracking-widest border border-teal-500/20">
-              USDC Base
-            </span>
+             <span className="text-xs font-bold px-2 py-0.5 rounded bg-up/10 text-up uppercase tracking-widest border border-up/20">
+               USDC Base
+             </span>
           </div>
           <div>
             <div className="text-3xl sm:text-4xl lg:text-5xl font-mono font-black tracking-tighter text-ink mb-4 group-hover:text-accent transition-colors">
@@ -389,21 +399,21 @@ const TradeTracker = () => {
         {/* Right: Intel Command Strip */}
         <div className="lg:col-span-7 flex flex-wrap sm:flex-nowrap divide-y sm:divide-y-0 divide-x-0 sm:divide-x divide-border/30 border border-border/50 rounded-2xl bg-surface-subtle/10 shadow-sm">
           {[
-            { label: 'PROFIT FACTOR', value: displayMetrics.profitFactor !== null ? displayMetrics.profitFactor.toFixed(2) : 'PERF', color: 'text-accent' },
+             { label: 'PROFIT FACTOR', value: displayMetrics.profitFactor !== null ? displayMetrics.profitFactor.toFixed(2) : 'PERF', color: 'text-accent' },
             { label: 'WIN RATE', value: `${(displayMetrics.winRate || 0).toFixed(1)}%`, sub: `${displayMetrics.profitableTrades || 0}/${displayMetrics.totalTrades || 0}`, color: 'text-ink' },
-            { label: 'FEE DRAG', value: displayMetrics.feeDragPct ? `${displayMetrics.feeDragPct.toFixed(1)}%` : '0%', color: 'text-coral' },
+            { label: 'FEE DRAG', value: displayMetrics.feeDragPct ? `${displayMetrics.feeDragPct.toFixed(1)}%` : '0%', color: 'text-down' },
             { 
               label: 'NET PNL', 
               value: `${displayMetrics.totalEquityPnl >= 0 ? '+' : ''}${displayMetrics.totalEquityPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
               sub: `R: ${displayMetrics.totalNetPnl.toFixed(1)} / U: ${displayMetrics.totalUnrealizedPnl.toFixed(1)}`,
-              color: displayMetrics.totalEquityPnl >= 0 ? 'text-success' : 'text-coral' 
+              color: displayMetrics.totalEquityPnl >= 0 ? 'text-up' : 'text-down' 
             },
           ].map((m, i) => (
             <div key={i} className="flex-1 w-1/2 sm:w-auto p-4 lg:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/40 transition-colors border-border/30">
               <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.2em] mb-1.5">{m.label}</span>
               <div className="flex items-baseline gap-2">
                  <span className={`text-lg sm:text-xl lg:text-2xl font-mono font-black tracking-tighter ${m.color}`}>{m.value}</span>
-                 {m.sub && <span className="text-[9px] font-bold text-muted/40 uppercase hidden sm:inline-block">{m.sub}</span>}
+                 {m.sub ? <span className="text-[9px] font-bold text-muted/40 uppercase hidden sm:inline-block">{m.sub}</span> : null}
               </div>
             </div>
           ))}
@@ -413,14 +423,14 @@ const TradeTracker = () => {
       {/* Main Content */}
       <div className="flex flex-col gap-12 lg:gap-16">
           <div className="w-full relative">
-          <div className="sticky top-0 z-10 bg-bg/90 backdrop-blur-xl pb-6 pt-2 mb-4 px-2 flex justify-between items-center border-b border-border/50">
-            <h2 className="text-2xl font-display font-black text-ink uppercase tracking-tight">Active Ledger</h2>
-            <div className="flex gap-1.5 p-1 bg-surface-subtle/50 rounded-full border border-border">
+          <div className="sticky top-0 z-10 bg-bg/90 backdrop-blur-xl pb-4 sm:pb-6 pt-2 mb-4 px-2 sm:px-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-border/50">
+            <h2 className="text-xl sm:text-2xl font-display font-black text-ink uppercase tracking-tight">Active Ledger</h2>
+            <div className="flex w-full sm:w-auto gap-1.5 p-1 bg-surface-subtle/50 rounded-full border border-border">
               {['ALL', 'OPEN', 'CLOSED'].map(f => (
                 <button 
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all ${filter === f ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-all ${filter === f ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                   aria-label={`Filter by ${f}`}
                 >
                   {f}
@@ -436,7 +446,7 @@ const TradeTracker = () => {
                 <p className="micro-label text-muted uppercase mb-4 tracking-[0.3em] opacity-60">
                   {positions.length === 0 ? 'No trades loaded yet' : 'No positions in this filter'}
                 </p>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted/40 max-w-sm mx-auto">
+                <p className="text-[11px] sm:text-[10px] font-medium uppercase tracking-[0.08em] sm:tracking-[0.18em] text-muted/40 max-w-sm mx-auto">
                   {positions.length === 0 ? 'Sync trades to populate the ledger and valuations.' : 'Try another filter to see open or closed positions.'}
                 </p>
               </div>
@@ -455,19 +465,19 @@ const TradeTracker = () => {
                   layout
                   className="glass-card overflow-hidden group hover:border-border transition-colors"
                 >
-                  <div className="p-5 sm:p-6 lg:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 sm:gap-8">
-                    <div className="flex items-center gap-6">
-                      <div className={`w-14 h-14 rounded-full border flex items-center justify-center font-mono font-black text-sm uppercase tracking-tighter transition-all group-hover:scale-105 ${pos.realizedPnl >= 0 ? 'bg-success/5 border-success/20 text-success shadow-[0_0_20px_rgba(52,211,153,0.1)]' : 'bg-coral/5 border-coral/20 text-coral shadow-[0_0_20px_rgba(255,107,107,0.1)]'}`}>
+                    <div className="p-5 sm:p-6 lg:p-8 flex flex-col md:flex-row justify-between items-start gap-6 sm:gap-8">
+                    <div className="flex items-start gap-4 sm:gap-6 min-w-0 w-full md:w-auto">
+                      <div className={`w-14 h-14 rounded-full border flex items-center justify-center font-mono font-black text-sm uppercase tracking-tighter transition-all group-hover:scale-105 ${pos.realizedPnl >= 0 ? 'bg-up/5 border-up/20 text-up shadow-[0_0_20px_rgba(52,211,153,0.1)]' : 'bg-down/5 border-down/20 text-down shadow-[0_0_20px_rgba(255,107,107,0.1)]'}`}>
                         {pos.symbol.slice(0, 3)}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-2xl font-display font-bold text-ink uppercase tracking-tight leading-none">{pos.symbol}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+                          <span className="text-xl sm:text-2xl font-display font-bold text-ink uppercase tracking-tight leading-none break-all">{pos.symbol}</span>
                           <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest border flex items-center justify-center ${pos.status === 'OPEN' ? 'bg-accent/10 border-accent/30 text-accent shadow-[0_0_10px_rgba(114,137,253,0.2)]' : 'bg-surface-subtle border-border text-muted'}`}>
                             {pos.status}
                           </span>
                         </div>
-                        <div className="text-[10px] font-mono font-bold text-muted/60 flex items-center gap-2.5 uppercase tracking-widest">
+                        <div className="text-[10px] font-mono font-bold text-muted/60 flex items-center gap-2.5 uppercase tracking-[0.1em] sm:tracking-widest flex-wrap">
                           <Clock className="w-3 h-3" />
                           {format(pos.entryTime, 'MMM d HH:mm')}
                           {pos.exitTime && (
@@ -480,7 +490,7 @@ const TradeTracker = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-12 w-full md:w-auto mt-4 md:mt-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-12 w-full md:w-auto mt-2 md:mt-0 items-start">
                       <div className="text-left">
                         <span className="block micro-label text-muted/50 mb-2 uppercase tracking-[0.2em] text-[9px]">AVG_IN</span>
                         <span className="font-mono font-bold text-sm text-ink">${pos.avgEntryPrice.toLocaleString(undefined, { minimumFractionDigits: pos.avgEntryPrice < 1 ? 6 : 2 })}</span>
@@ -500,24 +510,24 @@ const TradeTracker = () => {
 
                       {pos.status === 'CLOSED' ? (
                         <div className="text-left md:text-right col-span-2 md:col-span-1">
-                          <span className="block micro-label text-muted/50 mb-2 uppercase tracking-[0.2em] text-[9px]">FINAL P&L</span>
-                          <div className={`font-mono font-black text-lg tracking-tighter leading-none flex items-baseline gap-1.5 md:justify-end ${pos.realizedPnl >= 0 ? 'text-success' : 'text-coral'}`}>
-                            {pos.realizedPnl >= 0 ? '+' : ''}{(pos.realizedPnl || 0).toFixed(2)} <span className="text-[10px] uppercase">USDC</span>
-                            <div className="text-[10px] font-bold text-muted opacity-50 mt-1">({(pos.realizedPnlPercentage || 0).toFixed(1)}%)</div>
+                          <span className="block micro-label text-muted/50 mb-2 uppercase tracking-[0.2em]">FINAL P&L</span>
+                          <div className={`font-mono font-black text-lg tracking-tighter leading-none flex items-baseline gap-1.5 md:justify-end ${pos.realizedPnl >= 0 ? 'text-up' : 'text-down'}`}>
+                            {pos.realizedPnl >= 0 ? '+' : ''}{(pos.realizedPnl || 0).toFixed(2)} <span className="text-xs uppercase">USDC</span>
+                            <div className="text-xs font-bold text-muted opacity-50 mt-1">({(pos.realizedPnlPercentage || 0).toFixed(1)}%)</div>
                           </div>
                         </div>
                       ) : (
                         <div className="text-left md:text-right col-span-2 md:col-span-1">
-                          <span className="block micro-label text-muted/50 mb-2 uppercase tracking-[0.2em] text-[9px]">CURRENT P&L</span>
-                          <div className={`font-mono font-black text-lg tracking-tighter leading-none flex items-baseline gap-1.5 md:justify-end ${unrealizedPnl >= 0 ? 'text-success' : 'text-coral'}`}>
-                            {unrealizedPnl >= 0 ? '+' : ''}{unrealizedPnl.toFixed(2)} <span className="text-[10px] uppercase">USDC</span>
-                            <div className="text-[10px] font-bold text-muted opacity-50 mt-1">({unrealizedPct.toFixed(1)}%)</div>
+                          <span className="block micro-label text-muted/50 mb-2 uppercase tracking-[0.2em]">CURRENT P&L</span>
+                          <div className={`font-mono font-black text-lg tracking-tighter leading-none flex items-baseline gap-1.5 md:justify-end ${unrealizedPnl >= 0 ? 'text-up' : 'text-down'}`}>
+                            {unrealizedPnl >= 0 ? '+' : ''}{unrealizedPnl.toFixed(2)} <span className="text-xs uppercase">USDC</span>
+                            <div className="text-xs font-bold text-muted opacity-50 mt-1">({unrealizedPct.toFixed(1)}%)</div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto justify-end border-t md:border-t-0 border-border pt-6 md:pt-0">
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-end border-t md:border-t-0 border-border pt-6 md:pt-0 md:self-start">
                       <button 
                         onClick={() => handleOpenNoteModal(pos)}
                         className={`w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-95 border ${journals[pos.id]?.notes ? 'bg-accent/10 border-accent/40 text-accent shadow-lg shadow-accent/10' : 'bg-surface-subtle border-border text-muted hover:text-ink hover:bg-surface shadow-sm'}`}
@@ -561,23 +571,37 @@ const TradeTracker = () => {
                   <AreaChart data={equityCurveData}>
                     <defs>
                       <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#00d4aa" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#00d4aa" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="time" hide />
+                    <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" opacity={0.05} />
                     <Tooltip 
-                      cursor={{ stroke: 'rgba(255,255,255,0.05)', strokeWidth: 1 }}
-                      contentStyle={{ backgroundColor: '#050507', border: '1px solid #1a1a1c', borderRadius: '12px' }}
-                      itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                      cursor={{ stroke: 'var(--color-accent)', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const val = Number(payload[0].value);
+                          return (
+                            <div className="glass-card !p-3 shadow-xl border-white/10">
+                              <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">Equity Point</p>
+                              <p className={`text-sm font-mono font-black ${val >= 0 ? 'text-up' : 'text-down'}`}>
+                                {val >= 0 ? '+' : ''}{val.toFixed(2)} USDC
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="pnl" 
-                      stroke="#00d4aa" 
+                      stroke="var(--color-accent)" 
                       strokeWidth={3}
                       fillOpacity={1} 
                       fill="url(#colorPnl)" 
+                      animationDuration={2000}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -590,20 +614,20 @@ const TradeTracker = () => {
             <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight mb-8">Bias detection</h3>
             <div className="space-y-6">
               {biasMetrics.map(mistake => (
-                <div key={mistake.tag} className="flex justify-between items-center group">
-                  <div>
-                    <span className="text-[10px] font-black text-ink uppercase tracking-widest">{mistake.tag}</span>
-                    <span className="text-[10px] font-mono font-bold text-muted/50 ml-3 uppercase">FREQ: {mistake.count}</span>
+                <div key={mistake.tag} className="flex justify-between items-start sm:items-center gap-3 group">
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black text-ink uppercase tracking-[0.1em] sm:tracking-widest truncate block">{mistake.tag}</span>
+                    <span className="text-[10px] font-mono font-bold text-muted/50 uppercase block mt-1">FREQ: {mistake.count}</span>
                   </div>
-                  <span className={`text-[11px] font-mono font-black ${mistake.pnl >= 0 ? 'text-success' : 'text-coral'}`}>
+                   <span className={`text-xs font-mono font-black whitespace-nowrap ${mistake.pnl >= 0 ? 'text-up' : 'text-down'}`}>
                     {mistake.pnl >= 0 ? '+' : ''}{(mistake.pnl || 0).toFixed(2)}
                   </span>
                 </div>
               ))}
               {(Object.values(journals || {}) as JournalEntry[]).every(n => n.tags.length === 0) && (
                 <div className="text-center py-8">
-                  <p className="text-[10px] font-bold text-muted/40 uppercase tracking-widest mb-3">No symbol tags yet.</p>
-                  <p className="text-[9px] font-medium text-muted/30 uppercase leading-relaxed max-w-[200px] mx-auto">Add cognitive tags to your closed positions to unlock bias detection analytics.</p>
+                  <p className="text-[11px] sm:text-[10px] font-bold text-muted/40 uppercase tracking-[0.08em] sm:tracking-widest mb-3">No symbol tags yet.</p>
+                  <p className="text-[10px] sm:text-[9px] font-medium text-muted/30 uppercase tracking-[0.06em] sm:tracking-normal leading-relaxed max-w-[220px] mx-auto">Add cognitive tags to your closed positions to unlock bias detection analytics.</p>
                 </div>
               )}
             </div>
@@ -629,21 +653,21 @@ const TradeTracker = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 bottom-0 w-full max-w-xl z-[70] bg-surface border-l border-border shadow-2xl flex flex-col"
             >
-              <div className="p-8 border-b border-border flex justify-between items-center">
+              <div className="p-4 sm:p-8 border-b border-border flex justify-between items-center gap-3">
                 <div>
-                  <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight">Post-Execution Audit</h3>
-                  <p className="text-[10px] font-mono font-bold text-accent uppercase tracking-[0.2em] mt-1">{selectedPosition?.symbol} // REF_{selectedPosition?.id.split('_').pop()?.slice(0, 8)}</p>
+                  <h3 className="text-lg sm:text-xl font-display font-black text-ink uppercase tracking-tight">Post-Execution Audit</h3>
+                  <p className="text-[10px] font-mono font-bold text-accent uppercase tracking-[0.1em] sm:tracking-[0.2em] mt-1 truncate max-w-[230px] sm:max-w-full">{selectedPosition?.symbol} // REF_{selectedPosition?.id.split('_').pop()?.slice(0, 8)}</p>
                 </div>
                 <button onClick={() => setIsNoteModalOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-surface-subtle transition-all">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 sm:space-y-10 custom-scrollbar">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-surface-subtle p-4 rounded-xl border border-border">
                     <p className="micro-label mb-2 block opacity-40">PnL realized</p>
-                    <p className={`text-lg font-mono font-black ${selectedPosition!.realizedPnl >= 0 ? 'text-success' : 'text-coral'}`}>
+                     <p className={`text-lg font-mono font-black ${selectedPosition!.realizedPnl >= 0 ? 'text-up' : 'text-down'}`}>
                       {selectedPosition!.realizedPnl >= 0 ? '+' : ''}{selectedPosition!.realizedPnl.toFixed(2)}
                     </p>
                   </div>
@@ -672,7 +696,7 @@ const TradeTracker = () => {
 
                 <div className="space-y-6">
                   <p className="micro-label block">Structural Risk (USD)</p>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="trade-note-planned-stop" className="text-[9px] font-bold text-muted uppercase mb-2 block">Planned Stop</label>
                       <input 
@@ -708,8 +732,8 @@ const TradeTracker = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-accent/5 border border-accent/20 rounded-xl">
-                  <span className="text-[10px] font-black text-accent uppercase tracking-widest">Followed Pre-Trade Plan</span>
+                <div className="flex items-start sm:items-center justify-between gap-3 p-4 bg-accent/5 border border-accent/20 rounded-xl">
+                  <span className="text-[10px] font-black text-accent uppercase tracking-[0.1em] sm:tracking-widest leading-snug">Followed Pre-Trade Plan</span>
                   <button 
                     onClick={() => setEditingNote(prev => ({ ...prev, followedPlan: !prev.followedPlan }))}
                     className={`w-12 h-6 rounded-full relative transition-all ${editingNote.followedPlan ? 'bg-accent' : 'bg-muted/20'}`}
@@ -719,16 +743,16 @@ const TradeTracker = () => {
                 </div>
               </div>
 
-              <div className="p-8 border-t border-border bg-surface-subtle/50 flex gap-4">
+              <div className="p-4 sm:p-8 border-t border-border bg-surface-subtle/50 flex gap-3 sm:gap-4">
                 <button 
                   onClick={() => setIsNoteModalOpen(false)}
-                  className="flex-1 py-4 text-[10px] font-black text-muted hover:text-ink uppercase tracking-widest transition-all"
+                  className="flex-1 py-3 sm:py-4 text-[10px] font-black text-muted hover:text-ink uppercase tracking-[0.1em] sm:tracking-widest transition-all"
                 >
                   Discard
                 </button>
                 <button 
                   onClick={handleSaveNote}
-                  className="flex-[2] bg-accent text-white py-4 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                  className="flex-[2] bg-accent text-white py-3 sm:py-4 rounded-lg font-black text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 sm:gap-3"
                 >
                   <Save className="w-4 h-4" />
                   Persist Ledger

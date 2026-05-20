@@ -57,7 +57,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
               className="p-1.5 bg-white/5 rounded-lg text-muted/40 hover:text-accent hover:bg-accent/10 transition-all focus-visible-outline"
               aria-label={`Action for ${title}`}
             >
-              {actionIcon || <Plus className="w-3.5 h-3.5" />}
+              {actionIcon || <Plus className="w-3.5 h-3.5" aria-hidden="true" />}
             </button>
           )}
           {canExpand && (
@@ -67,7 +67,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
               aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
               title={isExpanded ? "Collapse Matrix" : "Expand Matrix"}
             >
-              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" aria-hidden="true" /> : <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" />}
             </button>
           )}
         </div>

@@ -171,6 +171,27 @@ export const persistTradeSyncSnapshot = async (args: {
 }) => {
   const { uid, syncId, symbolsSynced, trades, positions, metrics, balances, status } = args;
 
+  // On a COMPLETED sync, delete stale position documents (those with IDs that no longer
+  // exist in the fresh processed set, e.g. ghost positions from changed document IDs).
+  // SAFETY GUARD: Skip cleanup entirely if the new set is empty — this prevents a total
+  // data wipe caused by epoch misconfiguration, API failures, or no-trade windows.
+  if (status === 'COMPLETED' && positions.length > 0) {
+    try {
+      const existingSnap = await getDocs(collection(db, 'binance_positions', uid, 'items'));
+      if (!existingSnap.empty) {
+        const incomingIds = new Set(positions.map(p => p.id));
+        const staleRefs = existingSnap.docs
+          .filter(d => !incomingIds.has(d.id))
+          .map(d => d.ref);
+        if (staleRefs.length > 0) {
+          await deleteInChunks(staleRefs);
+        }
+      }
+    } catch (cleanupErr) {
+      console.warn('[Persistence] Failed to clean up stale positions', cleanupErr);
+    }
+  }
+
   const entries: Array<{ ref: DocumentReference; data: unknown }> = [];
 
   for (const trade of trades) {
@@ -348,6 +369,7 @@ export const loadPersistedMetrics = async (uid: string): Promise<DashboardMetric
 
   return {
     totalNetPnl: data.totalNetPnl,
+    totalGrossPnl: Number(data.totalGrossPnl || 0),
     totalUnrealizedPnl: Number(data.totalUnrealizedPnl || 0),
     totalEquityPnl: Number(data.totalEquityPnl || 0),
     profitFactor: typeof data.profitFactor === 'number' ? data.profitFactor : null,

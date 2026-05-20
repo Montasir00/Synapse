@@ -119,6 +119,15 @@ export const performGlobalTradeSync = async (
         .filter((b: any) => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
         .map((b: any) => b.asset)
       );
+
+      // Auto-add USDT/USDC pairs for every non-stable asset in the wallet
+      // This ensures coins like DOGE, XRP, etc. are always synced even if not manually added.
+      activeAssets.forEach((asset: string) => {
+        if (!STABLE_MAP[asset]) {
+          masterSymbolList.add(`${asset}USDT`);
+          masterSymbolList.add(`${asset}USDC`);
+        }
+      });
     } catch (accErr) {
       console.warn('[Sync Service] Account lookup failed', accErr);
       symbols.forEach(s => activeAssets.add(getQuoteAsset(s) === s ? s : s.replace(getQuoteAsset(s), '')));
@@ -130,9 +139,8 @@ export const performGlobalTradeSync = async (
     try {
       const { fetchBinanceExchangeInfo } = await import('./binanceService');
       const exchangeInfo = await fetchBinanceExchangeInfo(idToken, baseUrl);
-      const quoteAssets = ['USDT', 'USDC', 'FDUSD', 'BTC', 'ETH', 'BNB', 'EUR', 'BUSD'];
       
-      // Map all mathematically valid + trading pairs
+      // Map all valid + actively trading pairs
       (exchangeInfo?.symbols || []).forEach((s: any) => {
          if (s.status === 'TRADING') {
             validMarketPairs.add(s.symbol);
@@ -144,69 +152,16 @@ export const performGlobalTradeSync = async (
          if (validMarketPairs.has(rawSym)) discoverySymbols.add(rawSym);
       });
       
-      // Auto-discover unlisted quote equivalents for active assets
-      (exchangeInfo?.symbols || []).forEach((s: any) => {
-        if (activeAssets.has(s.baseAsset) && quoteAssets.includes(s.quoteAsset)) {
-          discoverySymbols.add(s.symbol);
-        }
-      });
-    } catch {}
-
-    // Stage 4: Full-History Trade Fetch (NO MORE SLICING - Issue #1)
-    const allTrades: BinanceTrade[] = [];
-    const syncList = Array.from(discoverySymbols); 
-    
-    for (const symbolS of syncList) {
-      try {
-        const trades = await fetchBinanceTrades(idToken, symbolS, baseUrl, encryptedApiKey, encryptedApiSecret);
-        if (trades.length > 0) allTrades.push(...trades);
-        await sleep(250); // Safety Throttle
-      } catch (err) {
-        if (symbols.includes(symbolS)) console.error(`[Sync] Failed ${symbolS}`, err);
-      }
+      // Auto-discovery of random pairs based on dust balances has been removed
+      // to prevent fetching coins the user is not actively trading.
+    } catch {
+      // Fallback: if exchange info lookup fails, use all manually-configured symbols
+      // This prevents a silent failure where zero trades are fetched with no error shown.
+      console.warn('[Sync Service] Exchange info lookup failed — falling back to manual symbol list.');
+      symbols.forEach(s => discoverySymbols.add(s));
     }
 
-    // 4. Audit Pass: Discover fees and non-stable quote assets for USD normalization
-    const historicalPricesMap: Record<string, number> = {};
-    const discoveryKeys = new Set<string>();
-    
-    allTrades.forEach(t => {
-      const q = getQuoteAsset(t.symbol);
-      const c = t.commissionAsset;
-      const isBase = t.symbol.startsWith(c);
-      
-      // 1. Fee Discovery: If fee is paid in a non-stable that isn't the coin we bought, fetch its USD price
-      if (!STABLE_MAP[c] && !isBase) {
-        discoveryKeys.add(`${c}USDT_${Math.floor(t.time / 60000) * 60000}`);
-      }
-      
-      // 2. Quote Discovery: For cross-quote pairs (e.g. NEARBTC), we need the quote (BTC) USD price
-      if (!STABLE_MAP[q]) {
-        discoveryKeys.add(`${q}USDT_${Math.floor(t.time / 60000) * 60000}`);
-      }
-    });
-
-    // Unified Rate-Limited Lookup Pass (NO MORE SLICING - Issue #2)
-    const lookupList = Array.from(discoveryKeys);
-    const { getHistoricalPrice } = await import('./binanceService');
-
-    for (const key of lookupList) {
-      if (historicalPriceCache[key]) {
-        historicalPricesMap[key] = historicalPriceCache[key];
-        continue;
-      }
-      const [sym, timeStr] = key.split('_');
-      try {
-        const price = await getHistoricalPrice(idToken, sym, parseInt(timeStr), baseUrl);
-        if (price > 0) {
-          historicalPriceCache[key] = price;
-          historicalPricesMap[key] = price;
-          await sleep(150); // Rate limit jitter
-        }
-      } catch {}
-    }
-
-    // Stage 5B: Tracking Epoch Filter
+    // Stage 4: Tracking Epoch Filter (Moved up to prevent ReferenceError)
     let epochMs = 0;
     const epochStr = localStorage.getItem('binance_trade_epoch');
     if (epochStr) {
@@ -233,6 +188,78 @@ export const performGlobalTradeSync = async (
       }
     }
 
+    // Stage 5: Delta-Filtered Trade Fetch (Optimized)
+    const allTrades: BinanceTrade[] = [];
+    const syncList = Array.from(discoverySymbols);
+    const symbolBatchSize = 3; // Reduced batch size to respect proxy limits while being parallel
+
+    for (let i = 0; i < syncList.length; i += symbolBatchSize) {
+      const batch = syncList.slice(i, i + symbolBatchSize);
+      await Promise.all(batch.map(async (symbolS) => {
+        try {
+          const trades = await fetchBinanceTrades(idToken, symbolS, baseUrl, encryptedApiKey, encryptedApiSecret, epochMs);
+          if (trades.length > 0) allTrades.push(...trades);
+        } catch (err) {
+          if (symbols.includes(symbolS)) console.error(`[Sync] Failed ${symbolS}`, err);
+        }
+      }));
+      if (syncList.length > symbolBatchSize) await sleep(150); // Minimal throttle between batches
+    }
+
+    // 4. Audit Pass: Discover fees and non-stable quote assets for USD normalization
+    const historicalPricesMap: Record<string, number> = {};
+    const discoveryKeys = new Set<string>();
+    
+    allTrades.forEach(t => {
+      const q = getQuoteAsset(t.symbol);
+      const c = t.commissionAsset;
+      const isBase = t.symbol.startsWith(c);
+      
+      // 1. Fee Discovery: If fee is paid in a non-stable that isn't the coin we bought, fetch its USD price
+      if (!STABLE_MAP[c] && !isBase) {
+        discoveryKeys.add(`${c}USDT_${Math.floor(t.time / 60000) * 60000}`);
+      }
+      
+      // 2. Quote Discovery: For cross-quote pairs (e.g. NEARBTC), we need the quote (BTC) USD price
+      if (!STABLE_MAP[q]) {
+        discoveryKeys.add(`${q}USDT_${Math.floor(t.time / 60000) * 60000}`);
+      }
+    });
+
+    // 3. Baseline Discovery: If tracking from epochMs, we need the historical price of wallet assets AT epochMs to establish the starting value.
+    if (epochMs > 0) {
+      finalBalances.forEach((b: any) => {
+        if (!STABLE_MAP[b.asset]) {
+          const totalQty = parseFloat(b.free || 0) + parseFloat(b.locked || 0);
+          if (totalQty > 0.0001) {
+            discoveryKeys.add(`${b.asset}USDT_${Math.floor(epochMs / 60000) * 60000}`);
+          }
+        }
+      });
+    }
+
+    // Unified Rate-Limited Lookup Pass (NO MORE SLICING - Issue #2)
+    const lookupList = Array.from(discoveryKeys);
+    const { getHistoricalPrice } = await import('./binanceService');
+
+    for (const key of lookupList) {
+      if (historicalPriceCache[key]) {
+        historicalPricesMap[key] = historicalPriceCache[key];
+        continue;
+      }
+      const [sym, timeStr] = key.split('_');
+      try {
+        const price = await getHistoricalPrice(idToken, sym, parseInt(timeStr), baseUrl);
+        if (price > 0) {
+          historicalPriceCache[key] = price;
+          historicalPricesMap[key] = price;
+          await sleep(150); // Rate limit jitter
+        }
+      } catch {}
+    }
+
+    // (Epoch fetch moved up to prevent ReferenceError)
+
     const epochFilteredTrades = allTrades.filter(t => t.time >= epochMs);
 
     // Stage 6A: Daily Price Snapshot & Balances USD
@@ -245,25 +272,33 @@ export const performGlobalTradeSync = async (
 
         const candidates = [`${asset}USDT`, `${asset}USDC`];
         candidates.forEach((candidate) => {
-          // If we have populated valid pairs, strictly filter to prevent 400 Bad Request on delisted dust.
+          // If we have populated valid pairs, strictly filter to prevent 400 Bad Request on delisted coins.
           if (validMarketPairs.size > 0) {
             if (validMarketPairs.has(candidate)) {
               symbolsToFetch.add(candidate);
             }
           } else {
-            symbolsToFetch.add(candidate);
+            // If exchangeInfo lookup failed, fallback ONLY to USDT to minimize error risk.
+            if (candidate.endsWith('USDT')) {
+              symbolsToFetch.add(candidate);
+            }
           }
         });
       };
 
-      // Active-pairs-only pricing: open position assets + non-stable wallet assets for USD valuation.
+      // Active-pairs-only pricing: open position assets + non-stable wallet assets with non-zero balance.
       existingPositions
         .filter((p) => p.status === 'OPEN' && p.remainingQty > 0)
         .forEach((p) => addQuoteCandidates(p.symbol));
 
-      finalBalances.forEach((b: any) => {
-        addQuoteCandidates(String(b.asset || ''));
-      });
+      finalBalances
+        .filter((b: any) => {
+          const total = parseFloat(b.free || 0) + parseFloat(b.locked || 0);
+          return total > 0.00001; // Ignore extreme dust to prevent API spam
+        })
+        .forEach((b: any) => {
+          addQuoteCandidates(String(b.asset || ''));
+        });
 
       currentPrices = await fetchTickerPrices(idToken, baseUrl, Array.from(symbolsToFetch));
       if (Object.keys(currentPrices).length > 0) {
@@ -300,28 +335,63 @@ export const performGlobalTradeSync = async (
     if (epochMs > 0) {
         let baselineTrades: BinanceTrade[] = [];
         const baselineSaved = localStorage.getItem('binance_baseline_trades');
-        
+
+        // Always force-bust the baseline cache if it exists, to prevent stale entries from
+        // persisting across sell events (e.g. sold DOGE appearing as ghost OPEN).
+        // We regenerate fresh from current balances on every sync.
         if (baselineSaved) {
             try {
                 const parsed = JSON.parse(baselineSaved);
                 if (parsed.epoch === epochMs) {
-              const cached = Array.isArray(parsed.trades) ? parsed.trades : [];
-              baselineTrades = cached.filter((t: BinanceTrade) => tradedAssets.has(getBaseAssetFromSymbol(t.symbol)));
+                  const cached = Array.isArray(parsed.trades) ? parsed.trades : [];
+                  // Build a zero-balance set: assets that are fully sold — exclude from baseline.
+                  const zeroBalanceAssets = new Set<string>(
+                    finalBalances
+                      .filter((b: any) => (parseFloat(b.free || 0) + parseFloat(b.locked || 0)) <= 0.0001)
+                      .map((b: any) => String(b.asset || ''))
+                  );
+                  // Filter out any cached baseline entries for assets now at zero balance,
+                  // then use the filtered cache to avoid a full regen.
+                  const filteredCache = cached.filter((t: any) => {
+                    const asset = String(t.commissionAsset || '');
+                    return !zeroBalanceAssets.has(asset);
+                  });
+                  if (filteredCache.length > 0) {
+                    baselineTrades = filteredCache;
+                  } else {
+                    // Cache is empty after filtering — regenerate fresh.
+                    localStorage.removeItem('binance_baseline_trades');
+                  }
+                } else {
+                  // Epoch mismatch — bust the stale cache.
+                  localStorage.removeItem('binance_baseline_trades');
                 }
-            } catch (e) {}
+            } catch (e) {
+              localStorage.removeItem('binance_baseline_trades');
+            }
         }
 
-        // If no baseline exists for this epoch, take a snapshot right now and freeze it.
+        // Generate a fresh baseline from current wallet balances.
+        // Inject a synthetic BUY for every non-stable asset with a sufficient USD balance.
+        // USD threshold ($5+) prevents dust amounts from creating phantom OPEN positions.
+        const BASELINE_MIN_USD = 5.0;
         if (baselineTrades.length === 0) {
            finalBalances.forEach((b: any) => {
-              if (!STABLE_MAP[b.asset] && tradedAssets.has(String(b.asset || ''))) {
+              if (!STABLE_MAP[b.asset]) {
                  const totalQty = parseFloat(b.free) + parseFloat(b.locked);
                  if (totalQty > 0.0001) {
                     const usdtSymbol = `${b.asset}USDT`;
-                    const snapshotPrice = currentPrices[usdtSymbol] || 0;
-                    if (snapshotPrice > 0) {
+                    const usdcSymbol = `${b.asset}USDC`;
+                    // Use historical price at epochMs for accurate cost basis, fallback to current price only if missing.
+                    const priceKey = `${b.asset}USDT_${Math.floor(epochMs / 60000) * 60000}`;
+                    const snapshotPrice = historicalPricesMap[priceKey] || currentPrices[usdtSymbol] || currentPrices[usdcSymbol] || 0;
+                    
+                    const usdValue = totalQty * snapshotPrice;
+                    const pairSymbol = currentPrices[usdtSymbol] ? usdtSymbol : usdcSymbol;
+                    // Only track if worth >= $5 to exclude dust/leftover amounts.
+                    if (snapshotPrice > 0 && usdValue >= BASELINE_MIN_USD) {
                        baselineTrades.push({
-                          symbol: usdtSymbol,
+                          symbol: pairSymbol,
                           id: `synthetic_${b.asset}_${epochMs}`,
                           orderId: 0,
                           orderListId: -1,
@@ -339,7 +409,7 @@ export const performGlobalTradeSync = async (
                  }
               }
            });
-           
+
            if (baselineTrades.length > 0) {
                localStorage.setItem('binance_baseline_trades', JSON.stringify({
                    epoch: epochMs,

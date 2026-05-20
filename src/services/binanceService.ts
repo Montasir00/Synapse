@@ -45,18 +45,30 @@ export const fetchBinanceTrades = async (
   symbol: string,
   baseUrl: string = 'https://api.binance.com',
   encryptedApiKey?: string,
-  encryptedApiSecret?: string
+  encryptedApiSecret?: string,
+  startTime?: number
 ): Promise<BinanceTrade[]> => {
   const allTrades: BinanceTrade[] = [];
-  let fromId: number | undefined = undefined;
+  let currentFromId: number | undefined = undefined;
   let fetching = true;
+  let isFirstRequest = true;
 
   try {
     while (fetching) {
+      const params: any = { symbol, limit: 1000 };
+      if (currentFromId !== undefined) {
+        params.fromId = currentFromId;
+      } else if (isFirstRequest && startTime && startTime > 0) {
+        params.startTime = startTime;
+      } else {
+        params.fromId = 0; // Force fetching from the beginning if no startTime!
+      }
+      isFirstRequest = false;
+
       const response = await axios.post('/api/binance/proxy', {
         method: 'GET',
         endpoint: '/api/v3/myTrades',
-        params: { symbol, limit: 1000, fromId },
+        params,
         baseUrl,
         encryptedApiKey,
         encryptedApiSecret,
@@ -73,7 +85,7 @@ export const fetchBinanceTrades = async (
           fetching = false;
         } else {
           // Point to next id for recursive fetch
-          fromId = (trades[trades.length - 1].id as number) + 1;
+          currentFromId = (trades[trades.length - 1].id as number) + 1;
         }
       }
     }
@@ -175,21 +187,35 @@ export const fetchTickerPrices = async (
   for (let i = 0; i < uniqueSymbols.length; i += batchSize) {
     const batch = uniqueSymbols.slice(i, i + batchSize);
     const results = await Promise.all(batch.map(async (symbol) => {
-      try {
-        const response = await axios.post('/api/binance/proxy', {
-          method: 'GET',
-          endpoint: '/api/v3/klines',
-          params: { symbol, interval: '1m', limit: 1 },
-          baseUrl
-        }, {
-          headers: { Authorization: `Bearer ${idToken}` }
-        });
-        
-        if (response.data && response.data.length > 0) {
-          return { symbol, price: parseFloat(response.data[0][4]) };
+      let attempts = 0;
+      const maxAttempts = 2;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const response = await axios.post('/api/binance/proxy', {
+            method: 'GET',
+            endpoint: '/api/v3/klines',
+            params: { symbol, interval: '1m', limit: 1 },
+            baseUrl
+          }, {
+            headers: { Authorization: `Bearer ${idToken}` }
+          });
+          
+          if (response.data && response.data.length > 0) {
+            return { symbol, price: parseFloat(response.data[0][4]) };
+          }
+          break; // Success but empty data? Stop.
+        } catch (err: any) {
+          attempts++;
+          const isTransient = err.response?.status === 502 || err.response?.status === 503 || err.response?.status === 429;
+          
+          if (attempts >= maxAttempts || !isTransient) {
+            console.warn(`[Binance Service] Failed to fetch proxy kline for ${symbol} after ${attempts} attempts`, err);
+            break;
+          }
+          // Wait 500ms before retry
+          await sleep(500);
         }
-      } catch (err) {
-        console.warn(`[Binance Service] Failed to fetch proxy kline for ${symbol}`, err);
       }
       return null;
     }));
@@ -370,6 +396,13 @@ export const processTradesIntoPositions = (
              }
           }
           
+          // If there is STILL remainingToSell (oversold, e.g. deposited asset), cost basis is 0!
+          if (remainingToSell > 0) {
+            const pieceGrossExitValue = sellPrice * remainingToSell;
+            totalPnlForThisSell += pieceGrossExitValue;
+            remainingToSell = 0;
+          }
+          
           currentPosition.grossRealizedPnl! += totalPnlForThisSell;
           currentPosition.totalFees! += commissionUSD;
           currentPosition.realizedPnl! = currentPosition.grossRealizedPnl! - currentPosition.totalFees!;
@@ -391,7 +424,8 @@ export const processTradesIntoPositions = (
             currentPosition.avgExitPrice = (currentPosition as any).totalExitValue / (currentPosition as any).totalExitQty;
             
             const totalEntryBasis = currentPosition.totalQty! * currentPosition.avgEntryPrice!;
-            currentPosition.realizedPnlPercentage = (currentPosition.realizedPnl! / totalEntryBasis) * 100;
+            // Avoid division by zero if totalEntryBasis is 0 (e.g. deposited asset)
+            currentPosition.realizedPnlPercentage = totalEntryBasis > 0 ? (currentPosition.realizedPnl! / totalEntryBasis) * 100 : 100;
             
             allPositions.push(currentPosition as Position);
             currentPosition = null;
@@ -402,6 +436,31 @@ export const processTradesIntoPositions = (
                 currentPosition.avgEntryPrice = remainingBasisUSD / currentPosition.remainingQty!;
               }
           }
+        } else {
+          // NO OPEN POSITION! The user sold an asset they didn't buy on Binance (e.g. deposited asset).
+          // Create an instant CLOSED position with 0 cost basis.
+          const posId = `pos_${base}_${trade.id}_${trade.time}_deposited`;
+          const metadata = existingMetadataMap.get(posId);
+          const pos: Position = {
+            id: posId,
+            symbol: base,
+            status: 'CLOSED',
+            totalQty: effectiveQty,
+            remainingQty: 0,
+            avgEntryPrice: 0,
+            avgExitPrice: sellPrice,
+            trades: [trade],
+            entryTime: trade.time,
+            exitTime: trade.time,
+            grossRealizedPnl: grossExitValueUSD,
+            realizedPnl: grossExitValueUSD - commissionUSD,
+            totalFees: commissionUSD,
+            realizedPnlPercentage: 100,
+            notes: metadata?.notes,
+            tags: metadata?.tags || [],
+            lots: []
+          };
+          allPositions.push(pos);
         }
       }
     }
@@ -469,9 +528,9 @@ export const calculateMetrics = (positions: Position[], currentPrices: Record<st
 
   return {
     totalNetPnl,
+    totalGrossPnl,
     totalUnrealizedPnl,
     totalEquityPnl,
-    totalGrossPnl,
     totalFees,
     winRate,
     profitFactor,
@@ -483,5 +542,5 @@ export const calculateMetrics = (positions: Position[], currentPrices: Record<st
     avgHoldTimeWinner,
     avgHoldTimeLoser,
     performanceByPair
-  } as DashboardMetrics;
+  };
 };

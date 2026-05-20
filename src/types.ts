@@ -45,6 +45,8 @@ export interface Transaction {
   type: 'income' | 'expense';
   status: 'Completed' | 'Pending' | 'Flagged';
   description?: string;
+  createdAt?: string;
+  uid?: string | null;
 }
 
 export interface Exercise {
@@ -108,5 +110,18 @@ export interface CryptoTrade {
   notes_right?: string;
   notes_wrong?: string;
   created_at?: string;
+}
+
+export interface Loan {
+  id: string;
+  uid: string;
+  personName: string;
+  amount: number;
+  type: 'borrowed' | 'lent'; // 'lent' = gave to people, 'borrowed' = I owe people
+  status: 'pending' | 'settled';
+  dueDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 

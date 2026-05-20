@@ -6,7 +6,11 @@ interface SettingsProps {
   onLogin: () => void;
   onSystemReset: () => void;
   onTradeReset: () => void;
+  onUpdateTradeEpoch: (timestamp: number) => void;
   onOpenApiCheck: () => void;
+  onRecalculateFinancials?: () => void;
+  isSyncingFinancials?: boolean;
+  isSyncingTrades?: boolean;
 }
 
 export default function Settings({
@@ -14,7 +18,11 @@ export default function Settings({
   onLogin,
   onSystemReset,
   onTradeReset,
+  onUpdateTradeEpoch,
   onOpenApiCheck,
+  onRecalculateFinancials,
+  isSyncingFinancials,
+  isSyncingTrades,
 }: SettingsProps) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
@@ -92,6 +100,16 @@ export default function Settings({
               </p>
             </div>
           )}
+
+          <div className="mt-6 p-4 rounded-xl bg-alert/5 border border-alert/20 flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-alert mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-[10px] font-black text-alert uppercase tracking-widest">Security Protocol</p>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed">
+                When using Binance API, ensure <span className="text-alert">"Enable Withdrawals"</span> is <span className="text-alert underline underline-offset-4">UNCHECKED</span> in your Binance settings. Your secrets are stored in a private vault, but this extra layer ensures your funds remain on the exchange.
+              </p>
+            </div>
+          </div>
         </section>
 
         {user && <JournalMigrator />}
@@ -119,6 +137,51 @@ export default function Settings({
           </div>
         </section>
 
+        {/* Tracking History Optimization */}
+        <section className="soothing-card p-6 md:p-8 border-l-4 border-teal-500 relative overflow-hidden group" aria-labelledby="settings-optimization-title">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+            <ShieldCheck className="w-32 h-32 rotate-12 text-teal-500" />
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-4 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
+                <div className="w-10 h-10 bg-teal-500/10 rounded-full flex items-center justify-center text-teal-500 border border-teal-500/20">
+                  <ShieldCheck className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 id="settings-optimization-title" className="text-xl md:text-2xl font-display font-black text-ink uppercase tracking-tight">Optimization: Tracking History</h2>
+                  <p className="micro-label !text-teal-500/80">Control how much history to sync for maximum speed</p>
+                </div>
+              </div>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
+                Ignoring old trades significantly increases sync speed. Choose a starting point that covers your active positions.
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-end">
+              <button 
+                onClick={() => onUpdateTradeEpoch(Date.now() - 30 * 24 * 60 * 60 * 1000)}
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+              >
+                Last 30 Days
+              </button>
+              <button 
+                onClick={() => onUpdateTradeEpoch(Date.now() - 90 * 24 * 60 * 60 * 1000)}
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+              >
+                Last 90 Days
+              </button>
+              <button 
+                onClick={() => onUpdateTradeEpoch(0)}
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+              >
+                All Time
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* Tracking Epoch */}
         <section className="soothing-card p-6 md:p-8 border-l-4 border-teal-500 relative overflow-hidden group" aria-labelledby="settings-trade-reset-title">
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
@@ -137,19 +200,53 @@ export default function Settings({
                 </div>
               </div>
             </div>
-            
             <button 
               onClick={() => {
                 if (window.confirm("This will set the current moment as the new starting point for Trade Tracker. Past trade history will be removed from cloud storage. Continue?")) {
                   onTradeReset();
                 }
               }}
-              className="precise-button w-full sm:w-auto border-teal-500/30 text-teal-600 hover:bg-teal-500/10 transition-all px-6 sm:px-10 py-3 sm:py-4"
+              disabled={isSyncingTrades}
+              className="precise-button w-full sm:w-auto border-teal-500/30 text-teal-600 hover:bg-teal-500/10 transition-all px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Reset Trade Tracker
+              {isSyncingTrades ? 'Syncing...' : 'Reset Trade Tracker'}
             </button>
           </div>
         </section>
+        
+        {/* Financial Data Integrity */}
+        {user && onRecalculateFinancials && (
+          <section className="soothing-card p-6 md:p-8 border-l-4 border-accent relative overflow-hidden group" aria-labelledby="settings-sync-title">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+              <ShieldCheck className="w-32 h-32 rotate-12 text-accent" />
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="space-y-4 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
+                  <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center text-accent border border-accent/20">
+                    <ShieldCheck className="w-5 h-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h2 id="settings-sync-title" className="text-xl md:text-2xl font-display font-black text-ink uppercase tracking-tight">Financial Sync</h2>
+                    <p className="micro-label">Recalculate all-time savings from scratch</p>
+                  </div>
+                </div>
+                <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
+                  If you notice discrepancies in your all-time balance, this will perform a deep scan of every transaction in your ledger to ensure the total is 100% accurate.
+                </p>
+              </div>
+              
+              <button 
+                onClick={onRecalculateFinancials}
+                disabled={isSyncingFinancials}
+                className="precise-button w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-wait"
+              >
+                {isSyncingFinancials ? 'Syncing...' : 'Re-sync Totals'}
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Dangerous Zone */}
         <section className="soothing-card p-6 md:p-8 border-l-4 border-alert relative overflow-hidden group" aria-labelledby="settings-system-reset-title">

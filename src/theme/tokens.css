@@ -1,52 +1,56 @@
 :root {
-  /* Design system color tokens (Soft Pearl - High Performance Light) */
-  --ds-color-bg: #f7f8fa;
-  --ds-color-surface: #ffffff;
-  --ds-color-surface-subtle: #f3f5f7;
-  --ds-color-border: #e5e9ef;
-  --ds-color-border-strong: #d4dae3;
+  /* BASE + NEUTRALS */
+  --ds-color-bg: oklch(0.99 0.005 260);        /* Soft Porcelain */
+  --ds-color-surface: oklch(0.97 0.008 260);   /* Mist */
+  --ds-color-surface-pure: oklch(1 0 0); 
+  --ds-color-border: oklch(0.93 0.012 260);    /* Lavender Haze */
+  --ds-color-text-primary: oklch(0.25 0.03 260); /* Ink */
+  --ds-color-text-secondary: oklch(0.55 0.04 260); /* Slate */
+  --ds-color-text-muted: oklch(0.65 0.03 260);
 
-  --ds-color-text-primary: #111827;
-  --ds-color-text-secondary: #475467;
-  --ds-color-text-muted: #667085;
-  --ds-color-text-disabled: #98a2b3;
+  /* SECTION ACCENTS */
+  --color-todo: oklch(0.55 0.20 265);          /* Periwinkle */
+  --color-todo-tint: oklch(0.92 0.06 265);     /* Periwinkle Tint */
 
-  --ds-color-primary: #4f46e5;
-  --ds-color-primary-hover: #4338ca;
-  --ds-color-primary-active: #3730a3;
-  --ds-color-primary-soft: #eef0ff;
+  --color-expense: oklch(0.50 0.14 160);       /* Sage */
+  --color-expense-tint: oklch(0.92 0.05 160);  /* Sage Tint */
 
-  --ds-color-secondary: #00d4aa;
-  --ds-color-secondary-hover: #00b38f;
-  --ds-color-secondary-soft: #e8f7f5;
+  --color-trade: oklch(0.55 0.16 38);          /* Terracotta */
+  --color-trade-tint: oklch(0.93 0.05 38);     /* Terracotta Tint */
 
-  --ds-color-success: #15803d;
-  --ds-color-success-soft: #ecfdf3;
-  --ds-color-warning: #b54708;
-  --ds-color-warning-soft: #fff7e6;
-  --ds-color-danger: #b42318;
-  --ds-color-danger-soft: #fef3f2;
-  --ds-color-info: #1d4ed8;
-  --ds-color-info-soft: #eff6ff;
+  /* SEMANTIC — STATUS */
+  --ds-color-success: oklch(0.50 0.14 160);    /* Sage (Positive/Up) */
+  --ds-color-danger: oklch(0.55 0.16 25);      /* Deep Red (Negative/Down) */
+  --ds-color-warning: oklch(0.70 0.15 80);     /* Pending / Neutral */
+
+  /* Trade Specific Semantics */
+  --color-pnl-up: var(--ds-color-success);
+  --color-pnl-down: var(--ds-color-danger);
+  --color-pnl-neutral: var(--ds-color-warning);
+
+  /* Aliases for Global System */
+  --ds-color-primary: var(--color-todo);
+  --ds-color-secondary: var(--color-expense);
+  --ds-color-accent: var(--color-trade);
 
   /* Spacing & radius */
   --spacing-unit: 8px;
   --radius: 12px;
 
-  /* Typography scale */
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
+  /* Typography scale (Guarded minimums for Noir aesthetic) */
+  --text-xs: 0.75rem;     /* 12px - MINIMUM for micro-labels */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 10px 24px rgba(16, 24, 40, 0.1);
+  /* Shadows (Softer, based on Slate/Mist) */
+  --shadow-sm: 0 1px 2px oklch(0.25 0.03 260 / 0.04);
+  --shadow-md: 0 4px 12px oklch(0.25 0.03 260 / 0.06);
+  --shadow-lg: 0 12px 32px oklch(0.25 0.03 260 / 0.08);
 }
 
 /* Utility classes */

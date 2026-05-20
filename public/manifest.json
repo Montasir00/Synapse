@@ -4,8 +4,8 @@
   "description": "High-performance gamified productivity engine.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f8fa",
-  "theme_color": "#f7f8fa",
+  "background_color": "#fcfcfd",
+  "theme_color": "#fcfcfd",
   "icons": [
     {
       "src": "/favicon.png",

@@ -1,7 +1,11 @@
 import { PlusCircle, Clock, Zap, Flower2, Activity, ChevronRight, Dumbbell, History } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, CartesianGrid, XAxis } from 'recharts';
 import { motion } from 'motion/react';
 import { Exercise } from '../types';
 import ModuleCard from './ModuleCard';
+import { parseISO, startOfWeek, addDays, format, isSameDay } from 'date-fns';
+
+import { useMemo } from 'react';
 
 interface ExercisesProps {
   sessions: Exercise[];
@@ -15,6 +19,22 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
     { label: 'Calories Burned', value: (sessions.length * 450).toLocaleString(), unit: 'kcal', sub: 'Daily average: 262 kcal' },
     { label: 'Last Workout', value: sessions[0]?.title || 'None', sub: sessions[0]?.date || 'No sessions yet', rating: 4 },
   ];
+
+  const weeklyData = useMemo(() => {
+    const today = new Date();
+    const start = startOfWeek(today, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = addDays(start, i);
+      const daySessions = sessions.filter(s => isSameDay(parseISO(s.date), day));
+      const duration = daySessions.reduce((acc, s) => acc + (parseInt(s.duration) || 0), 0);
+      return {
+        name: format(day, 'EEE'),
+        full: format(day, 'EEEE'),
+        value: duration,
+        isToday: isSameDay(day, today)
+      };
+    });
+  }, [sessions]);
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -133,18 +153,42 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
               <span className="text-[10px] font-black text-ink uppercase tracking-[0.2em]">Weekly activity</span>
               <span className="text-[9px] font-bold text-accent px-2.5 py-1 bg-accent/5 rounded-full uppercase tracking-widest border border-accent/10">Load</span>
             </div>
-            <div className="h-40 flex items-end gap-4 mb-3 px-2">
-              {[0.5, 0.75, 0.33, 0.66, 0.9, 0.5, 0.66].map((h, i) => (
-                <div key={i} className="w-full bg-surface-subtle rounded-full group relative overflow-hidden" style={{ height: `${h * 100}%` }}>
-                  {i === 4 && <div className="absolute inset-0 bg-accent shadow-[0_0_15px_rgba(114,137,253,0.4)]" />}
-                  <div className="absolute inset-0 bg-accent/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between text-[9px] font-black text-muted uppercase tracking-[0.15em] px-1 opacity-50 mt-4">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
-                <span key={d} className={i === 4 ? 'text-accent opacity-100' : ''}>{d}</span>
-              ))}
+            <div style={{ height: 160, minHeight: 160 }} className="w-full min-w-0">
+              <ResponsiveContainer width="100%" height={160} minWidth={0} minHeight={160}>
+                <BarChart data={weeklyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <Tooltip 
+                    cursor={{ fill: 'var(--color-accent)', opacity: 0.05 }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="glass-card !p-3 shadow-xl border-white/10">
+                            <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.full}</p>
+                            <p className="text-sm font-mono font-black text-accent">{payload[0].value} MIN</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} animationDuration={1500}>
+                    {weeklyData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.isToday ? 'var(--color-accent)' : 'var(--color-surface-subtle)'} 
+                        fillOpacity={entry.isToday ? 1 : 0.4}
+                      />
+                    ))}
+                  </Bar>
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 9, fontWeight: 900, fill: 'var(--color-muted)', opacity: 0.5 }}
+                    interval={0}
+                    dy={10}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

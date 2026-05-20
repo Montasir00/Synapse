@@ -2,10 +2,12 @@ import {
   LayoutDashboard,
   CheckCircle2,
   CreditCard,
+  Coins,
   Dumbbell,
   LineChart,
   Settings,
-  LogOut
+  LogOut,
+  BrainCircuit
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -20,6 +22,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
   { id: 'expenses', label: 'Expenses', icon: CreditCard },
+  { id: 'loans', label: 'Loans', icon: Coins },
   { id: 'exercises', label: 'Exercises', icon: Dumbbell },
   { id: 'trade-tracker', label: 'Trade Tracker', icon: LineChart },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -50,27 +53,32 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
                   setActiveTab(item.id);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 group relative focus-visible-outline ${
-                  isActive
-                    ? 'text-ink bg-accent/5 shadow-[0_0_20px_rgba(99,102,241,0.06)] border border-accent/20'
-                    : 'text-muted hover:text-ink/80 hover:bg-white/[0.02] border border-transparent'
+                  isActive ? 'text-ink' : 'text-muted hover:text-ink/80'
                 }`}
                 aria-label={`Navigate to ${item.label}`}
                 aria-current={isActive ? 'page' : undefined}
               >
                 {isActive && (
                   <motion.div
-                    layoutId="active-nav"
+                    layoutId="active-nav-pill"
+                    className="absolute inset-0 bg-accent/5 shadow-[0_0_20px_rgba(var(--accent-rgb),0.06)] border border-accent/20 rounded-full"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                {isActive && (
+                  <motion.div
+                    layoutId="active-nav-indicator"
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-accent rounded-r-full"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
                 <Icon
-                  className={`w-4 h-4 transition-colors duration-150 shrink-0 ${
+                  className={`w-4 h-4 transition-colors duration-150 shrink-0 relative z-10 ${
                     isActive ? 'text-accent' : 'text-muted group-hover:text-ink'
                   }`}
                   aria-hidden="true"
                 />
-                <span className="text-[11px] uppercase tracking-[0.1em] font-semibold">{item.label}</span>
+                <span className="text-[11px] uppercase tracking-[0.1em] font-semibold relative z-10">{item.label}</span>
               </button>
             );
           })}

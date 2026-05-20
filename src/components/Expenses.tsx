@@ -1,9 +1,101 @@
-import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Download, Plus, PieChart, ArrowUpRight, ArrowDownRight, Trash2, Edit3, Settings2, KeyRound, Check, X, ChevronDown, Search, Maximize2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Download, Plus, PieChart, ArrowUpRight, ArrowDownRight, Trash2, Edit3, Settings2, KeyRound, Check, X, ChevronDown, Search, Maximize2, CalendarRange, RotateCcw, History as HistoryIcon } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Transaction, Budget } from '../types';
-import { useState, useMemo } from 'react';
-import { format, subMonths, startOfMonth, startOfYear, isWithinInterval, endOfDay, parseISO, eachMonthOfInterval } from 'date-fns';
-import { BarChart, Bar, ResponsiveContainer, Cell, Tooltip, PieChart as RechartsPieChart, Pie, Legend } from 'recharts';
+import AnimatedNumber from './AnimatedNumber';
+
+interface SwipeableExpenseItemProps {
+  transaction: Transaction;
+  onEdit: (t: Transaction) => void;
+  onDelete: (id: string) => void;
+  index: number;
+  searchTerm: string;
+  getIcon: (cat: string) => any;
+}
+
+function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchTerm, getIcon }: SwipeableExpenseItemProps) {
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [-100, 0, 100], [1, 1, 1]);
+  const bg = useTransform(x, [-100, 0, 100], ['var(--color-alert)', 'transparent', 'var(--color-accent)']);
+  const deleteOpacity = useTransform(x, [-80, -20], [1, 0]);
+  const editOpacity = useTransform(x, [20, 80], [0, 1]);
+
+  const Icon = getIcon(t.category);
+  const isLatest = index === 0 && !searchTerm;
+
+  const handleDragEnd = (_: any, info: any) => {
+    if (info.offset.x < -100) {
+      onDelete(t.id);
+    } else if (info.offset.x > 100) {
+      onEdit(t);
+    }
+  };
+
+  return (
+    <div className="relative group overflow-hidden rounded-3xl">
+      <motion.div 
+        style={{ backgroundColor: bg }}
+        className="absolute inset-0 flex items-center justify-between px-8 z-0"
+      >
+        <motion.div style={{ opacity: editOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+          <Edit3 className="w-5 h-5" />
+          <span>Edit</span>
+        </motion.div>
+        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+          <span>Delete</span>
+          <Trash2 className="w-5 h-5" />
+        </motion.div>
+      </motion.div>
+
+      <motion.div 
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.6}
+        onDragEnd={handleDragEnd}
+        style={{ x, opacity }}
+        className={`relative z-10 p-4 sm:p-6 bg-white/[0.01] border-b border-white/[0.03] flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all ${isLatest ? 'border-l-4 border-l-success bg-success/[0.02]' : ''} hover:bg-black/[0.02] ${t.id.toString().startsWith('temp-') ? 'opacity-50 grayscale-[0.5]' : ''}`}
+      >
+        <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-subtle rounded-full flex items-center justify-center border border-border transition-all group-hover:scale-110 group-hover:border-accent/30 flex-shrink-0">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-muted group-hover:text-accent" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <p className="text-sm sm:text-base font-black text-ink leading-tight truncate">{t.description || t.category || t.merchant}</p>
+              {isLatest && !t.id.toString().startsWith('temp-') && (
+                <span className="px-2 py-1 rounded-lg bg-accent text-[9px] font-black text-white uppercase tracking-widest shadow-lg shadow-accent/20">Latest</span>
+              )}
+              {t.id.toString().startsWith('temp-') && (
+                <span className="px-2 py-1 rounded-lg bg-warning/20 border border-warning/30 text-[9px] font-black text-warning uppercase tracking-widest animate-pulse">Syncing...</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-[10px] uppercase font-black tracking-widest text-muted">{t.category}</span>
+              <span className="w-1 h-1 bg-white/10 rounded-full" />
+              <span className="text-[10px] font-mono text-muted truncate max-w-[100px] sm:max-w-none">{t.merchant}</span>
+              <span className="w-1 h-1 bg-white/10 rounded-full" />
+              <span className="text-[10px] font-mono text-muted">{format(parseISO(t.date), 'MMM d, yyyy')}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 w-full sm:w-auto">
+          <span className={`text-base sm:text-2xl font-mono font-black tabular-nums ${t.type === 'income' ? 'text-success' : 'text-ink'}`}>
+            {t.type === 'income' ? '+' : '–'}${Math.abs(t.amount).toLocaleString()}
+          </span>
+          <div className="hidden sm:flex gap-2">
+            <button onClick={() => onEdit(t)} className="p-2 text-muted hover:text-accent transition-colors"><Edit3 className="w-4 h-4" /></button>
+            <button onClick={() => onDelete(t.id)} className="p-2 text-muted hover:text-alert transition-colors"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+import { useState, useMemo, useEffect } from 'react';
+import { format, subMonths, startOfMonth, startOfYear, endOfMonth, isWithinInterval, endOfDay, parseISO, eachMonthOfInterval } from 'date-fns';
+import { BarChart, Bar, ResponsiveContainer, Cell, Tooltip, PieChart as RechartsPieChart, Pie, Legend, CartesianGrid } from 'recharts';
+import { db, auth } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 interface ExpensesProps {
   transactions: Transaction[];
@@ -14,15 +106,21 @@ interface ExpensesProps {
   onUpsertBudget: (category: string, limit: number) => void;
   globalMonthlyBudget: number;
   onSetGlobalBudget: (limit: number) => void;
+  /** Pre-computed all-time savings aggregate from app_settings. Avoids reading all transactions. */
+  allTimeSavings?: number;
+  /** On-demand fetcher for historical ranges. */
+  onLoadRange?: (start: string, end: string) => Promise<Transaction[]>;
+  /** Whether a financial sync is currently in progress. */
+  isSyncing?: boolean;
 }
 
 const NoirTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const val = payload[0].value;
     return (
-      <div className="soothing-card p-3 shadow-md border-border !bg-surface">
-        <p className="micro-label mb-1">{payload[0].payload.name}</p>
-        <p className={`text-xs font-mono font-black ${val >= 0 ? 'text-accent' : 'text-alert'}`}>
+      <div className="bg-surface backdrop-blur-md border border-border p-3 rounded-2xl shadow-xl">
+        <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.name}</p>
+        <p className={`text-sm font-mono font-black ${val >= 0 ? 'text-success' : 'text-alert'}`}>
           {val >= 0 ? '+' : '-'}${Math.abs(val).toLocaleString()}
         </p>
       </div>
@@ -40,6 +138,9 @@ export default function Expenses({
   onUpsertBudget,
   globalMonthlyBudget,
   onSetGlobalBudget,
+  allTimeSavings: allTimeSavingsProp,
+  onLoadRange,
+  isSyncing,
 }: ExpensesProps) {
   const [savingsGoal, setSavingsGoal] = useState(5000);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -50,24 +151,53 @@ export default function Expenses({
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [selectedBudgetDate, setSelectedBudgetDate] = useState(new Date());
   const [isFocusedLedgerOpen, setIsFocusedLedgerOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{start: string, end: string} | null>(null);
+  const [historicalData, setHistoricalData] = useState<Transaction[] | null>(null);
+  const [isFetchingRange, setIsFetchingRange] = useState(false);
+
+  // Sync historical data when date range changes
+  useEffect(() => {
+    if (dateRange?.start && dateRange?.end && onLoadRange) {
+      const fetchHistory = async () => {
+        setIsFetchingRange(true);
+        try {
+          const data = await onLoadRange(dateRange.start, dateRange.end);
+          setHistoricalData(data);
+        } catch (e) {
+          console.error('Range fetch failed', e);
+        } finally {
+          setIsFetchingRange(false);
+        }
+      };
+      fetchHistory();
+    } else {
+      setHistoricalData(null);
+    }
+  }, [dateRange, onLoadRange]);
+
+  // The pool of transactions we are currently looking at
+  const transactionPool = historicalData ?? transactions;
 
   // ALL-TIME CUMULATIVE SAVINGS (Historical Reserves)
-  const allTimeSavings = useMemo(() => {
-    return transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
-  }, [transactions]);
+  // Uses the pre-computed aggregate from app_settings if available.
+  // Falls back to summing the local (limited) transaction list only if prop is not provided.
+  const computedSavings = useMemo(() => {
+    return transactionPool.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
+  }, [transactionPool]);
+  const allTimeSavings = allTimeSavingsProp ?? computedSavings;
 
-  // CATEGORY COLOR MAP for PieChart
-  const COLORS = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#8b5cf6', '#3b82f6'];
+  // CATEGORY COLOR MAP for PieChart - using standardized theme variables
+  const COLORS = ['var(--color-accent)', 'var(--color-success)', 'var(--color-trade)', 'var(--color-todo)', 'var(--color-ink)', 'var(--color-muted)'];
 
   // BUDGET-SPECIFIC MONTH FILTER
   const budgetPeriodTransactions = useMemo(() => {
     const start = startOfMonth(selectedBudgetDate);
     const end = endOfDay(new Date(selectedBudgetDate.getFullYear(), selectedBudgetDate.getMonth() + 1, 0));
-    return transactions.filter(t => {
+    return transactionPool.filter(t => {
       const d = parseISO(t.date);
       return isWithinInterval(d, { start, end });
     });
-  }, [transactions, selectedBudgetDate]);
+  }, [transactionPool, selectedBudgetDate]);
 
   const budgetPeriodTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -79,15 +209,34 @@ export default function Expenses({
 
   // Filter transactions based on time period
   const filteredTransactions = useMemo(() => {
-    const now = new Date();
-    const start = startOfMonth(now);
-    return transactions
+    if (!dateRange || !dateRange.start || !dateRange.end) {
+      // No filter active: Show the entire recent pool (last 50)
+      return [...transactionPool].sort((a, b) => {
+        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (aCreated !== bCreated) return bCreated - aCreated;
+        return b.id.localeCompare(a.id);
+      });
+    }
+
+    const { start: rangeStart, end: rangeEnd } = dateRange;
+
+    return transactionPool
       .filter(t => {
-        const tDate = parseISO(t.date);
-        return isWithinInterval(tDate, { start, end: endOfDay(now) });
+        const transactionDate = t.date.split('T')[0];
+        return transactionDate >= rangeStart && transactionDate <= rangeEnd;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions]);
+      .sort((a, b) => {
+        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (aCreated !== bCreated) return bCreated - aCreated;
+        return b.id.localeCompare(a.id);
+      });
+  }, [transactionPool, dateRange]);
 
   // Search filter for the ledger
   const searchedTransactions = useMemo(() => {
@@ -96,6 +245,7 @@ export default function Expenses({
     return filteredTransactions.filter(t =>
       (t.merchant?.toLowerCase().includes(lower)) ||
       t.category.toLowerCase().includes(lower) ||
+      (t.description?.toLowerCase().includes(lower)) ||
       t.amount.toString().includes(lower)
     );
   }, [filteredTransactions, searchTerm]);
@@ -112,7 +262,7 @@ export default function Expenses({
     const months = eachMonthOfInterval({ start: subMonths(now, 5), end: now });
     months.forEach(monthStart => {
       const monthEnd = endOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0));
-      const periodTx = transactions.filter(t => {
+      const periodTx = transactionPool.filter(t => {
         const d = parseISO(t.date);
         return isWithinInterval(d, { start: monthStart, end: monthEnd });
       });
@@ -121,7 +271,7 @@ export default function Expenses({
       data.push({ name: format(monthStart, 'MMM'), net: inc - exp });
     });
     return data;
-  }, [transactions]);
+  }, [transactionPool]);
 
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -148,12 +298,13 @@ export default function Expenses({
     setIsEditingGoal(false);
   };
 
-  const handleExport = () => {
-    const headers = ['Date', 'Merchant', 'Category', 'Amount', 'Type'];
+  const handleExportFiltered = () => {
+    const headers = ['Date', 'Description', 'Category', 'Merchant', 'Amount', 'Type'];
     const rows = searchedTransactions.map(t => [
       t.date,
-      t.merchant || '',
+      `"${t.description?.replace(/"/g, '""') || ''}"`,
       t.category,
+      `"${t.merchant?.replace(/"/g, '""') || ''}"`,
       t.amount.toString(),
       t.type
     ]);
@@ -163,10 +314,55 @@ export default function Expenses({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `synapse_ledger_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.setAttribute("download", `synapse_filtered_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success('Filtered ledger exported.');
+  };
+
+  const handleExportAllTime = async () => {
+    if (!auth.currentUser) return;
+    toast.info('Preparing full ledger export...');
+    try {
+      const q = query(collection(db, 'transactions'), where('uid', '==', auth.currentUser.uid));
+      const snap = await getDocs(q);
+      const allTrans = snap.docs.map(doc => doc.data() as Transaction);
+      
+      const headers = ['Date', 'Description', 'Category', 'Merchant', 'Amount', 'Type'];
+      const rows = allTrans
+        .sort((a, b) => {
+          const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+          if (timeDiff !== 0) return timeDiff;
+          const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          if (aCreated !== bCreated) return bCreated - aCreated;
+          return b.id.localeCompare(a.id);
+        })
+        .map(t => [
+        t.date,
+        `"${t.description?.replace(/"/g, '""') || ''}"`,
+        t.category,
+        `"${t.merchant?.replace(/"/g, '""') || ''}"`,
+        t.amount.toString(),
+        t.type
+      ]);
+      
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + [headers.join(','), ...rows.map(e => e.join(","))].join("\n");
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `synapse_full_history_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Full history exported.');
+    } catch (e) {
+      console.error('Export failed', e);
+      toast.error('Failed to export all-time data.');
+    }
   };
 
   return (
@@ -174,17 +370,20 @@ export default function Expenses({
       {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
 
       {/* The Command Strip (Intel Summary) */}
-      <div className="flex flex-wrap sm:flex-nowrap w-full divide-x divide-border/30 border border-border/50 rounded-2xl bg-surface-subtle/20 overflow-hidden shadow-sm">
+      <div className="grid grid-cols-2 sm:grid-cols-4 w-full border border-border/50 rounded-2xl bg-surface-subtle/20 overflow-hidden shadow-sm divide-x divide-y divide-border/30 sm:divide-y-0">
         {[
-          { label: 'Inflow', value: `$${totalIncome.toLocaleString()}`, color: 'text-success' },
-          { label: 'Outflow', value: `$${totalSpent.toLocaleString()}`, color: 'text-alert' },
-          { label: 'Net Balance', value: `${netBalance >= 0 ? '+' : '-'}$${Math.abs(netBalance).toLocaleString()}`, color: netBalance >= 0 ? 'text-success' : 'text-alert' },
-          { label: 'Savings Rate', value: `${(savingsRate || 0).toFixed(0)}%`, color: 'text-accent' },
+          { label: 'Inflow', value: totalIncome, color: 'text-success', prefix: '$' },
+          { label: 'Outflow', value: totalSpent, color: 'text-alert', prefix: '$' },
+          { label: 'Net Balance', value: netBalance, color: netBalance >= 0 ? 'text-success' : 'text-alert', prefix: netBalance >= 0 ? '+$' : '-$' },
+          { label: 'Savings Rate', value: savingsRate || 0, color: 'text-accent', suffix: '%' },
         ].map((m, i) => (
-          <div key={i} className="flex-1 w-1/2 sm:w-auto p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors">
-            <span className="text-[9px] font-bold text-muted/50 uppercase tracking-[0.2em] mb-1">{m.label}</span>
+          <div key={i} className="p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors border-border/10">
+            <span className="text-[9px] font-black text-muted/60 uppercase tracking-[0.2em] mb-1">{m.label}</span>
             <div className="flex items-baseline gap-2">
-               <span className={`text-base sm:text-lg lg:text-xl font-mono font-black tracking-tighter ${m.color}`}>{m.value}</span>
+               <span className={`text-sm sm:text-lg lg:text-xl font-mono font-black tracking-tighter ${m.color}`}>
+                  <AnimatedNumber value={Math.abs(m.value)} prefix={m.prefix} />
+                  {m.suffix}
+               </span>
             </div>
           </div>
         ))}
@@ -196,7 +395,14 @@ export default function Expenses({
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
                 <h3 className="text-2xl sm:text-3xl font-display font-black text-ink uppercase tracking-tighter">Expense Ledger</h3>
-                <p className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">Current month transactions and budgets</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em]">
+                    {dateRange ? 'Historical Range Filtered' : 'Latest activity and budgets'}
+                  </p>
+                  {isFetchingRange && (
+                    <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                  )}
+                </div>
             </div>
             <div className="flex items-center gap-3">
               <button 
@@ -208,7 +414,8 @@ export default function Expenses({
               </button>
               <button 
                 onClick={onAddExpense} 
-                className="precise-button !px-6 !py-2.5 flex items-center gap-2 group/btn"
+                disabled={isSyncing}
+                className="precise-button !px-6 !py-2.5 flex items-center gap-2 group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform" />
                 <span className="hidden sm:inline text-[10px] uppercase font-black tracking-widest">New Entry</span>
@@ -223,50 +430,71 @@ export default function Expenses({
               placeholder="Registry deeper search..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/60 font-medium"
+              className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/60 font-bold"
             />
           </div>
         </div>
         <div className="w-full">
-          <div className="divide-y divide-white/[0.02]">
+          <div className="space-y-1">
             {searchedTransactions.length > 0 ? (
-              searchedTransactions.slice(0, 50).map(t => {
-                const Icon = getIcon(t.category);
-                const tDate = parseISO(t.date);
-                return (
-                  <div key={t.id} className="p-2.5 sm:p-4 flex items-start sm:items-center justify-between gap-2 sm:gap-3 group hover:bg-white/[0.02]">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-accent/5 group-hover:border-accent/20">
-                        <Icon className="w-4 h-4 text-muted group-hover:text-accent transition-colors" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-bold text-ink mb-1 group-hover:translate-x-1 transition-transform truncate max-w-[140px] sm:max-w-none">{t.merchant || t.category}</p>
-                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-muted">
-                          <span>{t.category}</span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                          <span>{format(tDate, 'MMM d')}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
-                      <span className={`text-sm sm:text-xl font-mono font-black ${t.type === 'income' ? 'text-success' : 'text-ink'}`}>${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}</span>
-                      <div className="flex items-center gap-1.5 sm:gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => onEditExpense(t)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/10 transition-all" aria-label="Edit transaction"><Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
-                        <button onClick={() => setTransactionToDelete(t.id)} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-alert hover:bg-alert/10 transition-all" aria-label="Delete transaction"><Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              <AnimatePresence mode="popLayout">
+                {searchedTransactions.slice(0, 50).map((t, index) => (
+                  <SwipeableExpenseItem 
+                    key={t.id}
+                    transaction={t}
+                    index={index}
+                    searchTerm={searchTerm}
+                    getIcon={getIcon}
+                    onEdit={onEditExpense}
+                    onDelete={onDeleteExpense}
+                  />
+                ))}
+              </AnimatePresence>
             ) : (
               <div className="p-12 sm:p-20 text-center space-y-4" role="status">
                 <Search className="w-8 h-8 mx-auto text-muted" />
                 <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted">
-                  {searchTerm ? `No matches for "${searchTerm}"` : 'No transactions logged yet'}
+                  {searchTerm ? `No matches for “${searchTerm}”` : 'No recent transactions found'}
                 </p>
+                {!searchTerm && (
+                  <p className="text-[9px] font-bold text-muted/40 uppercase tracking-widest">
+                    Use the date filter below to load historical data.
+                  </p>
+                )}
               </div>
             )}
           </div>
+        </div>
+
+        {/* Date Filter UI */}
+        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center gap-4 bg-surface-subtle/50 p-4 rounded-2xl border border-border shadow-sm">
+           <div className="flex items-center gap-3 w-full sm:w-auto">
+              <CalendarRange className="w-5 h-5 text-muted hidden sm:block" />
+              <div className="flex items-center justify-between sm:justify-start gap-2 flex-1 sm:flex-none">
+                 <input 
+                    type="date" 
+                    className="bg-surface border border-border rounded-xl px-3 py-2 text-xs text-ink outline-none focus:border-accent/40 w-full sm:w-auto"
+                    value={dateRange?.start || ''}
+                    onChange={(e) => setDateRange(prev => ({ start: e.target.value, end: prev?.end || '' }))}
+                 />
+                 <span className="text-muted text-xs font-bold uppercase">to</span>
+                 <input 
+                    type="date" 
+                    className="bg-surface border border-border rounded-xl px-3 py-2 text-xs text-ink outline-none focus:border-accent/40 w-full sm:w-auto"
+                    value={dateRange?.end || ''}
+                    onChange={(e) => setDateRange(prev => ({ start: prev?.start || '', end: e.target.value }))}
+                 />
+              </div>
+           </div>
+           {dateRange ? (
+              <button 
+                 onClick={() => setDateRange(null)}
+                 className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-alert/10 text-muted hover:text-alert border border-border rounded-xl transition-all text-[10px] uppercase font-black tracking-widest w-full sm:w-auto justify-center"
+              >
+                 <RotateCcw className="w-3.5 h-3.5" />
+                 Reset Filter
+              </button>
+           ) : null}
         </div>
       </div>
 
@@ -294,12 +522,12 @@ export default function Expenses({
           <div className="flex-1 max-w-xl self-start lg:self-center w-full">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-3 md:mb-4">
                <div>
-              {allTimeSavings <= 0 && (
+              {allTimeSavings <= 0 ? (
                 <div className="mt-4 p-4 rounded-xl border border-dashed border-border bg-bg/50 text-center">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60">No reserve growth yet</p>
                   <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted/40 mt-1">Income will appear here as transactions are logged.</p>
                 </div>
-              )}
+              ) : null}
                  <p className="text-xs font-black uppercase text-ink tracking-wide sm:tracking-widest mb-1">Target Milestone</p>
                  <div className="flex items-baseline gap-2">
                    {isEditingGoal ? (
@@ -343,18 +571,19 @@ export default function Expenses({
 
       {/* Visual Analytics Stack */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
-          <div className="soothing-card p-5 sm:p-6 h-[280px] flex flex-col min-w-0">
+          <div className="soothing-card p-5 sm:p-6 flex flex-col min-w-0" style={{ height: 280 }}>
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Net Performance</h3>
                 <p className="micro-label mt-1">Cashflow Velocity Trend</p>
               </div>
             </div>
-            <div className="flex-1 w-full min-w-0 min-h-[180px]">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
-                <BarChart data={cashflowData}>
-                  <Tooltip content={<NoirTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Bar dataKey="net" radius={[4, 4, 0, 0]}>
+            <div className="w-full min-w-0" style={{ flex: 1, minHeight: 180 }}>
+              <ResponsiveContainer width="100%" height={180} minWidth={0} minHeight={180}>
+                <BarChart data={cashflowData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" opacity={0.1} />
+                  <Tooltip content={<NoirTooltip />} cursor={{ fill: 'var(--color-accent)', opacity: 0.05 }} />
+                  <Bar dataKey="net" radius={[6, 6, 0, 0]} animationDuration={1500}>
                     {cashflowData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.net >= 0 ? 'var(--color-accent)' : 'var(--color-alert)'} fillOpacity={0.8} />
                     ))}
@@ -369,13 +598,13 @@ export default function Expenses({
               <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Spending Breakdown</h3>
               <p className="micro-label mt-1 uppercase tracking-widest">Category mix for the current month</p>
             </div>
-            <div className="w-full md:w-[300px] h-[250px] min-w-0 min-h-[220px] relative">
+            <div className="w-full md:w-[300px] min-w-0" style={{ height: 250, minHeight: 220, position: 'relative' }}>
               {categoryTotals.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
+                <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={220}>
                   <RechartsPieChart>
-                    <Pie data={categoryTotals.map(([name, value]) => ({ name, value }))} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                    <Pie data={categoryTotals.map(([name, value]) => ({ name, value }))} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={8} dataKey="value" stroke="none" animationDuration={2000}>
                       {categoryTotals.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.9} />
                       ))}
                     </Pie>
                     <Tooltip content={<NoirTooltip />} />
@@ -480,56 +709,59 @@ export default function Expenses({
                   <h2 className="text-3xl font-display font-black text-ink uppercase tracking-tighter">Mission Ledger</h2>
                   <p className="micro-label opacity-40 mt-1 uppercase tracking-widest">Complete Financial History</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <button onClick={handleExport} className="p-3 bg-white/5 border border-white/5 rounded-full text-muted hover:text-accent transition-all"><Download className="w-5 h-5" /></button>
-                  <button onClick={() => setIsFocusedLedgerOpen(false)} className="p-3 bg-white/5 border border-white/5 rounded-full text-muted hover:text-alert transition-all"><X className="w-5 h-5" /></button>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/5">
+                    <button 
+                      onClick={handleExportFiltered} 
+                      aria-label="Export filtered" 
+                      title="Export Current View"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-accent/10 text-muted hover:text-accent rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Filtered
+                    </button>
+                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                    <button 
+                      onClick={handleExportAllTime} 
+                      aria-label="Export all time" 
+                      title="Export All-Time History"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-success/10 text-muted hover:text-success rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                    >
+                      <HistoryIcon className="w-3.5 h-3.5" />
+                      All-Time
+                    </button>
+                  </div>
+                  <button onClick={() => setIsFocusedLedgerOpen(false)} aria-label="Close ledger" className="p-3 bg-white/5 border border-white/5 rounded-full text-muted hover:text-alert transition-all"><X className="w-5 h-5" aria-hidden="true" /></button>
                 </div>
               </div>
               
               <div className="p-6 md:p-8 bg-surface-subtle border-b border-border">
                 <div className="flex items-center gap-4 bg-surface px-6 py-4 rounded-full border border-border focus-within:border-accent/40 shadow-inner">
-                  <Search className="w-5 h-5 text-muted" />
+                  <Search className="w-5 h-5 text-muted" aria-hidden="true" />
                   <input 
                     type="text" 
-                    placeholder="Search ledger..." 
+                    placeholder="Search and refine…" 
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="bg-transparent border-none outline-none text-sm text-ink w-full placeholder:text-muted font-bold"
+                    className="bg-transparent border-none outline-none text-xs sm:text-sm text-ink w-full placeholder:text-muted/60 font-bold"
+                    inputMode="search"
                   />
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto scrollbar-custom p-4 md:p-8">
                 <div className="space-y-2">
-                   {searchedTransactions.map(t => {
-                     const Icon = getIcon(t.category);
-                     return (
-                        <div key={t.id} className="p-6 bg-white/[0.01] border border-white/[0.03] rounded-3xl flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between group hover:bg-white/[0.03] hover:border-white/10 transition-all">
-                          <div className="flex items-center gap-6 w-full sm:w-auto min-w-0">
-                              <div className="w-12 h-12 bg-surface-subtle rounded-full flex items-center justify-center border border-border transition-all group-hover:scale-110 group-hover:border-accent/30">
-                                <Icon className="w-5 h-5 text-muted group-hover:text-accent" />
-                              </div>
-                              <div>
-                              <p className="text-base font-black text-ink leading-tight truncate">{t.merchant || t.category}</p>
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                                    <span className="text-[10px] uppercase font-black tracking-widest text-muted">{t.category}</span>
-                                    <span className="w-1 h-1 bg-white/10 rounded-full" />
-                                  <span className="text-[10px] font-mono text-muted break-words">{format(parseISO(t.date), 'MMMM d, yyyy')}</span>
-                                 </div>
-                              </div>
-                           </div>
-                          <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 w-full sm:w-auto">
-                            <span className={`text-lg sm:text-2xl font-mono font-black ${t.type === 'income' ? 'text-success shadow-success/20' : 'text-ink'}`}>
-                                 {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toLocaleString()}
-                              </span>
-                              <div className="flex gap-2">
-                                <button onClick={() => { setIsFocusedLedgerOpen(false); onEditExpense(t); }} className="p-2 text-muted hover:text-accent transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                <button onClick={() => setTransactionToDelete(t.id)} className="p-2 text-muted hover:text-alert transition-colors"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                           </div>
-                        </div>
-                     );
-                   })}
+                    {searchedTransactions.map((t, index) => (
+                      <SwipeableExpenseItem 
+                        key={t.id}
+                        transaction={t}
+                        index={index}
+                        searchTerm={searchTerm}
+                        getIcon={getIcon}
+                        onEdit={(tx) => { setIsFocusedLedgerOpen(false); onEditExpense(tx); }}
+                        onDelete={(id) => setTransactionToDelete(id)}
+                      />
+                    ))}
                 </div>
               </div>
             </motion.div>

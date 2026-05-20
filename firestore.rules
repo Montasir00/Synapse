@@ -59,6 +59,10 @@ service cloud.firestore {
       allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }
 
+    match /loans/{loanId} {
+      allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
+    }
+
     match /budgets/{budgetId} {
       allow read, write: if isDocOwned(resource) || isDocOwned(request.resource);
     }

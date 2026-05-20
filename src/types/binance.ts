@@ -73,6 +73,7 @@ export interface TradeNote {
 
 export interface DashboardMetrics {
   totalNetPnl: number;
+  totalGrossPnl: number;
   totalUnrealizedPnl: number;
   totalEquityPnl: number;
   profitFactor: number | null;
@@ -139,6 +140,7 @@ export interface PersistedPosition {
 export interface PersistedMetrics {
   uid: string;
   totalNetPnl: number;
+  totalGrossPnl: number;
   totalUnrealizedPnl: number;
   totalEquityPnl: number;
   profitFactor: number | null;
