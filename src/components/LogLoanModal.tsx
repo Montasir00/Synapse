@@ -22,7 +22,7 @@ export default function LogLoanModal({
   const [amount, setAmount] = useState('');
   const [personName, setPersonName] = useState('');
   const [type, setType] = useState<'lent' | 'borrowed'>('lent');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +45,7 @@ export default function LogLoanModal({
       setAmount('');
       setPersonName('');
       setType('lent');
-      setDueDate('');
+      setDueDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     }
     setSubmitAttempted(false);
