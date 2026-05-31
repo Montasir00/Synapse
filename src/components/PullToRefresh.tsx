@@ -51,11 +51,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     const currentY = yElastic.get();
     if (currentY >= 65) {
       setIsRefreshing(true);
-      haptics.medium(); // Trigger medium vibration feedback
+      haptics.medium();
       
-      // Animate indicator to open position
-      await controls.start({ y: 55, transition: { type: 'spring', stiffness: 300, damping: 25 } });
-
       try {
         await onRefresh();
       } catch (err) {
@@ -63,13 +60,9 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       } finally {
         setIsRefreshing(false);
         setCanTrigger(false);
-        // Animate indicator back to hidden position
-        await controls.start({ y: 0, transition: { type: 'spring', stiffness: 250, damping: 30 } });
         y.set(0);
       }
     } else {
-      // Snap back
-      await controls.start({ y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } });
       y.set(0);
     }
   };
@@ -83,7 +76,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
           rotate: isRefreshing ? undefined : rotate,
           opacity: isRefreshing ? 1 : opacity,
         }}
-        animate={controls}
+        animate={{ y: isRefreshing ? 55 : 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="absolute top-2 left-0 right-0 z-50 flex justify-center pointer-events-none"
       >
         <div className={`p-2.5 rounded-full backdrop-blur-xl border flex items-center justify-center shadow-lg transition-all ${
@@ -101,16 +95,16 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       <motion.div
         drag={disabled || isRefreshing ? false : 'y'}
         onPointerDown={(e) => {
-          // Disable pull-to-refresh if user has scrolled down
           if (window.scrollY > 0) {
             e.stopPropagation();
           }
         }}
         dragDirectionLock
-        dragConstraints={{ top: 0, bottom: 150 }}
+        dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.45}
-        style={{ y: isRefreshing ? 48 : yElastic }}
-        animate={controls}
+        style={{ y }}
+        animate={{ y: isRefreshing ? 48 : 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         onDragEnd={handleDragEnd}
         className="w-full h-full min-h-[inherit]"
       >
