@@ -72,6 +72,8 @@ export const ExpenseRowSkeleton: React.FC = () => {
   );
 };
 
+const STATIC_HEIGHTS = [45, 60, 30, 80, 50, 75, 40, 65, 85, 35, 55, 70];
+
 export const ChartSkeleton: React.FC = () => {
   return (
     <div className="soothing-card bg-surface border-border p-5 space-y-4">
@@ -80,11 +82,11 @@ export const ChartSkeleton: React.FC = () => {
         <Skeleton className="h-4 w-16" />
       </div>
       <div className="h-48 sm:h-56 flex items-end gap-2 pt-4">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {STATIC_HEIGHTS.map((height, i) => (
           <Skeleton
             key={i}
             className="w-full rounded-t"
-            style={{ height: `${Math.max(15, Math.floor(Math.random() * 85))}%` }}
+            style={{ height: `${height}%` }}
           />
         ))}
       </div>

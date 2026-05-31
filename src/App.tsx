@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, lazy, Suspense, useMemo, Fragment } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo, Fragment, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
@@ -200,6 +200,8 @@ export default function App() {
     }
     return 'dashboard';
   });
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -370,13 +372,13 @@ export default function App() {
       if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         haptics.light();
-        if (activeTab === 'tasks') {
+        if (activeTabRef.current === 'tasks') {
           setEditingTask(null);
           setIsTaskModalOpen(true);
-        } else if (activeTab === 'expenses') {
+        } else if (activeTabRef.current === 'expenses') {
           setEditingTransaction(null);
           setIsExpenseModalOpen(true);
-        } else if (activeTab === 'exercises') {
+        } else if (activeTabRef.current === 'exercises') {
           setIsExerciseModalOpen(true);
         }
       }
@@ -393,7 +395,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, deferredPrompt]);
+  }, []);
 
   // Fetch Data from Firestore
   useEffect(() => {
@@ -445,7 +447,9 @@ export default function App() {
     // Tasks Listener — fetches all tasks for this user.
     const tasksQuery = query(
       collection(db, 'tasks'),
-      where('uid', '==', currentUid)
+      where('uid', '==', currentUid),
+      orderBy('createdAt', 'desc'),
+      limit(100)
     );
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const tasksData: Task[] = [];
@@ -465,7 +469,9 @@ export default function App() {
     // Transactions Listener — load all user transactions.
     const transQuery = query(
       collection(db, 'transactions'),
-      where('uid', '==', currentUid)
+      where('uid', '==', currentUid),
+      orderBy('createdAt', 'desc'),
+      limit(50)
     );
     const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
       const transData: Transaction[] = [];
@@ -502,8 +508,7 @@ export default function App() {
       setExerciseSessions(exercisesData);
     }, (error) => console.error("[Firebase Sync] Exercises listener error:", error));
 
-    // Notes Listener
-    const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid));
+    const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid), limit(50));
     const unsubscribeNotes = onSnapshot(notesQuery, (snapshot) => {
       const notesData: Note[] = [];
       snapshot.forEach((doc) => notesData.push({ ...doc.data(), id: doc.id } as Note));
@@ -511,7 +516,7 @@ export default function App() {
     }, (error) => console.error("Notes listener error:", error));
 
     // Loans Listener
-    const loansQuery = query(collection(db, 'loans'), where('uid', '==', currentUid));
+    const loansQuery = query(collection(db, 'loans'), where('uid', '==', currentUid), limit(50));
     const unsubscribeLoans = onSnapshot(loansQuery, (snapshot) => {
       const loansData: Loan[] = [];
       snapshot.forEach((doc) => loansData.push({ ...doc.data(), id: doc.id } as Loan));
@@ -833,8 +838,15 @@ export default function App() {
     }
   };
 
+  const lastRefreshRef = useRef(0);
   const handleRefresh = async () => {
     if (!user?.uid) return;
+    const now = Date.now();
+    if (now - lastRefreshRef.current < 30000) {
+      toast.info('Data is up to date.');
+      return;
+    }
+    lastRefreshRef.current = now;
     await handleRecalculateFinancials();
   };
 
@@ -1048,6 +1060,9 @@ export default function App() {
     }
   };
 
+  const tasksRef = useRef(tasks);
+  useEffect(() => { tasksRef.current = tasks; }, [tasks]);
+
   useEffect(() => {
     const resetKey = `synapse_last_recurrence_reset_${user?.uid || 'guest'}`;
 
@@ -1089,7 +1104,7 @@ export default function App() {
         return false;
       };
 
-      (tasks || []).forEach(t => {
+      (tasksRef.current || []).forEach(t => {
         if (t.taskCategory !== 'daily') return;
 
         if (t.status === 'done') {
@@ -1131,7 +1146,7 @@ export default function App() {
     // Heartbeat: Check for midnight transition every 60 seconds
     const interval = setInterval(checkDailyReset, 60000);
     return () => clearInterval(interval);
-  }, [tasks, user?.uid]);
+  }, [user?.uid]);
 
   // Persistent Memory (Notes)
   const addNote = async (content: string) => {
@@ -1363,6 +1378,34 @@ export default function App() {
     }
   };
 
+  const handleAddTask = useCallback(() => {
+    setEditingTask(null);
+    setIsTaskModalOpen(true);
+  }, []);
+
+  const handleEditTask = useCallback((task: Task) => {
+    setEditingTask(task);
+    setIsTaskModalOpen(true);
+  }, []);
+
+  const handleAddExpense = useCallback(() => {
+    setEditingTransaction(null);
+    setIsExpenseModalOpen(true);
+  }, []);
+
+  const handleEditExpense = useCallback((t: Transaction) => {
+    setEditingTransaction(t);
+    setIsExpenseModalOpen(true);
+  }, []);
+
+  const handleSetGlobalBudget = useCallback((limit: number) => {
+    if (!settingsDocId) return;
+    updateDoc(doc(db, 'app_settings', settingsDocId), { monthlyBudget: limit });
+  }, [settingsDocId]);
+
+  const handleViewTasks = useCallback(() => setActiveTab('tasks'), []);
+  const handleViewExpenses = useCallback(() => setActiveTab('expenses'), []);
+
   const contentView = useMemo(() => {
     switch (activeTab) {
       case 'dashboard':
@@ -1374,16 +1417,10 @@ export default function App() {
             loans={loans}
             openPositions={openPositions}
             allTimeSavings={allTimeSavings}
-            onViewTasks={() => setActiveTab('tasks')}
-            onViewExpenses={() => setActiveTab('expenses')}
-            onAddTask={() => {
-              setEditingTask(null);
-              setIsTaskModalOpen(true);
-            }}
-            onAddExpense={() => {
-              setEditingTransaction(null);
-              setIsExpenseModalOpen(true);
-            }}
+            onViewTasks={handleViewTasks}
+            onViewExpenses={handleViewExpenses}
+            onAddTask={handleAddTask}
+            onAddExpense={handleAddExpense}
             onAddClick={handleAddClick}
             tradeSnapshot={tradeBufferState}
           />
@@ -1395,14 +1432,8 @@ export default function App() {
               tasks={tasks} 
               notes={notes}
               onUpdateStatus={updateTaskStatus} 
-              onAddTask={() => {
-                setEditingTask(null);
-                setIsTaskModalOpen(true);
-              }} 
-              onEditTask={(task) => {
-                setEditingTask(task);
-                setIsTaskModalOpen(true);
-              }}
+              onAddTask={handleAddTask} 
+              onEditTask={handleEditTask}
               onDeleteTask={deleteTask}
               onAddNote={addNote}
               onDeleteNote={deleteNote}
@@ -1429,21 +1460,12 @@ export default function App() {
             <Expenses 
               transactions={transactions}
               budgets={budgets}
-              onAddExpense={() => {
-                setEditingTransaction(null);
-                setIsExpenseModalOpen(true);
-              }}
-              onEditExpense={(t) => {
-                setEditingTransaction(t);
-                setIsExpenseModalOpen(true);
-              }}
+              onAddExpense={handleAddExpense}
+              onEditExpense={handleEditExpense}
               onDeleteExpense={deleteTransaction}
               onUpsertBudget={upsertBudget}
               globalMonthlyBudget={monthlyBudget}
-              onSetGlobalBudget={(limit) => {
-                if (!settingsDocId) return;
-                updateDoc(doc(db, 'app_settings', settingsDocId), { monthlyBudget: limit });
-              }}
+              onSetGlobalBudget={handleSetGlobalBudget}
               allTimeSavings={allTimeSavings}
               onLoadRange={loadTransactionsByRange}
               isSyncing={isSyncingFinancials}

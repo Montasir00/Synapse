@@ -100,6 +100,12 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       {/* Main Drag Container */}
       <motion.div
         drag={disabled || isRefreshing ? false : 'y'}
+        onPointerDown={(e) => {
+          // Disable pull-to-refresh if user has scrolled down
+          if (window.scrollY > 0) {
+            e.stopPropagation();
+          }
+        }}
         dragDirectionLock
         dragConstraints={{ top: 0, bottom: 150 }}
         dragElastic={0.45}
