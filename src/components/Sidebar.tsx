@@ -39,8 +39,8 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
             <BrainCircuit className="w-4.5 h-4.5 text-accent" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <span className="text-sm font-display font-black text-ink tracking-tight block leading-none">TaskOS</span>
-            <span className="text-[10px] text-muted/50 font-medium tracking-wide">Life OS</span>
+            <span className="text-sm font-display font-black text-ink tracking-tight block leading-none">Synapse</span>
+            <span className="text-[10px] text-muted/50 font-medium tracking-wide">Neural OS</span>
           </div>
         </div>
 
