@@ -447,9 +447,7 @@ export default function App() {
     // Tasks Listener — fetches all tasks for this user.
     const tasksQuery = query(
       collection(db, 'tasks'),
-      where('uid', '==', currentUid),
-      orderBy('createdAt', 'desc'),
-      limit(100)
+      where('uid', '==', currentUid)
     );
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const tasksData: Task[] = [];
@@ -469,9 +467,7 @@ export default function App() {
     // Transactions Listener — load all user transactions.
     const transQuery = query(
       collection(db, 'transactions'),
-      where('uid', '==', currentUid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
+      where('uid', '==', currentUid)
     );
     const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
       const transData: Transaction[] = [];
@@ -508,7 +504,7 @@ export default function App() {
       setExerciseSessions(exercisesData);
     }, (error) => console.error("[Firebase Sync] Exercises listener error:", error));
 
-    const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid), limit(50));
+    const notesQuery = query(collection(db, 'notes'), where('uid', '==', currentUid));
     const unsubscribeNotes = onSnapshot(notesQuery, (snapshot) => {
       const notesData: Note[] = [];
       snapshot.forEach((doc) => notesData.push({ ...doc.data(), id: doc.id } as Note));
@@ -516,7 +512,7 @@ export default function App() {
     }, (error) => console.error("Notes listener error:", error));
 
     // Loans Listener
-    const loansQuery = query(collection(db, 'loans'), where('uid', '==', currentUid), limit(50));
+    const loansQuery = query(collection(db, 'loans'), where('uid', '==', currentUid));
     const unsubscribeLoans = onSnapshot(loansQuery, (snapshot) => {
       const loansData: Loan[] = [];
       snapshot.forEach((doc) => loansData.push({ ...doc.data(), id: doc.id } as Loan));
