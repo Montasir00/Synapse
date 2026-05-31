@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, AlertTriangle, Loader2, Key } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { validateBinanceCredentials } from '../services/binanceService';
 import axios from 'axios';
 
 type CheckStatus = 'idle' | 'checking' | 'valid' | 'invalid';
@@ -67,6 +66,7 @@ export default function TempApiKeyCheck() {
 
     try {
       const token = await user.getIdToken();
+      const { validateBinanceCredentials } = await import('../services/binanceService');
       const result = await validateBinanceCredentials(token, cleanKey, cleanSecret, baseUrl);
       const hint = getValidationHint(result.code ?? null, baseUrl);
       const combinedMsg = [result.msg || (result.ok ? 'Credentials are valid.' : 'Credentials are invalid.'), hint]

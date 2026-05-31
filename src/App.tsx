@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, lazy, Suspense, useMemo, Fragment } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 
@@ -177,14 +177,15 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
   );
 };
 
+const DEFAULT_SOURCE_OPTIONS = [
+  'Salary',
+  'Bank Transfer',
+  'Card',
+  'Cash',
+  'Investments',
+];
+
 export default function App() {
-  const defaultSourceOptions = [
-    'Salary',
-    'Bank Transfer',
-    'Card',
-    'Cash',
-    'Investments',
-  ];
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -209,7 +210,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
-  const [customSources, setCustomSources] = useState<string[]>(defaultSourceOptions);
+  const [customSources, setCustomSources] = useState<string[]>(DEFAULT_SOURCE_OPTIONS);
   
   // Dynamic Merchant & Category Logic
   const categories = useMemo(() => {
@@ -236,6 +237,7 @@ export default function App() {
   const [exerciseSessions, setExerciseSessions] = useState<any[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [tradeBufferState, setTradeBufferState] = useState({
     openPositions: 0,
     closedPositions: 0,
@@ -309,9 +311,36 @@ export default function App() {
     setIsLoading(true);
     const currentUid = user.uid;
 
+    // Track initial snapshots for critical collections to ensure smooth skeleton-to-content transition
+    const initialLoads = {
+      tasks: false,
+      transactions: false,
+      budgets: false,
+      loans: false,
+      openPositions: false,
+      settings: false,
+    };
+
+    const markLoaded = (key: keyof typeof initialLoads) => {
+      initialLoads[key] = true;
+      if (
+        initialLoads.tasks &&
+        initialLoads.transactions &&
+        initialLoads.budgets &&
+        initialLoads.loans &&
+        initialLoads.openPositions &&
+        initialLoads.settings
+      ) {
+        setIsLoading(false);
+      }
+    };
+
+    // Safety fallback timeout: if Firestore takes too long or is offline, force show layout after 1.5s
+    const safetyTimeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+
     // Tasks Listener — fetches all tasks for this user.
-    // Client-side filter excludes completed long-term tasks from state.
-    // Completed daily tasks are kept for midnight recurrence reset logic.
     const tasksQuery = query(
       collection(db, 'tasks'),
       where('uid', '==', currentUid)
@@ -320,29 +349,31 @@ export default function App() {
       const tasksData: Task[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as Task;
-        // Include active tasks OR completed daily tasks (needed for midnight reset logic).
-        // Completed long-term tasks are excluded — they are loaded on-demand in Tasks.tsx.
         if (data.status !== 'done' || data.taskCategory === 'daily') {
           tasksData.push({ ...data, id: doc.id } as Task);
         }
       });
       setTasks(tasksData);
+      markLoaded('tasks');
     }, (error) => {
       console.error("[Firebase Sync] Tasks listener error:", error);
+      markLoaded('tasks');
     });
 
-    // Transactions Listener — limited to last 50 ordered by date.
-    // All-time totals are maintained separately in app_settings (allTimeSavings).
+    // Transactions Listener — load all user transactions.
     const transQuery = query(
       collection(db, 'transactions'),
-      where('uid', '==', currentUid),
-      limit(100) // Increased slightly to ensure we catch enough recent ones without explicit order
+      where('uid', '==', currentUid)
     );
     const unsubscribeTrans = onSnapshot(transQuery, (snapshot) => {
       const transData: Transaction[] = [];
       snapshot.forEach((doc) => transData.push({ ...doc.data(), id: doc.id } as Transaction));
       setTransactions(transData);
-    }, (error) => console.error("[Firebase Sync] Transactions listener error:", error));
+      markLoaded('transactions');
+    }, (error) => {
+      console.error("[Firebase Sync] Transactions listener error:", error);
+      markLoaded('transactions');
+    });
 
     // Budgets Listener
     const budgetsQuery = query(collection(db, 'budgets'), where('uid', '==', currentUid));
@@ -350,7 +381,11 @@ export default function App() {
       const budgetsData: Budget[] = [];
       snapshot.forEach((doc) => budgetsData.push({ ...doc.data(), id: doc.id } as Budget));
       setBudgets(budgetsData);
-    }, (error) => console.error("Budgets listener error:", error));
+      markLoaded('budgets');
+    }, (error) => {
+      console.error("Budgets listener error:", error);
+      markLoaded('budgets');
+    });
 
     // Exercises Listener — limited to last 30 sessions.
     const exercisesQuery = query(
@@ -379,7 +414,26 @@ export default function App() {
       const loansData: Loan[] = [];
       snapshot.forEach((doc) => loansData.push({ ...doc.data(), id: doc.id } as Loan));
       setLoans(loansData);
-    }, (error) => console.error("[Firebase Sync] Loans listener error:", error));
+      markLoaded('loans');
+    }, (error) => {
+      console.error("[Firebase Sync] Loans listener error:", error);
+      markLoaded('loans');
+    });
+
+    // Open Positions Listener
+    const openPositionsQuery = query(
+      collection(db, 'binance_positions', currentUid, 'items'),
+      where('status', '==', 'OPEN')
+    );
+    const unsubscribeOpenPositions = onSnapshot(openPositionsQuery, (snapshot) => {
+      const positionsData: any[] = [];
+      snapshot.forEach((doc) => positionsData.push({ ...doc.data(), id: doc.id }));
+      setOpenPositions(positionsData);
+      markLoaded('openPositions');
+    }, (error) => {
+      console.error("[Firebase Sync] Open positions listener error:", error);
+      markLoaded('openPositions');
+    });
 
     // App Settings Listener — also carries allTimeSavings aggregate.
     const appSettingsQuery = query(collection(db, 'app_settings'), where('uid', '==', currentUid));
@@ -390,11 +444,9 @@ export default function App() {
         setMonthlyBudget(settings.monthlyBudget || 0);
 
         // Read the pre-computed all-time savings aggregate.
-        // If the field doesn't exist yet, trigger one-time migration.
         if (typeof settings.allTimeSavings === 'number') {
           setAllTimeSavings(settings.allTimeSavings);
         } else {
-          // One-time migration: sum all historical transactions and save total.
           console.log('[BillingGuard] allTimeSavings missing — running one-time migration...');
           getDocs(query(collection(db, 'transactions'), where('uid', '==', currentUid)))
             .then((snap) => {
@@ -404,7 +456,6 @@ export default function App() {
                 total += t.type === 'income' ? t.amount : -t.amount;
               });
               setAllTimeSavings(total);
-              // Persist into settings so this never runs again.
               updateDoc(doc(db, 'app_settings', snapshot.docs[0].id), {
                 allTimeSavings: total,
               }).catch(console.error);
@@ -427,7 +478,7 @@ export default function App() {
           : [];
         const normalizedSources = persistedSources.length > 0
           ? Array.from(new Set(persistedSources))
-          : defaultSourceOptions;
+          : DEFAULT_SOURCE_OPTIONS;
 
         setCustomSources(normalizedSources);
       } else if (currentUid) {
@@ -439,7 +490,7 @@ export default function App() {
           tradeTrackerEpoch: 0,
           merchantCategoryMap: {},
           customExpenseCategories: [],
-          sourceOptions: defaultSourceOptions,
+          sourceOptions: DEFAULT_SOURCE_OPTIONS,
           updatedAt: new Date().toISOString(),
         };
         addDoc(collection(db, 'app_settings'), defaultSettings).catch(err => console.error(err));
@@ -449,22 +500,26 @@ export default function App() {
         setAllTimeSavings(0);
         setMerchantToCategory({});
         setCustomCategories([]);
-        setCustomSources(defaultSourceOptions);
+        setCustomSources(DEFAULT_SOURCE_OPTIONS);
       }
-    }, (error) => console.error("[Firebase Sync] App settings listener error:", error));
-
-    setIsLoading(false);
+      markLoaded('settings');
+    }, (error) => {
+      console.error("[Firebase Sync] App settings listener error:", error);
+      markLoaded('settings');
+    });
 
     return () => {
+      clearTimeout(safetyTimeout);
       unsubscribeTasks();
       unsubscribeTrans();
       unsubscribeBudgets();
       unsubscribeExercises();
       unsubscribeNotes();
       unsubscribeLoans();
+      unsubscribeOpenPositions();
       unsubscribeSettings();
     };
-  }, [user, isAuthReady]);
+  }, [user?.uid, isAuthReady]);
 
   // Trade tracker persisted-state listeners for dashboard buffer cards.
   // NOTE: The binance_positions sub-collection listener has been REMOVED from here.
@@ -840,7 +895,7 @@ export default function App() {
   const handleSystemReset = async () => {
     const currentUid = user?.uid || null;
     try {
-      const collections = ['tasks', 'transactions', 'budgets', 'notes', 'exercises', 'trade_journals', 'crypto_holdings'];
+      const collections = ['tasks', 'transactions', 'budgets', 'notes', 'exercises', 'trade_journals', 'crypto_holdings', 'loans'];
       
       // 1. Purge standard collections
       for (const collName of collections) {
@@ -1010,18 +1065,15 @@ export default function App() {
     }
   };
 
-  const updateTaskStatus = async (taskId: string, status: Task['status']) => {
-    // 1. Optimistic Update
-    const originalTasks = [...tasks];
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
-    if (taskIndex === -1) return;
+  const updateTaskStatus = async (taskId: string, status: 'todo' | 'done') => {
+    // Capture the original task for highly precise rollback in functional state updates
+    const originalTask = tasks.find(t => t.id === taskId);
+    if (!originalTask) return;
 
-    const task = tasks[taskIndex];
-    const newTasks = [...tasks];
     const updates: Partial<Task> = { status };
 
-    if (status === 'done' && task.status !== 'done') {
-      if (task.taskCategory === 'daily' && task.isMissedDaily) {
+    if (status === 'done' && originalTask.status !== 'done') {
+      if (originalTask.taskCategory === 'daily' && originalTask.isMissedDaily) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         updates.lastCompletedAt = yesterday.toISOString();
@@ -1031,16 +1083,15 @@ export default function App() {
       updates.isMissedDaily = false;
     }
 
-    newTasks[taskIndex] = { ...task, ...updates };
-    setTasks(newTasks);
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
     haptics.light();
 
     try {
       await updateDoc(doc(db, 'tasks', taskId), updates);
       toast.success('Task status updated.');
     } catch (error) {
-      // 2. Rollback on failure
-      setTasks(originalTasks);
+      // Precise targeted rollback on failure to avoid stale list rollback
+      setTasks(prev => prev.map(t => t.id === taskId ? originalTask : t));
       console.error('Error updating task status:', error);
       toast.error('Could not update task status.');
       haptics.error();
@@ -1064,9 +1115,11 @@ export default function App() {
   };
 
   const deleteTask = async (taskId: string) => {
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    if (!taskToDelete) return;
+
     // 1. Optimistic Update
-    const originalTasks = [...tasks];
-    setTasks(tasks.filter(t => t.id !== taskId));
+    setTasks(prev => prev.filter(t => t.id !== taskId));
     haptics.heavy();
 
     try {
@@ -1074,7 +1127,7 @@ export default function App() {
       toast.success('Task deleted.');
     } catch (error) {
       // 2. Rollback
-      setTasks(originalTasks);
+      setTasks(prev => prev.some(t => t.id === taskId) ? prev : [...prev, taskToDelete]);
       console.error('Error deleting task:', error);
       toast.error('Could not delete task.');
       haptics.error();
@@ -1088,14 +1141,13 @@ export default function App() {
     }
 
     // 1. Optimistic Update
-    const originalTransactions = [...transactions];
     const optimisticTransaction: Transaction = {
       ...transaction,
       id: 'temp-' + Date.now(),
       uid: user?.uid || null,
       createdAt: new Date().toISOString(),
     };
-    setTransactions([optimisticTransaction, ...transactions]);
+    setTransactions(prev => [optimisticTransaction, ...prev]);
     haptics.light();
 
     try {
@@ -1118,7 +1170,7 @@ export default function App() {
       toast.success('Transaction saved.');
     } catch (error) {
       // 2. Rollback
-      setTransactions(originalTransactions);
+      setTransactions(prev => prev.filter(t => t.id !== optimisticTransaction.id));
       console.error('Error adding transaction:', error);
       toast.error('Could not save transaction.');
       haptics.error();
@@ -1191,7 +1243,20 @@ export default function App() {
     }
   };
 
-  const renderContent = () => {
+  const handleAddClick = () => {
+    if (activeTab === 'tasks') {
+      setEditingTask(null);
+      setIsTaskModalOpen(true);
+    }
+    else if (activeTab === 'expenses') setIsExpenseModalOpen(true);
+    else if (activeTab === 'exercises') setIsExerciseModalOpen(true);
+    else {
+      setEditingTask(null);
+      setIsTaskModalOpen(true);
+    }
+  };
+
+  const contentView = useMemo(() => {
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -1199,6 +1264,9 @@ export default function App() {
             tasks={tasks} 
             transactions={transactions} 
             budgets={budgets}
+            loans={loans}
+            openPositions={openPositions}
+            allTimeSavings={allTimeSavings}
             onViewTasks={() => setActiveTab('tasks')}
             onViewExpenses={() => setActiveTab('expenses')}
             onAddTask={() => {
@@ -1283,7 +1351,6 @@ export default function App() {
             onEditLoan={updateLoan}
             onDeleteLoan={deleteLoan}
             onToggleStatus={toggleLoanStatus}
-            totalUnrealizedPnl={tradeBufferState.totalUnrealizedPnl}
           />
         );
       case 'trade-tracker':
@@ -1330,6 +1397,12 @@ export default function App() {
             onRecalculateFinancials={handleRecalculateFinancials}
             isSyncingFinancials={isSyncingFinancials}
             isSyncingTrades={isSyncingTrades}
+            tasksCount={tasks.length}
+            transactionsCount={transactions.length}
+            budgetsCount={budgets.length}
+            notesCount={notes.length}
+            loansCount={loans.length}
+            openPositionsCount={openPositions.length}
           />
         );
       default:
@@ -1338,6 +1411,9 @@ export default function App() {
             tasks={tasks} 
             transactions={transactions}
             budgets={budgets}
+            loans={loans}
+            openPositions={openPositions}
+            allTimeSavings={allTimeSavings}
             onViewTasks={() => setActiveTab('tasks')}
             onViewExpenses={() => setActiveTab('expenses')}
             onAddTask={() => {
@@ -1353,20 +1429,23 @@ export default function App() {
           />
         );
     }
-  };
-
-  const handleAddClick = () => {
-    if (activeTab === 'tasks') {
-      setEditingTask(null);
-      setIsTaskModalOpen(true);
-    }
-    else if (activeTab === 'expenses') setIsExpenseModalOpen(true);
-    else if (activeTab === 'exercises') setIsExerciseModalOpen(true);
-    else {
-      setEditingTask(null);
-      setIsTaskModalOpen(true);
-    }
-  };
+  }, [
+    activeTab,
+    tasks,
+    transactions,
+    budgets,
+    loans,
+    openPositions,
+    allTimeSavings,
+    tradeBufferState,
+    notes,
+    user,
+    monthlyBudget,
+    settingsDocId,
+    isSyncingFinancials,
+    isSyncingTrades,
+    exerciseSessions
+  ]);
 
   const handleLogin = async () => {
     try {
@@ -1410,7 +1489,15 @@ export default function App() {
   }, [activeTab]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className={`min-h-screen bg-bg text-ink/90 selection:bg-accent/30 selection:text-white theme-${activeTab}`}>
+      {/* Skip link — first focusable element for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[300] focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-xl focus:text-sm focus:font-semibold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Premium Background Elements */}
       <div className={`premium-orb ${orbPosition} bg-accent`} />
       <div className="contextual-glow" />
@@ -1421,7 +1508,7 @@ export default function App() {
         onLogout={handleLogout}
       />
       
-      <main className="lg:ml-64 min-h-screen relative p-2 sm:p-3 md:p-5 lg:p-8 xl:p-10 pt-[env(safe-area-inset-top)] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-10">
+      <main id="main-content" className="lg:ml-64 min-h-screen relative px-3 sm:px-3 md:px-5 lg:px-8 xl:px-10 pt-safe-top pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
         <div className="relative">
@@ -1442,7 +1529,7 @@ export default function App() {
                 }}
               >
                 <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
-                  {renderContent()}
+                  {contentView}
                 </Suspense>
               </motion.div>
             </AnimatePresence>
@@ -1454,6 +1541,8 @@ export default function App() {
       <MobileNav 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
+        user={user}
+        onLogout={handleLogout}
       />
 
       <div className="fixed inset-0 z-[200] pointer-events-none">
@@ -1501,6 +1590,7 @@ export default function App() {
 
       <Toaster position="bottom-left" theme="light" toastOptions={{ style: { background: 'var(--color-surface)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' } }} />
     </div>
+    </MotionConfig>
   );
 }
 

@@ -8,7 +8,7 @@ interface AnimatedNumberProps {
   precision?: number;
 }
 
-export default function AnimatedNumber({ value, prefix = '', className = '', precision = 0 }: AnimatedNumberProps) {
+export default function AnimatedNumber({ value, prefix = '', className = '', precision = 2 }: AnimatedNumberProps) {
   const spring = useSpring(value, {
     mass: 0.8,
     stiffness: 75,

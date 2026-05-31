@@ -52,7 +52,21 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
         dragElastic={0.6}
         onDragEnd={handleDragEnd}
         style={{ x, opacity }}
-        className={`relative z-10 p-4 sm:p-6 bg-white/[0.01] border-b border-white/[0.03] flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all ${isLatest ? 'border-l-4 border-l-success bg-success/[0.02]' : ''} hover:bg-black/[0.02] ${t.id.toString().startsWith('temp-') ? 'opacity-50 grayscale-[0.5]' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit ${t.description || t.category}: ${t.type === 'income' ? '+' : '–'}$${Math.abs(t.amount).toFixed(2)}`}
+        onClick={() => {
+          if (Math.abs(x.get()) < 5) {
+            onEdit(t);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onEdit(t);
+          }
+        }}
+        className={`relative z-10 p-4 sm:p-6 bg-white/[0.01] border-b border-white/[0.03] flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-colors cursor-pointer ${isLatest ? 'border-l-4 border-l-success bg-success/[0.02]' : ''} hover:bg-black/[0.02] ${t.id.toString().startsWith('temp-') ? 'opacity-50 grayscale-[0.5]' : ''}`}
       >
         <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-subtle rounded-full flex items-center justify-center border border-border transition-all group-hover:scale-110 group-hover:border-accent/30 flex-shrink-0">
@@ -79,11 +93,11 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
         </div>
         <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 w-full sm:w-auto">
           <span className={`text-base sm:text-2xl font-mono font-black tabular-nums ${t.type === 'income' ? 'text-success' : 'text-ink'}`}>
-            {t.type === 'income' ? '+' : '–'}${Math.abs(t.amount).toLocaleString()}
+            {t.type === 'income' ? '+' : '–'}${Math.abs(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <div className="hidden sm:flex gap-2">
-            <button onClick={() => onEdit(t)} className="p-2 text-muted hover:text-accent transition-colors"><Edit3 className="w-4 h-4" /></button>
-            <button onClick={() => onDelete(t.id)} className="p-2 text-muted hover:text-alert transition-colors"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => onEdit(t)} aria-label={`Edit ${t.description || t.category}`} className="p-2 text-muted hover:text-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 rounded"><Edit3 className="w-4 h-4" aria-hidden="true" /></button>
+            <button onClick={() => onDelete(t.id)} aria-label={`Delete ${t.description || t.category}`} className="p-2 text-muted hover:text-alert transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert focus-visible:ring-offset-1 rounded"><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
           </div>
         </div>
       </motion.div>
@@ -121,7 +135,7 @@ const NoirTooltip = ({ active, payload }: any) => {
       <div className="bg-surface backdrop-blur-md border border-border p-3 rounded-2xl shadow-xl">
         <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.name}</p>
         <p className={`text-sm font-mono font-black ${val >= 0 ? 'text-success' : 'text-alert'}`}>
-          {val >= 0 ? '+' : '-'}${Math.abs(val).toLocaleString()}
+          {val >= 0 ? '+' : '-'}${Math.abs(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
       </div>
     );
@@ -174,6 +188,18 @@ export default function Expenses({
       setHistoricalData(null);
     }
   }, [dateRange, onLoadRange]);
+
+  // Escape key listener for budget allocation modal
+  useEffect(() => {
+    if (!isAllocationModalOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAllocationModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isAllocationModalOpen]);
 
   // The pool of transactions we are currently looking at
   const transactionPool = historicalData ?? transactions;
@@ -250,8 +276,16 @@ export default function Expenses({
     );
   }, [filteredTransactions, searchTerm]);
 
-  const totalSpent = filteredTransactions.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0);
-  const totalIncome = filteredTransactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc, 0);
+  const { totalSpent, totalIncome } = useMemo(() => {
+    return filteredTransactions.reduce((acc, t) => {
+      if (t.type === 'expense') {
+        acc.totalSpent += t.amount;
+      } else if (t.type === 'income') {
+        acc.totalIncome += t.amount;
+      }
+      return acc;
+    }, { totalSpent: 0, totalIncome: 0 });
+  }, [filteredTransactions]);
   const netBalance = totalIncome - totalSpent;
   const savingsRate = totalIncome > 0 ? (netBalance / totalIncome) * 100 : 0;
 
@@ -262,12 +296,14 @@ export default function Expenses({
     const months = eachMonthOfInterval({ start: subMonths(now, 5), end: now });
     months.forEach(monthStart => {
       const monthEnd = endOfDay(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0));
-      const periodTx = transactionPool.filter(t => {
+      const { inc, exp } = transactionPool.reduce((acc, t) => {
         const d = parseISO(t.date);
-        return isWithinInterval(d, { start: monthStart, end: monthEnd });
-      });
-      const inc = periodTx.reduce((a, t) => t.type === 'income' ? a + t.amount : a, 0);
-      const exp = periodTx.reduce((a, t) => t.type === 'expense' ? a + t.amount : a, 0);
+        if (isWithinInterval(d, { start: monthStart, end: monthEnd })) {
+          if (t.type === 'income') acc.inc += t.amount;
+          else if (t.type === 'expense') acc.exp += t.amount;
+        }
+        return acc;
+      }, { inc: 0, exp: 0 });
       data.push({ name: format(monthStart, 'MMM'), net: inc - exp });
     });
     return data;
@@ -305,7 +341,7 @@ export default function Expenses({
       `"${t.description?.replace(/"/g, '""') || ''}"`,
       t.category,
       `"${t.merchant?.replace(/"/g, '""') || ''}"`,
-      t.amount.toString(),
+      Number(t.amount).toFixed(2),
       t.type
     ]);
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -344,7 +380,7 @@ export default function Expenses({
         `"${t.description?.replace(/"/g, '""') || ''}"`,
         t.category,
         `"${t.merchant?.replace(/"/g, '""') || ''}"`,
-        t.amount.toString(),
+          Number(t.amount).toFixed(2),
         t.type
       ]);
       
@@ -366,7 +402,7 @@ export default function Expenses({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-4 sm:px-6 pt-6 sm:pt-8 lg:pt-12">
       {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
 
       {/* The Command Strip (Intel Summary) */}
@@ -377,8 +413,8 @@ export default function Expenses({
           { label: 'Net Balance', value: netBalance, color: netBalance >= 0 ? 'text-success' : 'text-alert', prefix: netBalance >= 0 ? '+$' : '-$' },
           { label: 'Savings Rate', value: savingsRate || 0, color: 'text-accent', suffix: '%' },
         ].map((m, i) => (
-          <div key={i} className="p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors border-border/10">
-            <span className="text-[9px] font-black text-muted/60 uppercase tracking-[0.2em] mb-1">{m.label}</span>
+               <div key={i} className="p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors border-border/10">
+                 <span className="text-xs font-semibold text-muted/70 uppercase tracking-wide mb-1">{m.label}</span>
             <div className="flex items-baseline gap-2">
                <span className={`text-sm sm:text-lg lg:text-xl font-mono font-black tracking-tighter ${m.color}`}>
                   <AnimatedNumber value={Math.abs(m.value)} prefix={m.prefix} />
@@ -394,10 +430,10 @@ export default function Expenses({
         <div className="pb-4 sm:pb-6 border-b border-border/50">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-                <h3 className="text-2xl sm:text-3xl font-display font-black text-ink uppercase tracking-tighter">Expense Ledger</h3>
+                <h3 className="text-2xl sm:text-3xl font-display font-black text-ink uppercase tracking-tighter text-balance">Expense Ledger</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em]">
-                    {dateRange ? 'Historical Range Filtered' : 'Latest activity and budgets'}
+                  <p className="text-xs font-medium text-muted/60">
+                    {dateRange ? 'Historical range filtered' : 'Latest activity and budgets'}
                   </p>
                   {isFetchingRange && (
                     <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
@@ -406,9 +442,18 @@ export default function Expenses({
             </div>
             <div className="flex items-center gap-3">
               <button 
+                onClick={() => setIsAllocationModalOpen(true)} 
+                className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted/70 hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
+                aria-label="Configure budget limits per category"
+                title="Budget Config"
+              >
+                <Settings2 className="w-4 h-4" />
+              </button>
+              <button 
                 onClick={() => setIsFocusedLedgerOpen(true)} 
-                className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
-                aria-label="Expand focused ledger"
+                className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted/70 hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
+                aria-label="Open full ledger with export options"
+                title="Full Ledger + Export"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
@@ -424,13 +469,14 @@ export default function Expenses({
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 bg-surface-subtle/50 px-5 py-2.5 rounded-full border border-border focus-within:border-accent/40 transition-all w-full max-w-sm">
-            <Search className="w-4 h-4 text-muted" />
+            <Search className="w-4 h-4 text-muted/70" />
             <input
               type="text"
-              placeholder="Registry deeper search..."
+              placeholder="Search by merchant, category or amount…"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/60 font-bold"
+              className="bg-transparent border-none outline-none text-sm text-ink w-full placeholder:text-muted/60 font-medium"
+              aria-label="Search transactions"
             />
           </div>
         </div>
@@ -438,7 +484,7 @@ export default function Expenses({
           <div className="space-y-1">
             {searchedTransactions.length > 0 ? (
               <AnimatePresence mode="popLayout">
-                {searchedTransactions.slice(0, 50).map((t, index) => (
+                {searchedTransactions.slice(0, 25).map((t, index) => (
                   <SwipeableExpenseItem 
                     key={t.id}
                     transaction={t}
@@ -453,11 +499,11 @@ export default function Expenses({
             ) : (
               <div className="p-12 sm:p-20 text-center space-y-4" role="status">
                 <Search className="w-8 h-8 mx-auto text-muted" />
-                <p className="text-[11px] uppercase font-black tracking-[0.1em] sm:tracking-[0.2em] text-muted">
-                  {searchTerm ? `No matches for “${searchTerm}”` : 'No recent transactions found'}
+                <p className="text-xs font-medium text-muted">
+                  {searchTerm ? `No matches for "${searchTerm}"` : 'No transactions found'}
                 </p>
                 {!searchTerm && (
-                  <p className="text-[9px] font-bold text-muted/40 uppercase tracking-widest">
+                  <p className="text-xs text-muted/50">
                     Use the date filter below to load historical data.
                   </p>
                 )}
@@ -476,6 +522,8 @@ export default function Expenses({
                     className="bg-surface border border-border rounded-xl px-3 py-2 text-xs text-ink outline-none focus:border-accent/40 w-full sm:w-auto"
                     value={dateRange?.start || ''}
                     onChange={(e) => setDateRange(prev => ({ start: e.target.value, end: prev?.end || '' }))}
+                    aria-label="Start date"
+                    name="date-start"
                  />
                  <span className="text-muted text-xs font-bold uppercase">to</span>
                  <input 
@@ -483,6 +531,8 @@ export default function Expenses({
                     className="bg-surface border border-border rounded-xl px-3 py-2 text-xs text-ink outline-none focus:border-accent/40 w-full sm:w-auto"
                     value={dateRange?.end || ''}
                     onChange={(e) => setDateRange(prev => ({ start: prev?.start || '', end: e.target.value }))}
+                    aria-label="End date"
+                    name="date-end"
                  />
               </div>
            </div>
@@ -510,7 +560,7 @@ export default function Expenses({
               <Landmark className="w-3.5 md:w-4 h-3.5 md:h-4 text-accent animate-pulse" />
               <span className="text-[10px] md:micro-label !text-accent tracking-[0.12em] sm:tracking-[0.3em] font-black uppercase">Historical Reserves</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-black text-ink tracking-tighter">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-black text-ink tracking-tighter tabular-nums">
               ${allTimeSavings.toLocaleString()}
             </h2>
             <div className="flex items-center gap-2 text-muted">
@@ -537,6 +587,7 @@ export default function Expenses({
                          value={tempGoal} 
                          onChange={e => setTempGoal(e.target.value)}
                          className="w-20 md:w-24 bg-black/40 border-b border-accent outline-none text-ink text-xs md:text-sm py-1 font-mono"
+                         aria-label="Savings goal amount"
                        />
                        <button onClick={handleSaveGoal} className="p-1 hover:bg-white/5 rounded-full"><Check className="w-3 md:w-3.5 h-3 md:h-3.5 text-accent" /></button>
                      </div>
@@ -556,15 +607,16 @@ export default function Expenses({
                </div>
             </div>
             <div className="h-3 md:h-4 bg-surface-subtle rounded-full border border-border overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (allTimeSavings / savingsGoal) * 100)}%` }}
-                transition={{ duration: 1.5, ease: 'circOut' }}
-                className={`h-full ${allTimeSavings >= savingsGoal ? 'bg-success shadow-[0_0_20px_rgba(52,211,153,0.3)]' : 'bg-accent shadow-[0_0_20px_rgba(99,102,241,0.3)]'} relative`}
-              >
-                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-              </motion.div>
-            </div>
+               <motion.div 
+                 style={{ transformOrigin: 'left' }}
+                 initial={{ scaleX: 0 }}
+                 animate={{ scaleX: Math.min(1, allTimeSavings / savingsGoal) }}
+                 transition={{ duration: 1.5, ease: 'circOut' }}
+                 className={`h-full w-full ${allTimeSavings >= savingsGoal ? 'bg-success shadow-[0_0_20px_rgba(52,211,153,0.3)]' : 'bg-accent shadow-[0_0_20px_rgba(99,102,241,0.3)]'} relative`}
+               >
+                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
+               </motion.div>
+             </div>
           </div>
         </div>
       </motion.div>
@@ -623,15 +675,15 @@ export default function Expenses({
       {/* Allocation Modal */}
       <AnimatePresence>
         {isAllocationModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="benchmark-modal-title">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAllocationModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-md rounded-[24px] sm:rounded-[32px] shadow-2xl border border-white/10 p-4 sm:p-6 lg:p-10">
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-md rounded-[24px] sm:rounded-[32px] shadow-2xl border border-border/30 p-4 sm:p-6 lg:p-10">
               <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-display font-black text-ink uppercase tracking-tight">System Benchmark</h2>
-                <button onClick={() => setIsAllocationModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full text-muted transition-colors"><X className="w-5 h-5" /></button>
+                <h2 id="benchmark-modal-title" className="text-2xl font-display font-black text-ink uppercase tracking-tight">System Benchmark</h2>
+                <button onClick={() => setIsAllocationModalOpen(false)} aria-label="Close budget configuration" className="p-2 hover:bg-surface-subtle/20 rounded-full text-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X className="w-5 h-5" aria-hidden="true" /></button>
               </div>
 
-              <div className="mb-10 p-6 bg-accent/5 border border-accent/20 rounded-[28px] space-y-4">
+                <div className="mb-10 p-6 bg-accent/14 border border-accent/30 rounded-[28px] space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center text-accent border border-accent/20">
                     <TrendingUp className="w-5 h-5" />
@@ -649,14 +701,15 @@ export default function Expenses({
                     onBlur={(e) => onSetGlobalBudget(parseFloat(e.target.value) || 0)}
                     className="w-full bg-transparent border-none outline-none text-2xl font-mono font-black text-ink"
                     placeholder="2500"
+                    aria-label="Monthly spending limit"
                   />
                 </div>
               </div>
 
-              <div className="mb-6 flex items-center gap-4">
-                 <div className="h-px flex-1 bg-white/[0.03]" />
-                 <span className="text-[10px] font-black text-muted/30 uppercase tracking-[0.12em] sm:tracking-[0.3em]">Mapping Controls</span>
-                 <div className="h-px flex-1 bg-white/[0.03]" />
+               <div className="mb-6 flex items-center gap-4">
+                <div className="h-px flex-1 bg-border/30" />
+                <span className="text-[10px] font-black text-muted/70 uppercase tracking-[0.12em] sm:tracking-[0.3em]">Mapping Controls</span>
+                <div className="h-px flex-1 bg-border/30" />
               </div>
 
               <div className="space-y-4 max-h-[30vh] overflow-y-auto pr-2 scrollbar-custom">
@@ -670,7 +723,7 @@ export default function Expenses({
                         {isEditing ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-mono text-ink">$</span>
-                            <input type="number" value={editingBudget.limit} onChange={e => setEditingBudget({ ...editingBudget, limit: e.target.value })} className="w-20 bg-surface border-b border-accent text-sm font-mono outline-none py-1" autoFocus />
+                            <input type="number" value={editingBudget.limit} onChange={e => setEditingBudget({ ...editingBudget, limit: e.target.value })} className="w-20 bg-surface border-b border-accent text-sm font-mono outline-none py-1" aria-label={`Budget limit for ${cat}`} autoFocus />
                           </div>
                         ) : (
                           <p className="text-sm font-mono text-ink">{budget ? `$${budget.monthly_limit.toLocaleString()}` : 'No limit'}</p>
@@ -678,9 +731,9 @@ export default function Expenses({
                       </div>
                       <div className="flex gap-2">
                         {isEditing ? (
-                          <button onClick={() => { onUpsertBudget(cat, parseFloat(editingBudget.limit) || 0); setEditingBudget(null); }} className="p-2 bg-accent/20 text-accent rounded-lg"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => { onUpsertBudget(cat, parseFloat(editingBudget.limit) || 0); setEditingBudget(null); }} aria-label={`Save budget for ${cat}`} className="p-2 bg-accent/20 text-accent rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><Check className="w-4 h-4" aria-hidden="true" /></button>
                         ) : (
-                          <button onClick={() => setEditingBudget({ category: cat, limit: budget?.monthly_limit.toString() || '' })} className="p-2 hover:bg-surface rounded-lg text-muted hover:text-accent"><Settings2 className="w-4 h-4" /></button>
+                          <button onClick={() => setEditingBudget({ category: cat, limit: budget?.monthly_limit.toString() || '' })} aria-label={`Edit budget for ${cat}`} className="p-2 hover:bg-surface rounded-lg text-muted hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><Settings2 className="w-4 h-4" aria-hidden="true" /></button>
                         )}
                       </div>
                     </div>
@@ -702,7 +755,7 @@ export default function Expenses({
                initial={{ opacity: 0, scale: 0.98, y: 30 }} 
                animate={{ opacity: 1, scale: 1, y: 0 }} 
                exit={{ opacity: 0, scale: 0.98, y: 30 }} 
-               className="relative bg-surface w-full max-w-5xl h-[85vh] rounded-[40px] shadow-2xl border border-white/10 flex flex-col overflow-hidden"
+              className="relative bg-surface w-full max-w-5xl h-[85vh] rounded-[40px] shadow-2xl border border-border/30 flex flex-col overflow-hidden"
             >
               <div className="p-8 md:p-12 border-b border-border flex items-center justify-between">
                 <div>
@@ -710,28 +763,28 @@ export default function Expenses({
                   <p className="micro-label opacity-40 mt-1 uppercase tracking-widest">Complete Financial History</p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/5">
+                  <div className="flex items-center bg-surface-subtle/20 rounded-full p-1 border border-border/40">
                     <button 
                       onClick={handleExportFiltered} 
                       aria-label="Export filtered" 
                       title="Export Current View"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-accent/10 text-muted hover:text-accent rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-accent/10 text-muted/70 hover:text-accent rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Filtered
                     </button>
-                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                    <div className="w-[1px] h-4 bg-border/40 mx-1" />
                     <button 
                       onClick={handleExportAllTime} 
                       aria-label="Export all time" 
                       title="Export All-Time History"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-success/10 text-muted hover:text-success rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-success/10 text-muted/70 hover:text-success rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
                     >
                       <HistoryIcon className="w-3.5 h-3.5" />
                       All-Time
                     </button>
                   </div>
-                  <button onClick={() => setIsFocusedLedgerOpen(false)} aria-label="Close ledger" className="p-3 bg-white/5 border border-white/5 rounded-full text-muted hover:text-alert transition-all"><X className="w-5 h-5" aria-hidden="true" /></button>
+                  <button onClick={() => setIsFocusedLedgerOpen(false)} aria-label="Close ledger" className="p-3 bg-surface-subtle/20 border border-border/40 rounded-full text-muted/70 hover:text-alert transition-all"><X className="w-5 h-5" aria-hidden="true" /></button>
                 </div>
               </div>
               
@@ -744,6 +797,7 @@ export default function Expenses({
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="bg-transparent border-none outline-none text-xs sm:text-sm text-ink w-full placeholder:text-muted/60 font-bold"
+                    aria-label="Search transactions"
                     inputMode="search"
                   />
                 </div>
@@ -774,13 +828,13 @@ export default function Expenses({
         {transactionToDelete && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setTransactionToDelete(null)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-xs rounded-[32px] shadow-2xl border border-white/10 p-10 text-center">
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-xs rounded-[32px] shadow-2xl border border-border/30 p-10 text-center">
               <div className="w-16 h-16 bg-alert/20 rounded-full flex items-center justify-center mx-auto mb-6"><Trash2 className="w-6 h-6 text-alert" /></div>
               <h3 className="text-2xl font-display font-black text-ink mb-2 uppercase tracking-tight">Delete Entry?</h3>
               <p className="text-muted text-[11px] mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
               <div className="flex gap-4">
-                <button onClick={() => setTransactionToDelete(null)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-full font-bold text-[9px] uppercase tracking-widest text-muted">Cancel</button>
-                <button onClick={() => { onDeleteExpense(transactionToDelete); setTransactionToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-bold text-[9px] uppercase tracking-widest shadow-2xl shadow-alert/30">Confirm</button>
+                <button onClick={() => setTransactionToDelete(null)} className="flex-1 py-3 bg-surface-subtle/20 border border-border/40 rounded-full font-semibold text-sm text-muted/70 transition-all hover:bg-surface/50">Cancel</button>
+                <button onClick={() => { onDeleteExpense(transactionToDelete); setTransactionToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-semibold text-sm shadow-2xl shadow-alert/30 hover:bg-alert/90 transition-all">Delete</button>
               </div>
             </motion.div>
           </div>

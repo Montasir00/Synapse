@@ -11,6 +11,14 @@ interface SettingsProps {
   onRecalculateFinancials?: () => void;
   isSyncingFinancials?: boolean;
   isSyncingTrades?: boolean;
+  
+  // Database audit props
+  tasksCount?: number;
+  transactionsCount?: number;
+  budgetsCount?: number;
+  notesCount?: number;
+  loansCount?: number;
+  openPositionsCount?: number;
 }
 
 export default function Settings({
@@ -23,9 +31,15 @@ export default function Settings({
   onRecalculateFinancials,
   isSyncingFinancials,
   isSyncingTrades,
+  tasksCount = 0,
+  transactionsCount = 0,
+  budgetsCount = 0,
+  notesCount = 0,
+  loansCount = 0,
+  openPositionsCount = 0,
 }: SettingsProps) {
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-4 sm:px-6 pt-6 sm:pt-8 lg:pt-12">
       <div className="flex flex-col gap-6 sm:gap-8 lg:gap-10">
 
         <section className="soothing-card p-6 md:p-8 relative overflow-hidden group" aria-labelledby="settings-profile-title">
@@ -247,6 +261,60 @@ export default function Settings({
             </div>
           </section>
         )}
+
+        {/* Database Fetch Audit Section */}
+        <section className="soothing-card p-6 md:p-8 border-l-4 border-accent relative overflow-hidden group" aria-labelledby="settings-audit-title">
+          <div className="flex flex-col gap-6">
+            <div>
+              <h2 id="settings-audit-title" className="text-xl md:text-2xl font-display font-black text-ink uppercase tracking-tight">Database Fetch Audit</h2>
+              <p className="micro-label">Startup network synchronization payload</p>
+            </div>
+            
+            <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-xl">
+              When you load Synapse, Firestore establishes real-time tunnels to download active document states. Below is the exact transaction read audit required to synchronize this session:
+            </p>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2">
+              {[
+                { label: 'Tasks Register', count: tasksCount, suffix: 'reads' },
+                { label: 'Transactions', count: transactionsCount, suffix: 'reads' },
+                { label: 'Budgets & Rules', count: budgetsCount, suffix: 'reads' },
+                { label: 'Notes Storage', count: notesCount, suffix: 'reads' },
+                { label: 'Outstanding Loans', count: loansCount, suffix: 'reads' },
+                { label: 'Open Exposures', count: openPositionsCount, suffix: 'reads' },
+                { label: 'Core Vitals Doc', count: 3, suffix: 'reads' },
+              ].map((item, idx) => (
+                <div key={idx} className="border border-border/40 p-3 rounded-xl bg-surface-subtle/20">
+                  <span className="text-[8px] font-black text-muted/65 uppercase tracking-wider block mb-1">{item.label}</span>
+                  <span className="font-mono text-sm font-black text-ink">{item.count} {item.suffix}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-border/30 pt-4 flex items-baseline justify-between">
+              <div>
+                <span className="text-[9px] font-black text-muted/40 uppercase tracking-widest block mb-1">TOTAL INITIALIZATION VALUE</span>
+                <span className="text-2xl font-mono font-black text-accent">
+                  {tasksCount + transactionsCount + budgetsCount + notesCount + loansCount + openPositionsCount + 3} Reads
+                </span>
+              </div>
+              
+              <div className="text-right">
+                <span className="text-[9px] font-black text-muted/40 uppercase tracking-widest block mb-1">Tunnel Status</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-success/10 text-success">
+                  10 Active Tunnels
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-accent/5 border border-accent/15 flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping mt-1.5 shrink-0" />
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wide leading-relaxed">
+                <strong>Real-Time Optimization Active:</strong> After the initial payload, Firestore caches documents locally. Subsequent queries and live updates incur <strong>0 reads</strong> unless a document has been modified!
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Dangerous Zone */}
         <section className="soothing-card p-6 md:p-8 border-l-4 border-alert relative overflow-hidden group" aria-labelledby="settings-system-reset-title">

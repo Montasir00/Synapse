@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { Position, JournalEntry } from '../../types/binance';
-import { calculateMetrics } from '../../services/binanceService';
+import { calculateMetrics } from '../../services/tradeMetricsService';
 
 export const useTradeAnalytics = (positions: Position[], journals: Record<string, JournalEntry>, currentPrices: Record<string, number> = {}) => {
   // 1. Core Metrics (Derived from raw positions)

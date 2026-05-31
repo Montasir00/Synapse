@@ -34,18 +34,18 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   return (
     <div className={`soothing-card flex flex-col h-fit transition-all duration-700 border ${
       status === 'alert' ? 'border-alert/20 bg-alert/[0.02]' : 
-      status === 'active' ? 'border-accent/20 bg-accent/[0.02]' : 'border-white/5'
+      status === 'active' ? 'border-accent/20 bg-accent/[0.02]' : 'border-border/40'
     } ${className}`}>
-      <div className="p-5 pb-4 flex items-center justify-between border-b border-white/5 bg-white/[0.01]">
+      <div className="p-5 pb-4 flex items-center justify-between border-b border-border/40 bg-surface-subtle/10">
         <div className="flex items-center gap-3">
-          <div className={`${status === 'alert' ? 'text-alert' : status === 'active' ? 'text-accent' : 'text-muted/40'}`}>
+          <div className={`${status === 'alert' ? 'text-alert' : status === 'active' ? 'text-accent' : 'text-muted/70'}`}>
             {icon}
           </div>
           <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${status === 'alert' ? 'text-alert' : 'text-ink/60'}`}>
             {title}
           </h3>
           {badge && (
-            <span className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[8px] font-black text-accent uppercase tracking-widest leading-none">
+            <span className="px-2 py-0.5 rounded-full bg-accent/14 border border-accent/30 text-[10px] font-semibold text-white/90 tracking-wide leading-none">
               {badge}
             </span>
           )}
@@ -54,7 +54,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           {onAction && (
             <button 
               onClick={onAction} 
-              className="p-1.5 bg-white/5 rounded-lg text-muted/40 hover:text-accent hover:bg-accent/10 transition-all focus-visible-outline"
+              className="p-1.5 bg-surface-subtle/20 rounded-lg text-muted/70 hover:text-accent hover:bg-accent/10 transition-all focus-visible-outline"
               aria-label={`Action for ${title}`}
             >
               {actionIcon || <Plus className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -63,7 +63,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           {canExpand && (
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 bg-white/5 rounded-lg text-muted/40 hover:text-accent hover:bg-accent/10 transition-all focus-visible-outline"
+              className="p-1.5 bg-surface-subtle/20 rounded-lg text-muted/70 hover:text-accent hover:bg-accent/10 transition-all focus-visible-outline"
               aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
               title={isExpanded ? "Collapse Matrix" : "Expand Matrix"}
             >
@@ -75,7 +75,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 
       <div className={`p-4 transition-all duration-500 overflow-y-auto scrollbar-custom ${isExpanded ? 'max-h-[400px]' : ''}`}>
         {!hasItems ? (
-          <div className="py-8 text-center text-[9px] font-black text-muted/50 uppercase tracking-widest">
+          <div className="py-8 text-center text-xs font-medium text-muted/50">
             Nothing here yet
           </div>
         ) : (
@@ -87,8 +87,8 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             {displayedItems}
             {!isExpanded && canExpand && (
                <div className="pt-1 text-center">
-                  <span className="text-[8px] font-bold text-muted/40 uppercase tracking-widest">
-                     + {items.length - maxItems} More Encrypted
+                  <span className="text-[10px] font-medium text-muted/50">
+                     + {items.length - maxItems} more items
                   </span>
                </div>
             )}

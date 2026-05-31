@@ -212,7 +212,7 @@ export default function LogExpenseModal({
   return (
     <AnimatePresence>
       {isOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-label={editingTransaction ? 'Edit transaction' : 'Add transaction'}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="expense-modal-title">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -240,11 +240,12 @@ export default function LogExpenseModal({
                     <div className="w-3 h-3 rounded-full bg-accent animate-ping absolute inset-0" />
                     <div className="w-3 h-3 rounded-full bg-accent relative" />
                   </div>
-                  <span className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">Ledger Synchronization</span>
+                  <h2 id="expense-modal-title" className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">Ledger Synchronization</h2>
                 </div>
                 <button 
                   onClick={() => !isSubmitting && onClose()}
-                  className="w-10 h-10 rounded-full bg-surface-subtle/50 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/5 transition-all border border-border"
+                  aria-label="Close dialog"
+                  className="w-10 h-10 rounded-full bg-surface-subtle/50 flex items-center justify-center text-muted/70 hover:text-accent hover:bg-accent/5 transition-all border border-border"
                 >
                   <X className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -255,6 +256,7 @@ export default function LogExpenseModal({
                 <button 
                   type="button"
                   onClick={() => { setType('expense'); haptics.light(); }}
+                  aria-pressed={type === 'expense'}
                   className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'expense' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
                 >
                   Expense
@@ -262,6 +264,7 @@ export default function LogExpenseModal({
                 <button 
                   type="button"
                   onClick={() => { setType('income'); haptics.light(); }}
+                  aria-pressed={type === 'income'}
                   className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'income' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                 >
                   Income
@@ -272,7 +275,7 @@ export default function LogExpenseModal({
                 {/* Hero Amount Field */}
                 <div className="space-y-4 group">
                   <div className="flex justify-between items-end px-1">
-                    <label htmlFor="expense-amount" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Transaction Flow</label>
+                    <label htmlFor="expense-amount" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Transaction Flow</label>
                     <div className="flex items-center gap-1.5 text-accent">
                       <Sparkles className="w-3 h-3" />
                       <span className="text-[10px] font-bold uppercase tracking-widest">Precision Entry</span>
@@ -283,8 +286,9 @@ export default function LogExpenseModal({
                     <span className={`text-3xl sm:text-5xl font-mono font-bold mr-2 ${type === 'income' ? 'text-success' : 'text-ink'}`}>
                       {type === 'income' ? '+' : '-'}
                     </span>
-                    <input 
+                      <input 
                       id="expense-amount"
+                      name="amount"
                       type="number" 
                       step="0.01"
                       min="0.01"
@@ -292,7 +296,7 @@ export default function LogExpenseModal({
                       onChange={(e) => setAmount(e.target.value)}
                       onBlur={() => setSubmitAttempted(true)}
                       placeholder="0.00" 
-                      className={`w-full bg-transparent text-4xl sm:text-5xl font-mono font-bold tabular-nums outline-none transition-colors placeholder:text-muted/30 ${type === 'income' ? 'text-success' : 'text-ink'}`}
+                      className={`w-full bg-transparent text-4xl sm:text-5xl font-mono font-bold tabular-nums outline-none transition-colors placeholder:text-muted/70 ${type === 'income' ? 'text-success' : 'text-ink'}`}
                       inputMode="decimal"
                       required
                       autoFocus
@@ -311,7 +315,7 @@ export default function LogExpenseModal({
                   {/* Merchant Field */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label htmlFor="expense-merchant" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Counterparty</label>
+                      <label htmlFor="expense-merchant" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Counterparty</label>
                       <button 
                         type="button"
                         onClick={() => setIsAddingSource(!isAddingSource)}
@@ -328,8 +332,8 @@ export default function LogExpenseModal({
                           type="text"
                           value={newSource}
                           onChange={(e) => setNewSource(e.target.value)}
-                          placeholder="IDENTIFIER..."
-                          className="flex-1 bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/40"
+                          placeholder="IDENTIFIER…"
+                          className="flex-1 bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/70"
                           autoComplete="off"
                           autoFocus
                         />
@@ -341,12 +345,13 @@ export default function LogExpenseModal({
                       <div className="relative">
                         <input 
                           id="expense-merchant"
+                          name="merchant"
                           type="text" 
                           value={merchant}
                           onChange={(e) => handleMerchantChange(e.target.value)}
                           onBlur={() => setSubmitAttempted(true)}
                           placeholder={type === 'income' ? "E.G. SALARY" : "E.G. AMAZON"} 
-                          className={`w-full bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border text-ink placeholder:text-muted/40 uppercase tracking-widest ${merchantError ? 'border-alert/50' : 'border-border'}`}
+                          className={`w-full bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border text-ink placeholder:text-muted/70 uppercase tracking-widest ${merchantError ? 'border-alert/50' : 'border-border'}`}
                           list="merchant-history"
                           autoComplete="off"
                           required
@@ -362,11 +367,12 @@ export default function LogExpenseModal({
 
                   {/* Date Field */}
                   <div className="space-y-3">
-                    <label htmlFor="expense-date" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Execution Date</label>
+                    <label htmlFor="expense-date" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em] px-1">Execution Date</label>
                     <div className="relative">
-                      <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" aria-hidden="true" />
+                      <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <input 
                         id="expense-date"
+                        name="date"
                         type="date" 
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
@@ -379,7 +385,7 @@ export default function LogExpenseModal({
                 {/* Category Picker */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center px-1">
-                    <label htmlFor="expense-category" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Allocation Class</label>
+                    <label htmlFor="expense-category" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Allocation Class</label>
                     <button 
                       type="button"
                       onClick={() => setIsAddingCategory(!isAddingCategory)}
@@ -395,7 +401,7 @@ export default function LogExpenseModal({
                         type="text"
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="CATEGORY NAME..."
+                        placeholder="CATEGORY NAME…"
                         className="flex-1 bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/40"
                         autoComplete="off"
                         autoFocus
@@ -406,8 +412,8 @@ export default function LogExpenseModal({
                     </div>
                   ) : (
                     <div className="relative group">
-                      <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
-                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" aria-hidden="true" />
+                      <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <select 
                         id="expense-category"
                         value={category}
@@ -424,15 +430,15 @@ export default function LogExpenseModal({
 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label htmlFor="expense-notes" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Internal Log</label>
+                  <label htmlFor="expense-notes" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em] px-1">Internal Log</label>
                   <div className="relative group">
-                    <FileText className="absolute left-5 top-4.5 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
+                    <FileText className="absolute left-5 top-4.5 text-muted/70 w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                     <textarea 
                       id="expense-notes"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="MINDLOG DESCRIPTION..." 
-                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/40 uppercase tracking-widest"
+                      placeholder="MINDLOG DESCRIPTION…" 
+                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/70 uppercase tracking-widest"
                     />
                   </div>
                 </div>

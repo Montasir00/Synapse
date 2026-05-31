@@ -19,6 +19,9 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    optimizeDeps: {
+      include: ['lucide-react'],
+    },
     build: {
       rollupOptions: {
         output: {

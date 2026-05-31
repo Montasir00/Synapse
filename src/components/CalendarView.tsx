@@ -82,9 +82,9 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
   }, []).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
   return (
-    <div className="glass-card overflow-hidden border-white/5">
+    <div className="glass-card overflow-hidden border-border/40">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.01]">
+      <div className="flex items-center justify-between p-6 border-b border-border/40 bg-surface-subtle/10">
         <div>
           <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight">
             {format(currentMonth, 'MMMM')} <span className="opacity-20 text-accent">{format(currentMonth, 'yyyy')}</span>
@@ -94,13 +94,13 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
         <div className="flex items-center gap-2">
           <button 
             onClick={prevMonth}
-            className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-muted transition-all border border-white/5"
+            className="w-11 h-11 rounded-full bg-surface-subtle/20 flex items-center justify-center hover:bg-surface-subtle/30 text-muted/70 transition-all border border-border/40"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button 
             onClick={nextMonth}
-            className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-muted transition-all border border-white/5"
+            className="w-11 h-11 rounded-full bg-surface-subtle/20 flex items-center justify-center hover:bg-surface-subtle/30 text-muted/70 transition-all border border-border/40"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -110,7 +110,7 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
       {!isTinyScreen && (
       <>
       {/* Day Names Row */}
-      <div className="grid grid-cols-7 border-b border-white/5 bg-black/20">
+      <div className="grid grid-cols-7 border-b border-border/40 bg-black/20">
         {dayNames.map(day => (
           <div key={day} className="py-3 text-center">
             <span className="hidden md:inline text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-40">{day}</span>
@@ -138,9 +138,9 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
               return (
                 <div 
                   key={day.toISOString()} 
-                  className={`min-h-[60px] sm:min-h-[70px] md:min-h-[80px] lg:min-h-[120px] p-1 md:p-1.5 lg:p-2 border-r border-b border-white/5 relative transition-colors ${!isCurrentMonth ? 'opacity-20 bg-black/40' : 'hover:bg-white/[0.02]'}`}
+                  className={`min-h-[60px] sm:min-h-[70px] md:min-h-[80px] lg:min-h-[120px] p-1 md:p-1.5 lg:p-2 border-r border-b border-border/40 relative transition-colors ${!isCurrentMonth ? 'opacity-20 bg-black/40' : 'hover:bg-surface-subtle/10'}`}
                 >
-                  <span className={`text-[11px] font-mono font-bold ${isToday ? 'text-accent' : isCurrentMonth ? 'text-ink' : 'text-muted/30'}`}>
+                  <span className={`text-[11px] font-mono font-bold ${isToday ? 'text-accent' : isCurrentMonth ? 'text-ink' : 'text-muted/70'}`}>
                     {format(day, 'd')}
                   </span>
                   
@@ -154,8 +154,8 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
                         key={task.id} 
                         className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide truncate max-w-full ${
                           task.taskCategory === 'daily' 
-                            ? 'bg-accent/10 text-accent border border-accent/20' 
-                            : 'bg-white/5 text-muted border border-white/10'
+                            ? 'bg-accent/14 text-white border border-accent/30' 
+                            : 'bg-surface-subtle/20 text-muted/85 border border-border/40'
                         }`}
                         title={task.title}
                       >
@@ -173,21 +173,21 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
       )}
 
       {isTinyScreen && (
-        <div className="p-3 border-t border-white/5 space-y-2">
+        <div className="p-3 border-t border-border/40 space-y-2">
           {monthTasks.length === 0 && (
-            <div className="p-4 text-center text-[10px] font-bold uppercase tracking-widest text-muted/40 border border-dashed border-white/10 rounded-xl">
+            <div className="p-4 text-center text-[10px] font-bold uppercase tracking-widest text-muted/70 border border-dashed border-border/30 rounded-xl">
               No tasks scheduled this month
             </div>
           )}
           {monthTasks.map(entry => (
-            <div key={entry.task.id} className="p-3 rounded-xl bg-black/20 border border-white/10 flex items-center justify-between gap-3">
+            <div key={entry.task.id} className="p-3 rounded-xl bg-black/20 border border-border/40 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-wide text-muted/40 font-black">
+                <p className="text-[11px] uppercase tracking-wide text-muted/70 font-black">
                   {format(entry.dueDate, 'MMM d')}
                 </p>
                 <p className="text-sm font-bold text-ink truncate">{entry.task.title}</p>
               </div>
-              <span className={`text-[9px] font-black uppercase tracking-wide px-2 py-1 rounded-full border ${entry.task.taskCategory === 'daily' ? 'text-accent border-accent/30 bg-accent/10' : 'text-muted border-white/15 bg-white/5'}`}>
+              <span className={`text-[9px] font-black uppercase tracking-wide px-2 py-1 rounded-full border ${entry.task.taskCategory === 'daily' ? 'text-white border-accent/30 bg-accent/14' : 'text-muted/85 border-border/40 bg-surface-subtle/20'}`}>
                 {entry.task.taskCategory === 'daily' ? 'Habit' : 'Task'}
               </span>
             </div>
@@ -196,14 +196,14 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
       )}
 
       {/* Legend */}
-      <div className="p-4 border-t border-white/5 bg-black/40 flex items-center gap-6">
+      <div className="p-4 border-t border-border/40 bg-black/40 flex items-center gap-6">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-accent/20 border border-accent/40" />
           <span className="text-[9px] font-black text-muted uppercase tracking-wide">Habit</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-white/5 border border-white/10" />
-          <span className="text-[9px] font-black text-muted uppercase tracking-wide">Strategy</span>
+          <div className="w-2 h-2 rounded-full bg-surface-subtle/20 border border-border/40" />
+          <span className="text-[9px] font-black text-muted/85 uppercase tracking-wide">Strategy</span>
         </div>
       </div>
     </div>

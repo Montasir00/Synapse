@@ -1,30 +1,32 @@
 :root {
-  /* BASE + NEUTRALS */
-  --ds-color-bg: oklch(0.99 0.005 260);        /* Soft Porcelain */
-  --ds-color-surface: oklch(0.97 0.008 260);   /* Mist */
-  --ds-color-surface-pure: oklch(1 0 0); 
-  --ds-color-border: oklch(0.93 0.012 260);    /* Lavender Haze */
-  --ds-color-text-primary: oklch(0.25 0.03 260); /* Ink */
-  --ds-color-text-secondary: oklch(0.55 0.04 260); /* Slate */
-  --ds-color-text-muted: oklch(0.65 0.03 260);
+  /* BASE + NEUTRALS (Raycast Obsidian Dark Palette) */
+  --ds-color-bg: oklch(0.12 0.01 260);          /* Deep Obsidian background (#0c0d10) */
+  --ds-color-surface: oklch(0.15 0.01 260);     /* Card obsidian surface (#131419) */
+  --ds-color-surface-subtle: oklch(0.13 0.01 260); /* Translucent obsidian background (#0e0f12) */
+  --ds-color-surface-pure: oklch(0.10 0.01 260); /* Solid Space Black for fields and menus (#08090a) */
+  --ds-color-border: oklch(0.28 0.01 260 / 0.7); /* Razor-thin subtle divider borders (increased contrast) */
+  --ds-color-border-strong: oklch(0.32 0.01 260 / 0.9); /* Interactive active border states (slightly stronger) */
+  --ds-color-text-primary: oklch(0.96 0.01 260); /* Crisp silver primary text (#f1f2f6) */
+  --ds-color-text-secondary: oklch(0.75 0.01 260); /* Balanced Slate secondary text (#afb3c1) */
+  --ds-color-text-muted: oklch(0.62 0.01 260);   /* Dark Slate muted details (raised for contrast) */
 
-  /* SECTION ACCENTS */
-  --color-todo: oklch(0.55 0.20 265);          /* Periwinkle */
-  --color-todo-hover: oklch(0.48 0.22 265);    /* Periwinkle Hover */
-  --color-todo-tint: oklch(0.92 0.06 265);     /* Periwinkle Tint */
+  /* SECTION ACCENTS (Vibrant Raycast Cyber-Glows) */
+  --color-todo: oklch(0.68 0.16 265);            /* Electric Periwinkle */
+  --color-todo-hover: oklch(0.72 0.18 265);      /* Electric Periwinkle Bright */
+  --color-todo-tint: oklch(0.18 0.05 265 / 0.25); /* Translucent Periwinkle Halo */
 
-  --color-expense: oklch(0.50 0.14 160);       /* Sage */
-  --color-expense-hover: oklch(0.43 0.15 160); /* Sage Hover */
-  --color-expense-tint: oklch(0.92 0.05 160);  /* Sage Tint */
+  --color-expense: oklch(0.74 0.14 165);         /* Vibrant Mint Green */
+  --color-expense-hover: oklch(0.78 0.16 165);
+  --color-expense-tint: oklch(0.18 0.04 165 / 0.25);
 
-  --color-trade: oklch(0.55 0.16 38);          /* Terracotta */
-  --color-trade-hover: oklch(0.48 0.18 38);    /* Terracotta Hover */
-  --color-trade-tint: oklch(0.93 0.05 38);     /* Terracotta Tint */
+  --color-trade: oklch(0.66 0.15 35);            /* Coral / Hot Terracotta */
+  --color-trade-hover: oklch(0.72 0.17 35);
+  --color-trade-tint: oklch(0.18 0.04 35 / 0.25);
 
   /* SEMANTIC — STATUS */
-  --ds-color-success: oklch(0.50 0.14 160);    /* Sage (Positive/Up) */
-  --ds-color-danger: oklch(0.55 0.16 25);      /* Deep Red (Negative/Down) */
-  --ds-color-warning: oklch(0.70 0.15 80);     /* Pending / Neutral */
+  --ds-color-success: oklch(0.74 0.14 165);      /* Mint Green */
+  --ds-color-danger: oklch(0.65 0.15 25);        /* Cyber Red */
+  --ds-color-warning: oklch(0.78 0.12 85);       /* Cyber Gold */
 
   /* Trade Specific Semantics */
   --color-pnl-up: var(--ds-color-success);
@@ -37,14 +39,14 @@
   --ds-color-secondary: var(--color-expense);
   --ds-color-accent: var(--color-trade);
 
-  /* RGB version of active accent (default Periwinkle) */
-  --accent-rgb: 99, 102, 241;
+  /* RGB version of active accent (Electric Periwinkle) */
+  --accent-rgb: 139, 92, 246;
 
   /* Spacing & radius */
   --spacing-unit: 8px;
-  --radius: 12px;
+  --radius: 20px;                                /* More generous premium rounded geometry */
 
-  /* Typography scale (Guarded minimums for Noir aesthetic) */
+  /* Typography scale (Outfit & Inter harmony) */
   --text-xs: 0.75rem;     /* 12px - MINIMUM for micro-labels */
   --text-sm: 0.875rem;    /* 14px */
   --text-base: 1rem;      /* 16px */
@@ -54,10 +56,10 @@
   --text-3xl: 1.875rem;   /* 30px */
   --text-4xl: 2.25rem;    /* 36px */
 
-  /* Shadows (Softer, based on Slate/Mist) */
-  --shadow-sm: 0 1px 2px oklch(0.25 0.03 260 / 0.04);
-  --shadow-md: 0 4px 12px oklch(0.25 0.03 260 / 0.06);
-  --shadow-lg: 0 12px 32px oklch(0.25 0.03 260 / 0.08);
+  /* Shadows (Ultra-Premium, soft ambient glows) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
 /* Utility classes */

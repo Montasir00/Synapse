@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Position, JournalEntry } from '../../types/binance';
-import { calculateMetrics } from '../../services/binanceService';
+import { calculateMetrics } from '../../services/tradeMetricsService';
 import {
   loadPersistedLastSync,
   loadPersistedMetrics,
@@ -315,7 +315,7 @@ const TradeTracker = ({ onSyncTrades, isSyncing }: TradeTrackerProps) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
+    <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-4 sm:px-6 pt-6 sm:pt-8 lg:pt-12">
 
       {/* Header & Integrated Controls */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 border-b border-border/50 pb-6">

@@ -10,6 +10,7 @@ interface LogLoanModalProps {
   onAdd: (loan: Omit<Loan, 'id' | 'uid'>) => void | Promise<void>;
   onUpdate?: (id: string, updates: Partial<Loan>) => void | Promise<void>;
   editingLoan?: Loan | null;
+  defaultPersonName?: string;
 }
 
 export default function LogLoanModal({ 
@@ -18,6 +19,7 @@ export default function LogLoanModal({
   onAdd, 
   onUpdate,
   editingLoan,
+  defaultPersonName = '',
 }: LogLoanModalProps) {
   const [amount, setAmount] = useState('');
   const [personName, setPersonName] = useState('');
@@ -43,14 +45,14 @@ export default function LogLoanModal({
       setNotes(editingLoan.notes || '');
     } else {
       setAmount('');
-      setPersonName('');
+      setPersonName(defaultPersonName);
       setType('lent');
       setDueDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     }
     setSubmitAttempted(false);
     setIsSubmitting(false);
-  }, [editingLoan, isOpen]);
+  }, [editingLoan, isOpen, defaultPersonName]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -171,37 +173,37 @@ export default function LogLoanModal({
                   </div>
                   <span className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">Debt Ledger Synchronization</span>
                 </div>
-                <button 
-                  onClick={() => !isSubmitting && onClose()}
-                  className="w-10 h-10 rounded-full bg-surface-subtle/50 flex items-center justify-center text-muted hover:text-accent hover:bg-accent/5 transition-all border border-border"
-                >
-                  <X className="w-5 h-5" aria-hidden="true" />
-                </button>
-              </div>
+                  <button 
+                    onClick={() => !isSubmitting && onClose()}
+                    className="w-10 h-10 rounded-full bg-surface-subtle/50 flex items-center justify-center text-muted/70 hover:text-accent hover:bg-accent/5 transition-all border border-border"
+                  >
+                    <X className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
 
-              {/* Type Switcher */}
-              <div className="flex p-1.5 bg-surface-subtle/50 rounded-full mb-10 border border-border backdrop-blur-sm">
-                <button 
-                  type="button"
-                  onClick={() => { setType('lent'); haptics.light(); }}
-                  className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'lent' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
-                >
-                  Lent (Gave to)
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => { setType('borrowed'); haptics.light(); }}
-                  className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'borrowed' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
-                >
-                  Borrowed (Owe)
-                </button>
+                {/* Type Switcher */}
+                <div className="flex p-1.5 bg-surface-subtle/50 rounded-full mb-10 border border-border backdrop-blur-sm">
+                  <button 
+                    type="button"
+                    onClick={() => { setType('lent'); haptics.light(); }}
+                    className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'lent' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
+                  >
+                    Lent (Gave to)
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setType('borrowed'); haptics.light(); }}
+                    className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'borrowed' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
+                  >
+                    Borrowed (Owe)
+                  </button>
               </div>
 
               <form className="space-y-10" onSubmit={handleSubmit}>
                 {/* Hero Amount Field */}
                 <div className="space-y-4 group">
                   <div className="flex justify-between items-end px-1">
-                    <label htmlFor="loan-amount" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Principal Value</label>
+                    <label htmlFor="loan-amount" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Principal Value</label>
                     <div className="flex items-center gap-1.5 text-accent">
                       <Sparkles className="w-3 h-3" />
                       <span className="text-[10px] font-bold uppercase tracking-widest">Precision Entry</span>
@@ -249,7 +251,7 @@ export default function LogLoanModal({
                         onChange={(e) => setPersonName(e.target.value)}
                         onBlur={() => setSubmitAttempted(true)}
                         placeholder="E.G. JOHN DOE" 
-                        className={`w-full bg-surface-subtle/50 rounded-2xl py-3.5 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border text-ink placeholder:text-muted/40 uppercase tracking-widest ${nameError ? 'border-alert/50' : 'border-border'}`}
+                        className={`w-full bg-surface-subtle/50 rounded-2xl py-3.5 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border text-ink placeholder:text-muted/70 uppercase tracking-widest ${nameError ? 'border-alert/50' : 'border-border'}`}
                         autoComplete="off"
                         required
                       />
@@ -263,7 +265,7 @@ export default function LogLoanModal({
                   <div className="space-y-3">
                     <label htmlFor="loan-due-date" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Due Date (Optional)</label>
                     <div className="relative">
-                      <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" aria-hidden="true" />
+                      <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <input 
                         id="loan-due-date"
                         type="date" 
@@ -286,7 +288,7 @@ export default function LogLoanModal({
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="ENTER MEMO DETAILS..." 
-                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/40 uppercase tracking-widest"
+                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/70 uppercase tracking-widest"
                     />
                   </div>
                 </div>

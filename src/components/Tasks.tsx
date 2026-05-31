@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Edit2, Trash2, CheckCircle2, Circle, ListChecks, Calendar as CalendarIcon, History, ShieldAlert, ChevronDown, ChevronUp, BrainCircuit, Zap, RotateCcw } from 'lucide-react';
 import CalendarView from './CalendarView';
 import ModuleCard from './ModuleCard';
@@ -10,10 +10,10 @@ interface SwipeableTaskItemProps {
   onUpdateStatus: (id: string, status: Task['status']) => void;
   onDeleteTask: (id: string) => void;
   onEditTask: (task: Task) => void;
-  isFocusMode: boolean;
+  variant?: 'focus' | 'board';
 }
 
-function SwipeableTaskItem({ task, onUpdateStatus, onDeleteTask, onEditTask, isFocusMode }: SwipeableTaskItemProps) {
+function SwipeableTaskItem({ task, onUpdateStatus, onDeleteTask, onEditTask, variant = 'board' }: SwipeableTaskItemProps) {
   const x = useMotionValue(0);
   const opacity = useTransform(x, [-100, 0, 100], [1, 1, 1]);
   const bg = useTransform(x, [-100, 0, 100], ['var(--color-alert)', 'transparent', 'var(--color-success)']);
@@ -52,22 +52,40 @@ function SwipeableTaskItem({ task, onUpdateStatus, onDeleteTask, onEditTask, isF
         dragElastic={0.6}
         onDragEnd={handleDragEnd}
         style={{ x, opacity }}
-        className={`relative z-10 flex items-start justify-between p-3 sm:p-4 bg-surface border transition-all ${
-          isFocusMode ? 'border-accent/30 shadow-md' : 'border-border hover:border-accent/20 hover:shadow-md'
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit task: ${task.title}`}
+        onClick={() => {
+          if (Math.abs(x.get()) < 5) {
+            onEditTask(task);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onEditTask(task);
+          }
+        }}
+        className={`relative z-10 flex items-start justify-between p-3 sm:p-4 bg-surface border transition-colors cursor-pointer ${
+          variant === 'focus' ? 'border-accent/30 shadow-md' : 'border-border hover:border-accent/20 hover:shadow-md'
         } ${task.status === 'done' ? 'opacity-70' : ''}`}
       >
         <div className="flex items-start gap-3 sm:gap-4 min-w-0">
           <button 
-            onClick={() => onUpdateStatus(task.id, task.status === 'done' ? 'todo' : 'done')}
-            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center transition-all ${task.status === 'done' ? 'bg-success/20 border-success text-success' : 'border-border text-muted hover:border-accent flex-shrink-0'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdateStatus(task.id, task.status === 'done' ? 'todo' : 'done');
+            }}
+            aria-label={task.status === 'done' ? 'Mark as incomplete' : 'Mark as complete'}
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center transition-colors ${task.status === 'done' ? 'bg-success/20 border-success text-success' : 'border-border text-muted hover:border-accent flex-shrink-0'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1`}
           >
-            {task.status === 'done' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+            {task.status === 'done' ? <CheckCircle2 className="w-5 h-5" aria-hidden="true" /> : <Circle className="w-5 h-5" aria-hidden="true" />}
           </button>
           <span className={`text-xs sm:text-base font-bold break-words leading-snug pr-2 ${task.status === 'done' ? 'text-muted line-through' : 'text-ink'}`}>{task.title}</span>
         </div>
-        <div className="flex items-center gap-1 opacity-10 sm:opacity-50 group-hover:opacity-100 transition-opacity self-start">
-          <button onClick={() => onEditTask(task)} className="p-2.5 text-muted hover:text-accent"><Edit2 className="w-4 h-4" /></button>
-          <button onClick={() => onDeleteTask(task.id)} className="p-2.5 text-muted hover:text-alert"><Trash2 className="w-4 h-4" /></button>
+        <div className="flex items-center gap-1 opacity-80 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity self-start">
+          <button onClick={(e) => { e.stopPropagation(); onEditTask(task); }} aria-label={`Edit task: ${task.title}`} className="p-2.5 text-muted hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 rounded"><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+          <button onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }} aria-label={`Delete task: ${task.title}`} className="p-2.5 text-muted hover:text-alert focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert focus-visible:ring-offset-1 rounded"><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
         </div>
       </motion.div>
     </div>
@@ -126,9 +144,11 @@ export default function Tasks({
     });
   };
 
-  const filteredTasks = tasks.filter(t => {
-    return t.title.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      return t.title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [tasks, searchQuery]);
 
   const isOverdue = (t: Task) => {
     if (t.status === 'done') return false;
@@ -155,17 +175,41 @@ export default function Tasks({
     return dueCompare.getTime() < now.getTime();
   };
 
-  const dailyTasks = filteredTasks.filter(t => t.taskCategory === 'daily' && t.status !== 'done' && !t.isMissedDaily && !isOverdue(t));
-  const longTermTasks = sortTasksArr(filteredTasks.filter(t => t.taskCategory === 'long-term' && t.status !== 'done' && !isOverdue(t)));
-  const overdueTasks = sortTasksArr(tasks.filter(t => isOverdue(t)));
+  // Consolidated single pass over filteredTasks to partition daily and long-term tasks
+  const { dailyTasks, longTermTasks } = useMemo(() => {
+    const daily: Task[] = [];
+    const longTerm: Task[] = [];
+
+    for (const t of filteredTasks) {
+      if (t.status === 'done') continue;
+      if (isOverdue(t)) continue;
+
+      if (t.taskCategory === 'daily') {
+        if (!t.isMissedDaily) {
+          daily.push(t);
+        }
+      } else if (t.taskCategory === 'long-term') {
+        longTerm.push(t);
+      }
+    }
+
+    return {
+      dailyTasks: daily,
+      longTermTasks: sortTasksArr(longTerm),
+    };
+  }, [filteredTasks]);
+
+  const overdueTasks = useMemo(() => {
+    return sortTasksArr(tasks.filter(t => isOverdue(t)));
+  }, [tasks]);
 
   return (
-   <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-12">
+   <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-4 sm:px-6 space-y-6 sm:space-y-8 lg:space-y-12">
       
       {/* 1. Control Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 lg:gap-8 pb-6 sm:pb-8 border-b border-border/50 relative overflow-hidden group">
          <div className="space-y-1 relative z-10">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-ink tracking-tighter">Task Board</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-ink tracking-tighter text-balance">Task Board</h1>
             <p className="text-muted text-[10px] sm:text-xs font-medium uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-2">
                <Zap className={`w-3 h-3 ${isFocusMode ? 'text-accent animate-spin-slow' : 'text-accent animate-pulse'}`} /> 
                {isFocusMode ? 'Focus view active' : 'Board view active'}
@@ -182,12 +226,14 @@ export default function Tasks({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full min-w-0 bg-surface-subtle py-2.5 sm:py-3 pl-10 pr-4 rounded-xl border border-border outline-none text-xs focus:border-accent/40 transition-all font-medium"
                   inputMode="search"
+                  aria-label="Search tasks"
                />
             </div>
 
             <button 
                onClick={() => setIsFocusMode(!isFocusMode)}
-               className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl border font-black text-[10px] sm:text-[11px] uppercase tracking-widest transition-all active:scale-95 ${
+               aria-pressed={isFocusMode}
+               className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl border font-semibold text-xs sm:text-sm uppercase tracking-wide transition-all active:scale-95 ${
                   isFocusMode 
                      ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' 
                      : 'bg-surface-subtle border-border text-muted hover:text-ink'
@@ -234,13 +280,13 @@ export default function Tasks({
                            transition={{ duration: 0.2 }}
                            key={task.id}
                         >
-                           <SwipeableTaskItem 
-                              task={task} 
-                              onUpdateStatus={onUpdateStatus} 
-                              onDeleteTask={onDeleteTask} 
-                              onEditTask={onEditTask} 
-                              isFocusMode={isFocusMode} 
-                           />
+                            <SwipeableTaskItem 
+                               task={task} 
+                               onUpdateStatus={onUpdateStatus} 
+                               onDeleteTask={onDeleteTask} 
+                               onEditTask={onEditTask} 
+                               variant={isFocusMode ? 'focus' : 'board'} 
+                            />
                         </motion.div>
                      ))}
                   </AnimatePresence>
@@ -254,7 +300,7 @@ export default function Tasks({
                >
                   <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0">
                      <CalendarIcon className="w-5 h-5 text-muted/40 group-hover:text-accent transition-transform group-hover:scale-110" aria-hidden="true" />
-                     <span className="text-xs font-black uppercase tracking-[0.12em] sm:tracking-[0.2em] text-muted/60 group-hover:text-ink">Calendar View</span>
+                     <span className="text-xs font-semibold tracking-wide text-muted/60 group-hover:text-ink">Calendar View</span>
                   </div>
                   <div className="w-10 h-10 bg-surface-subtle rounded-lg flex items-center justify-center text-muted group-hover:text-accent transition-all">
                      {showCalendar ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
@@ -293,7 +339,7 @@ export default function Tasks({
                                     onUpdateStatus={onUpdateStatus} 
                                     onDeleteTask={onDeleteTask} 
                                     onEditTask={onEditTask} 
-                                    isFocusMode={isFocusMode} 
+                                    variant={isFocusMode ? 'focus' : 'board'}
                                  />
                               </motion.div>
                            ))}
@@ -330,7 +376,7 @@ export default function Tasks({
                                     onUpdateStatus={onUpdateStatus} 
                                     onDeleteTask={onDeleteTask} 
                                     onEditTask={onEditTask} 
-                                    isFocusMode={isFocusMode} 
+                                    variant={isFocusMode ? 'focus' : 'board'}
                                  />
                               </motion.div>
                            ))}
@@ -364,6 +410,7 @@ export default function Tasks({
                      placeholder="Record memo…"
                      className="w-full bg-surface-subtle py-3 px-4 rounded-xl border border-border text-xs sm:text-sm font-medium text-ink outline-none focus:border-accent/40 mb-4 transition-all placeholder:text-muted"
                      inputMode="text"
+                     aria-label="Record memo"
                   />
                   <div className="space-y-3">
                      {notes.length === 0 ? (
