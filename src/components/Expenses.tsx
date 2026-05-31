@@ -2,6 +2,7 @@ import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Do
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Transaction, Budget } from '../types';
 import AnimatedNumber from './AnimatedNumber';
+import EmptyState from './EmptyState';
 
 interface SwipeableExpenseItemProps {
   transaction: Transaction;
@@ -497,17 +498,13 @@ export default function Expenses({
                 ))}
               </AnimatePresence>
             ) : (
-              <div className="p-12 sm:p-20 text-center space-y-4" role="status">
-                <Search className="w-8 h-8 mx-auto text-muted" />
-                <p className="text-xs font-medium text-muted">
-                  {searchTerm ? `No matches for "${searchTerm}"` : 'No transactions found'}
-                </p>
-                {!searchTerm && (
-                  <p className="text-xs text-muted/50">
-                    Use the date filter below to load historical data.
-                  </p>
-                )}
-              </div>
+              <EmptyState 
+                iconName={searchTerm ? "Search" : "ShoppingBag"}
+                title={searchTerm ? "No matches found" : "No transactions logged"}
+                description={searchTerm ? `No matches found for "${searchTerm}". Try a different keyword.` : "Keep tabs on your cash flow by logging your first income or expense."}
+                actionText={searchTerm ? undefined : "Log Transaction"}
+                onAction={searchTerm ? undefined : onAddExpense}
+              />
             )}
           </div>
         </div>

@@ -25,6 +25,7 @@ import { Loan } from '../types';
 import { format, parseISO } from 'date-fns';
 import AnimatedNumber from './AnimatedNumber';
 import LogLoanModal from './LogLoanModal';
+import EmptyState from './EmptyState';
 
 interface LoansProps {
   loans: Loan[];
@@ -387,7 +388,13 @@ export default function Loans({
                   />
                 ))
               ) : (
-                <EmptyState icon={Coins} text={lentEmptyText} />
+                <EmptyState 
+                  iconName={searchTerm ? "Search" : "Coins"}
+                  title={searchTerm ? "No matches found" : "No receivables found"}
+                  description={searchTerm ? `No counterparties match "${searchTerm}".` : lentEmptyText}
+                  actionText={searchTerm ? undefined : "Log Loan"}
+                  onAction={searchTerm ? undefined : handleOpenAddModal}
+                />
               )}
             </AnimatePresence>
 
@@ -430,7 +437,13 @@ export default function Loans({
                   />
                 ))
               ) : (
-                <EmptyState icon={Scale} text={borrowedEmptyText} />
+                <EmptyState 
+                  iconName={searchTerm ? "Search" : "Scale"}
+                  title={searchTerm ? "No matches found" : "No payables found"}
+                  description={searchTerm ? `No counterparties match "${searchTerm}".` : borrowedEmptyText}
+                  actionText={searchTerm ? undefined : "Log Loan"}
+                  onAction={searchTerm ? undefined : handleOpenAddModal}
+                />
               )}
             </AnimatePresence>
 
@@ -889,12 +902,3 @@ function CounterpartyCard({ counterparty: c, index, type, onClick, formatDate }:
   );
 }
 
-// Compact Sub-component for Empty State
-function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
-  return (
-    <div className="p-8 sm:p-12 text-center rounded-[28px] border border-dashed border-border/40 bg-surface-subtle/10" role="status">
-      <Icon className="w-6 h-6 mx-auto text-muted/30 mb-3" />
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/50">{text}</p>
-    </div>
-  );
-}

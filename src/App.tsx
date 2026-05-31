@@ -20,10 +20,20 @@ const Loans = lazy(() => import('./components/Loans'));
 import LogExpenseModal from './components/LogExpenseModal';
 import TaskModal from './components/TaskModal';
 import LogExerciseModal from './components/LogExerciseModal';
+import { Sparkles, X } from 'lucide-react';
 import { Task, Transaction, Budget, Note, Loan } from './types';
 import { Toaster, toast } from 'sonner';
 import { auth, db, signInWithGoogle, logout } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import {
+  DashboardSkeleton,
+  MetricCardSkeleton,
+  TaskCardSkeleton,
+  ExpenseRowSkeleton,
+  ChartSkeleton,
+  Skeleton
+} from './components/SkeletonLoader';
+import PullToRefresh from './components/PullToRefresh';
 import { haptics } from './utils/haptics';
 import { 
   collection, 
@@ -82,15 +92,22 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
     return (
       <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Fragment key={i}>
-              <SectionSkeleton className="h-28 sm:h-32" />
-            </Fragment>
-          ))}
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
         </div>
-        <SectionSkeleton className="h-48 sm:h-56" />
+        <ChartSkeleton />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
-          <SectionSkeleton className="lg:col-span-7 h-[420px]" />
+          <div className="lg:col-span-7 space-y-4">
+            <Skeleton className="h-6 w-36 mb-2" />
+            <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
+              <ExpenseRowSkeleton />
+              <ExpenseRowSkeleton />
+              <ExpenseRowSkeleton />
+              <ExpenseRowSkeleton />
+            </div>
+          </div>
           <div className="lg:col-span-5 space-y-5 sm:space-y-8">
             <SectionSkeleton className="h-[260px]" />
             <SectionSkeleton className="h-[380px]" />
@@ -103,13 +120,15 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
   if (activeTab === 'tasks') {
     return (
       <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-12">
-        <SectionSkeleton className="h-36 sm:h-40" />
+        <div className="flex gap-4">
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Fragment key={i}>
-              <SectionSkeleton className="h-[360px]" />
-            </Fragment>
-          ))}
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
         </div>
       </div>
     );
@@ -118,7 +137,10 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
   if (activeTab === 'settings') {
     return (
       <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8">
-        <SectionSkeleton className="h-40" />
+        <div className="soothing-card bg-surface border-border p-6 space-y-4 h-40">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           <SectionSkeleton className="h-72" />
           <SectionSkeleton className="h-72" />
@@ -130,13 +152,18 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
   if (activeTab === 'exercises') {
     return (
       <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32">
-        <SectionSkeleton className="h-36 sm:h-40" />
+        <div className="grid grid-cols-3 gap-4">
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
+          <MetricCardSkeleton />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Fragment key={i}>
-              <SectionSkeleton className="h-44 sm:h-52" />
-            </Fragment>
-          ))}
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
+          <TaskCardSkeleton />
         </div>
       </div>
     );
@@ -145,8 +172,7 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
   if (activeTab === 'trade-tracker') {
     return (
       <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32">
-        <SectionSkeleton className="h-36 sm:h-44" />
-        <SectionSkeleton className="h-[280px]" />
+        <ChartSkeleton />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           <SectionSkeleton className="h-[260px]" />
           <SectionSkeleton className="h-[260px]" />
@@ -155,26 +181,7 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
     );
   }
 
-  return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32 px-3 sm:px-4 lg:px-6 pt-6 sm:pt-8 lg:pt-12">
-      <SectionSkeleton className="h-36 sm:h-40" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Fragment key={i}>
-            <SectionSkeleton className="h-28 sm:h-32" />
-          </Fragment>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        <SectionSkeleton className="lg:col-span-2 h-[260px]" />
-        <SectionSkeleton className="h-[260px]" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <SectionSkeleton className="h-[240px]" />
-        <SectionSkeleton className="h-[240px]" />
-      </div>
-    </div>
-  );
+  return <DashboardSkeleton />;
 };
 
 const DEFAULT_SOURCE_OPTIONS = [
@@ -195,6 +202,8 @@ export default function App() {
   });
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   
   // Modals state
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -292,6 +301,99 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // PWA Install Event Handler
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA install prompt outcome: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallPrompt(false);
+  };
+
+  // Global Keyboard Navigation and Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.getAttribute('contenteditable') === 'true'
+      );
+
+      if (isTyping) {
+        if (e.key === 'Escape') {
+          setIsExpenseModalOpen(false);
+          setEditingTransaction(null);
+          setIsTaskModalOpen(false);
+          setEditingTask(null);
+          setIsExerciseModalOpen(false);
+        }
+        return;
+      }
+
+      // Tab switching: Alt + 1/2/3/4/5
+      if (e.altKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        e.preventDefault();
+        const tabMap: Record<string, string> = {
+          '1': 'dashboard',
+          '2': 'tasks',
+          '3': 'expenses',
+          '4': 'loans',
+          '5': 'settings'
+        };
+        if (tabMap[e.key]) {
+          setActiveTab(tabMap[e.key]);
+          haptics.light();
+        }
+        return;
+      }
+
+      // Add Item shortcut: N key
+      if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        haptics.light();
+        if (activeTab === 'tasks') {
+          setEditingTask(null);
+          setIsTaskModalOpen(true);
+        } else if (activeTab === 'expenses') {
+          setEditingTransaction(null);
+          setIsExpenseModalOpen(true);
+        } else if (activeTab === 'exercises') {
+          setIsExerciseModalOpen(true);
+        }
+      }
+
+      // Escape key to close modals
+      if (e.key === 'Escape') {
+        setIsExpenseModalOpen(false);
+        setEditingTransaction(null);
+        setIsTaskModalOpen(false);
+        setEditingTask(null);
+        setIsExerciseModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, deferredPrompt]);
 
   // Fetch Data from Firestore
   useEffect(() => {
@@ -729,6 +831,11 @@ export default function App() {
     } finally {
       setIsSyncingFinancials(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    if (!user?.uid) return;
+    await handleRecalculateFinancials();
   };
 
   const loadTransactionsByRange = async (start: string, end: string) => {
@@ -1511,30 +1618,32 @@ export default function App() {
       <main id="main-content" className="lg:ml-64 min-h-screen relative px-3 sm:px-3 md:px-5 lg:px-8 xl:px-10 pt-safe-top pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         
         
-        <div className="relative">
-          {isLoading ? (
-            <TabSkeleton activeTab={activeTab} />
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-                transition={{ 
-                  type: 'spring',
-                  stiffness: 260,
-                  damping: 20,
-                  mass: 0.5
-                }}
-              >
-                <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
-                  {contentView}
-                </Suspense>
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </div>
+        <PullToRefresh onRefresh={handleRefresh} disabled={isLoading || !user}>
+          <div className="relative">
+            {isLoading ? (
+              <TabSkeleton activeTab={activeTab} />
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                  transition={{ 
+                    type: 'spring',
+                    stiffness: 260,
+                    damping: 20,
+                    mass: 0.5
+                  }}
+                >
+                  <Suspense fallback={<TabSkeleton activeTab={activeTab} />}>
+                    {contentView}
+                  </Suspense>
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </div>
+        </PullToRefresh>
       </main>
 
       {/* Mobile bottom nav */}
@@ -1588,7 +1697,58 @@ export default function App() {
         </div>
       </div>
 
-      <Toaster position="bottom-left" theme="light" toastOptions={{ style: { background: 'var(--color-surface)', color: 'var(--color-ink)', border: '1px solid var(--color-border)' } }} />
+      <AnimatePresence>
+        {showInstallPrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-24 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[200] glass-surface border border-accent/25 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-accent/10 text-accent shrink-0">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-black uppercase tracking-wider text-ink font-display">Install Synapse</h4>
+                <p className="text-[10px] text-muted font-medium mt-0.5 leading-snug">Add to your home screen for immediate offline execution.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleInstallPWA}
+                className="px-3.5 py-1.5 bg-accent text-bg font-sans font-black text-[9px] uppercase tracking-wider rounded-lg hover:bg-accent-hover transition-colors shadow-md shadow-accent/10 cursor-pointer"
+              >
+                Install
+              </button>
+              <button
+                onClick={() => setShowInstallPrompt(false)}
+                className="p-1.5 rounded-lg bg-surface-subtle text-muted hover:text-ink transition-colors cursor-pointer"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Toaster 
+        position="bottom-right" 
+        theme="dark" 
+        closeButton
+        toastOptions={{ 
+          style: { 
+            background: 'rgba(12, 13, 16, 0.85)', 
+            backdropFilter: 'blur(24px)', 
+            color: 'var(--color-ink)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '14px',
+            fontFamily: 'var(--font-sans)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+          } 
+        }} 
+      />
     </div>
     </MotionConfig>
   );
