@@ -82,7 +82,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    /* Absolute force for iOS PWA safe area to paint background correctly */
+    background-color: #0c0d10 !important; /* Fallback for immediate solid rendering */
     background-color: var(--color-bg) !important; 
   }
 
