@@ -77,7 +77,7 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
       <div className="fixed bottom-0 left-0 right-0 z-[80] lg:hidden flex justify-center pointer-events-none" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="px-4 w-full flex justify-center">
         <nav
-          className="pointer-events-auto bg-surface/75 backdrop-blur-2xl border border-border/30 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] w-full max-w-md overflow-hidden"
+          className="pointer-events-auto bg-surface-subtle/85 backdrop-blur-3xl border border-border/40 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-md overflow-hidden"
         >
           <div className="flex items-center justify-around gap-1 px-2 py-2">
             {primaryNavItems.map((item) => {
@@ -102,10 +102,9 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
                   <div className={`relative z-10 flex flex-col items-center justify-center transition-all duration-300 ${isActive ? 'scale-105 text-accent' : 'text-muted/50 hover:text-ink/75'}`}>
                     <Icon 
                       strokeWidth={isActive ? 2.5 : 2}
-                      className={`w-5 h-5 transition-all duration-300 ${isActive ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]' : ''}`} 
+                      className={`w-6 h-6 transition-all duration-300 ${isActive ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]' : ''}`} 
                       aria-hidden="true"
                     />
-                    <span className="text-[10px] uppercase tracking-wide font-bold mt-0.5">{item.label}</span>
                   </div>
                   {isActive && (
                     <motion.div 
@@ -138,10 +137,9 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
               <div className={`relative z-10 flex flex-col items-center justify-center transition-all duration-300 ${isMoreActive || isMoreOpen ? 'scale-105 text-accent' : 'text-muted/50 hover:text-ink/75'}`}>
                 <Grid 
                   strokeWidth={isMoreActive || isMoreOpen ? 2.5 : 2}
-                  className={`w-5 h-5 transition-all duration-300 ${isMoreActive || isMoreOpen ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]' : ''}`} 
+                  className={`w-6 h-6 transition-all duration-300 ${isMoreActive || isMoreOpen ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]' : ''}`} 
                   aria-hidden="true"
                 />
-                <span className="text-[10px] uppercase tracking-wide font-bold mt-0.5">More</span>
               </div>
               {(isMoreActive || isMoreOpen) && (
                 <motion.div 
