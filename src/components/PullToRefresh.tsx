@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, useAnimation } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useMotionValue, useTransform } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { haptics } from '../utils/haptics';
 
@@ -22,22 +17,19 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [canTrigger, setCanTrigger] = useState(false);
   const y = useMotionValue(0);
-  const controls = useAnimation();
+  const touchStartY = useRef<number | null>(null);
+  const isPullingRef = useRef(false);
 
-  // Caps the drag distance, making it feel progressively heavier (elastic limit)
+  // Caps the pull distance with progressive elastic resistance
   const yElastic = useTransform(y, [0, 150], [0, 80]);
-
-  // Rotate the spinner as the user pulls down
   const rotate = useTransform(y, [0, 80], [0, 360]);
-
-  // Opacity of the spinner
   const opacity = useTransform(y, [0, 50, 80], [0, 0.4, 1]);
 
   useEffect(() => {
     const unsubscribe = yElastic.on('change', (latest) => {
       if (latest >= 65 && !canTrigger && !isRefreshing) {
         setCanTrigger(true);
-        haptics.light(); // Trigger subtle click haptic feedback
+        haptics.light();
       } else if (latest < 65 && canTrigger) {
         setCanTrigger(false);
       }
@@ -45,14 +37,54 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     return () => unsubscribe();
   }, [yElastic, canTrigger, isRefreshing]);
 
-  const handleDragEnd = async (_: any, info: any) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (disabled || isRefreshing) return;
+    
+    // Only allow pull-to-refresh when at the absolute top of the page
+    if (window.scrollY <= 1) {
+      touchStartY.current = e.touches[0].clientY;
+      isPullingRef.current = true;
+    } else {
+      isPullingRef.current = false;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (disabled || isRefreshing || !isPullingRef.current || touchStartY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartY.current;
+
+    // If dragging downward at the top of the viewport
+    if (deltaY > 0 && window.scrollY <= 1) {
+      // Prevent standard browser bounce/overflow scroll
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      y.set(deltaY);
+    } else if (deltaY < 0) {
+      // If dragging upward, let the default scroll handle it
+      isPullingRef.current = false;
+      y.set(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (disabled || isRefreshing || touchStartY.current === null) {
+      touchStartY.current = null;
+      isPullingRef.current = false;
+      return;
+    }
 
     const currentY = yElastic.get();
+    touchStartY.current = null;
+    isPullingRef.current = false;
+
     if (currentY >= 65) {
       setIsRefreshing(true);
       haptics.medium();
-      
+      y.set(120); // Hold at active spinner offset
+
       try {
         await onRefresh();
       } catch (err) {
@@ -68,7 +100,13 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   };
 
   return (
-    <div className="relative overflow-hidden w-full h-full">
+    <div 
+      className="relative w-full h-full"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       {/* Visual Refresh Indicator */}
       <motion.div
         style={{
@@ -77,7 +115,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
           opacity: isRefreshing ? 1 : opacity,
         }}
         animate={{ y: isRefreshing ? 55 : 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
         className="absolute top-2 left-0 right-0 z-50 flex justify-center pointer-events-none"
       >
         <div className={`p-2.5 rounded-full backdrop-blur-xl border flex items-center justify-center shadow-lg transition-all ${
@@ -91,21 +129,10 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
         </div>
       </motion.div>
 
-      {/* Main Drag Container */}
+      {/* Main Content Container */}
       <motion.div
-        drag={disabled || isRefreshing ? false : 'y'}
-        onPointerDown={(e) => {
-          if (window.scrollY > 0) {
-            e.stopPropagation();
-          }
-        }}
-        dragDirectionLock
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.45}
-        style={{ y }}
-        animate={{ y: isRefreshing ? 48 : 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        onDragEnd={handleDragEnd}
+        style={{ y: isRefreshing ? 48 : yElastic }}
+        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
         className="w-full h-full min-h-[inherit]"
       >
         {children}
@@ -113,4 +140,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     </div>
   );
 };
+
 export default PullToRefresh;
+
