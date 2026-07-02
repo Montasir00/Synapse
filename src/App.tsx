@@ -7,16 +7,17 @@ import { useState, useEffect, lazy, Suspense, useMemo, Fragment, useRef, useCall
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Lazy load pages for performance
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const Tasks = lazy(() => import('./components/Tasks'));
-const Expenses = lazy(() => import('./components/Expenses'));
-const Exercises = lazy(() => import('./components/Exercises'));
-const TradeTracker = lazy(() => import('./components/TradeTracker'));
-const TempApiKeyCheck = lazy(() => import('./components/TempApiKeyCheck'));
-const Settings = lazy(() => import('./components/Settings'));
-const Loans = lazy(() => import('./components/Loans'));
+// Lazy load pages for performance with automatic reload retry on failure
+const Dashboard = lazyWithRetry(() => import('./components/Dashboard'));
+const Tasks = lazyWithRetry(() => import('./components/Tasks'));
+const Expenses = lazyWithRetry(() => import('./components/Expenses'));
+const Exercises = lazyWithRetry(() => import('./components/Exercises'));
+const TradeTracker = lazyWithRetry(() => import('./components/TradeTracker'));
+const TempApiKeyCheck = lazyWithRetry(() => import('./components/TempApiKeyCheck'));
+const Settings = lazyWithRetry(() => import('./components/Settings'));
+const Loans = lazyWithRetry(() => import('./components/Loans'));
 import LogExpenseModal from './components/LogExpenseModal';
 import TaskModal from './components/TaskModal';
 import LogExerciseModal from './components/LogExerciseModal';
@@ -193,6 +194,14 @@ const DEFAULT_SOURCE_OPTIONS = [
 ];
 
 export default function App() {
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('page_has_reloaded_for_chunk_error');
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -1644,9 +1653,9 @@ export default function App() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
-                  initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ 
                     type: 'spring',
                     stiffness: 260,

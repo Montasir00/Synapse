@@ -123,18 +123,20 @@ export default function LogLoanModal({
       personName: personName.trim(),
       type: type,
       status: (editingLoan ? editingLoan.status : 'pending') as 'pending' | 'settled',
-      dueDate: dueDate || undefined,
-      notes: notes.trim() || undefined,
+      dueDate: dueDate || null,
+      notes: notes.trim() || null,
       createdAt: editingLoan ? editingLoan.createdAt : new Date().toISOString()
     };
 
     try {
       if (editingLoan && onUpdate) {
-        await Promise.resolve(onUpdate(editingLoan.id, loanData));
+        await onUpdate(editingLoan.id, loanData);
       } else {
-        await Promise.resolve(onAdd(loanData));
+        await onAdd(loanData);
       }
       onClose();
+    } catch (error) {
+      console.error("Submission failed:", error);
     } finally {
       setIsSubmitting(false);
     }

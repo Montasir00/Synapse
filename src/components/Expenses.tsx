@@ -443,14 +443,6 @@ export default function Expenses({
             </div>
             <div className="flex items-center gap-3">
               <button 
-                onClick={() => setIsAllocationModalOpen(true)} 
-                className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted/70 hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
-                aria-label="Configure budget limits per category"
-                title="Budget Config"
-              >
-                <Settings2 className="w-4 h-4" />
-              </button>
-              <button 
                 onClick={() => setIsFocusedLedgerOpen(true)} 
                 className="w-10 h-10 rounded-full border border-border bg-surface-subtle flex items-center justify-center text-muted/70 hover:text-accent hover:border-accent/40 transition-all active:scale-95 shadow-sm"
                 aria-label="Open full ledger with export options"
