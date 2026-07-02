@@ -70,8 +70,8 @@ A deep-dive ledger designed for auditing "Resource Depletion." It helps you visu
 
 1. **Clone the Neural Codebase**
    ```bash
-   git clone https://github.com/Montasir00/TrackOS.git
-   cd TrackOS
+   git clone https://github.com/Montasir00/Synapse.git
+   cd Synapse
    ```
 
 2. **Initialize Dependencies**
