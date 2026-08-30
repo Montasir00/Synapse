@@ -41,11 +41,11 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           <div className={`${status === 'alert' ? 'text-alert' : status === 'active' ? 'text-accent' : 'text-muted/70'}`}>
             {icon}
           </div>
-          <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${status === 'alert' ? 'text-alert' : 'text-ink/60'}`}>
+          <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${status === 'alert' ? 'text-alert' : 'text-ink/60'}`}>
             {title}
           </h3>
           {badge && (
-            <span className="px-2 py-0.5 rounded-full bg-accent/14 border border-accent/30 text-[10px] font-semibold text-white/90 tracking-wide leading-none">
+            <span className="px-2 py-0.5 rounded-full bg-accent/14 border border-accent/30 text-xs font-semibold text-white/90 tracking-wide leading-none">
               {badge}
             </span>
           )}
@@ -87,7 +87,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             {displayedItems}
             {!isExpanded && canExpand && (
                <div className="pt-1 text-center">
-                  <span className="text-[10px] font-medium text-muted/50">
+                  <span className="text-xs font-medium text-muted/50">
                      + {items.length - maxItems} more items
                   </span>
                </div>

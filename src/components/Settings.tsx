@@ -51,14 +51,14 @@ export default function Settings({
             {!user ? (
               <button 
                 onClick={onLogin}
-                className="precise-button px-6 py-2 text-[10px]"
+                className="precise-button px-6 py-2 text-xs"
               >
                 Sign In With Google
               </button>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1 bg-success/10 border border-success/20 rounded-full">
                 <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-                <span className="text-[10px] font-black text-success uppercase tracking-widest">Connected</span>
+                <span className="text-xs font-black text-success uppercase tracking-widest">Connected</span>
               </div>
             )}
           </div>
@@ -109,7 +109,7 @@ export default function Settings({
           {!user && (
             <div className="mt-4 p-4 rounded-xl bg-accent/5 border border-accent/10 flex items-start gap-3">
               <ShieldCheck className="w-4 h-4 text-accent mt-0.5" />
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed">
+              <p className="text-xs font-bold text-muted uppercase tracking-wide leading-relaxed">
                 Cloud persistence is currently disabled. Your data is stored locally on this device. <span className="text-accent cursor-pointer hover:underline" onClick={onLogin}>Sign in with Google</span> to sync across devices.
               </p>
             </div>
@@ -118,8 +118,8 @@ export default function Settings({
           <div className="mt-6 p-4 rounded-xl bg-alert/5 border border-alert/20 flex items-start gap-3">
             <ShieldCheck className="w-4 h-4 text-alert mt-0.5" />
             <div className="space-y-1">
-              <p className="text-[10px] font-black text-alert uppercase tracking-widest">Security Protocol</p>
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed">
+              <p className="text-xs font-black text-alert uppercase tracking-widest">Security Protocol</p>
+              <p className="text-xs font-bold text-muted uppercase tracking-wide leading-relaxed">
                 When using Binance API, ensure <span className="text-alert">"Enable Withdrawals"</span> is <span className="text-alert underline underline-offset-4">UNCHECKED</span> in your Binance settings. Your secrets are stored in a private vault, but this extra layer ensures your funds remain on the exchange.
               </p>
             </div>
@@ -128,7 +128,7 @@ export default function Settings({
 
         {user && <JournalMigrator />}
 
-        <section className="soothing-card p-6 md:p-8 border-l-4 border-accent relative overflow-hidden group" aria-labelledby="settings-api-title">
+        <section className="soothing-card p-6 md:p-8 hover:border-accent/40 relative overflow-hidden group" aria-labelledby="settings-api-title">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-3 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3">
@@ -152,7 +152,7 @@ export default function Settings({
         </section>
 
         {/* Tracking History Optimization */}
-        <section className="soothing-card p-6 md:p-8 border-l-4 border-teal-500 relative overflow-hidden group" aria-labelledby="settings-optimization-title">
+        <section className="soothing-card p-6 md:p-8 hover:border-teal-500/40 relative overflow-hidden group" aria-labelledby="settings-optimization-title">
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
             <ShieldCheck className="w-32 h-32 rotate-12 text-teal-500" />
           </div>
@@ -168,7 +168,7 @@ export default function Settings({
                   <p className="micro-label !text-teal-500/80">Control how much history to sync for maximum speed</p>
                 </div>
               </div>
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
+              <p className="text-xs font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
                 Ignoring old trades significantly increases sync speed. Choose a starting point that covers your active positions.
               </p>
             </div>
@@ -176,19 +176,19 @@ export default function Settings({
             <div className="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-end">
               <button 
                 onClick={() => onUpdateTradeEpoch(Date.now() - 30 * 24 * 60 * 60 * 1000)}
-                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-xs"
               >
                 Last 30 Days
               </button>
               <button 
                 onClick={() => onUpdateTradeEpoch(Date.now() - 90 * 24 * 60 * 60 * 1000)}
-                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-xs"
               >
                 Last 90 Days
               </button>
               <button 
                 onClick={() => onUpdateTradeEpoch(0)}
-                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-[10px]"
+                className="precise-button !px-4 !py-2 border-teal-500/30 text-teal-600 hover:bg-teal-500/10 text-xs"
               >
                 All Time
               </button>
@@ -197,7 +197,7 @@ export default function Settings({
         </section>
 
         {/* Tracking Epoch */}
-        <section className="soothing-card p-6 md:p-8 border-l-4 border-teal-500 relative overflow-hidden group" aria-labelledby="settings-trade-reset-title">
+        <section className="soothing-card p-6 md:p-8 hover:border-teal-500/40 relative overflow-hidden group" aria-labelledby="settings-trade-reset-title">
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
             <ShieldCheck className="w-32 h-32 rotate-12 text-teal-500" />
           </div>
@@ -216,21 +216,21 @@ export default function Settings({
             </div>
             <button 
               onClick={() => {
-                if (window.confirm("This will set the current moment as the new starting point for Trade Tracker. Past trade history will be removed from cloud storage. Continue?")) {
+                if (window.confirm("This will establish the current moment as the new starting point for Trade Tracker. All past trade history will be permanently deleted from cloud storage.\n\nClick OK to Reset History, or Cancel to Keep History.")) {
                   onTradeReset();
                 }
               }}
               disabled={isSyncingTrades}
               className="precise-button w-full sm:w-auto border-teal-500/30 text-teal-600 hover:bg-teal-500/10 transition-all px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSyncingTrades ? 'Syncing...' : 'Reset Trade Tracker'}
+              {isSyncingTrades ? 'Syncing…' : 'Reset Trade Tracker'}
             </button>
           </div>
         </section>
         
         {/* Financial Data Integrity */}
         {user && onRecalculateFinancials && (
-          <section className="soothing-card p-6 md:p-8 border-l-4 border-accent relative overflow-hidden group" aria-labelledby="settings-sync-title">
+          <section className="soothing-card p-6 md:p-8 hover:border-accent/40 relative overflow-hidden group" aria-labelledby="settings-sync-title">
             <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
               <ShieldCheck className="w-32 h-32 rotate-12 text-accent" />
             </div>
@@ -246,7 +246,7 @@ export default function Settings({
                     <p className="micro-label">Recalculate all-time savings from scratch</p>
                   </div>
                 </div>
-                <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
+                <p className="text-xs font-bold text-muted uppercase tracking-wide leading-relaxed max-w-md">
                   If you notice discrepancies in your all-time balance, this will perform a deep scan of every transaction in your ledger to ensure the total is 100% accurate.
                 </p>
               </div>
@@ -256,21 +256,21 @@ export default function Settings({
                 disabled={isSyncingFinancials}
                 className="precise-button w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-wait"
               >
-                {isSyncingFinancials ? 'Syncing...' : 'Re-sync Totals'}
+                {isSyncingFinancials ? 'Syncing…' : 'Re-sync Totals'}
               </button>
             </div>
           </section>
         )}
 
         {/* Database Fetch Audit Section */}
-        <section className="soothing-card p-6 md:p-8 border-l-4 border-accent relative overflow-hidden group" aria-labelledby="settings-audit-title">
+        <section className="soothing-card p-6 md:p-8 hover:border-accent/40 relative overflow-hidden group" aria-labelledby="settings-audit-title">
           <div className="flex flex-col gap-6">
             <div>
               <h2 id="settings-audit-title" className="text-xl md:text-2xl font-display font-black text-ink uppercase tracking-tight">Database Fetch Audit</h2>
               <p className="micro-label">Startup network synchronization payload</p>
             </div>
             
-            <p className="text-[10px] font-bold text-muted uppercase tracking-wide leading-relaxed max-w-xl">
+            <p className="text-xs font-bold text-muted uppercase tracking-wide leading-relaxed max-w-xl">
               When you load Synapse, Firestore establishes real-time tunnels to download active document states. Below is the exact transaction read audit required to synchronize this session:
             </p>
             
@@ -285,7 +285,7 @@ export default function Settings({
                 { label: 'Core Vitals Doc', count: 3, suffix: 'reads' },
               ].map((item, idx) => (
                 <div key={idx} className="border border-border/40 p-3 rounded-xl bg-surface-subtle/20">
-                  <span className="text-[8px] font-black text-muted/65 uppercase tracking-wider block mb-1">{item.label}</span>
+                  <span className="text-xs font-black text-muted/65 uppercase tracking-wider block mb-1">{item.label}</span>
                   <span className="font-mono text-sm font-black text-ink">{item.count} {item.suffix}</span>
                 </div>
               ))}
@@ -293,15 +293,15 @@ export default function Settings({
 
             <div className="border-t border-border/30 pt-4 flex items-baseline justify-between">
               <div>
-                <span className="text-[9px] font-black text-muted/40 uppercase tracking-widest block mb-1">TOTAL INITIALIZATION VALUE</span>
+                <span className="text-xs font-black text-muted/40 uppercase tracking-widest block mb-1">TOTAL INITIALIZATION VALUE</span>
                 <span className="text-2xl font-mono font-black text-accent">
                   {tasksCount + transactionsCount + budgetsCount + notesCount + loansCount + openPositionsCount + 3} Reads
                 </span>
               </div>
               
               <div className="text-right">
-                <span className="text-[9px] font-black text-muted/40 uppercase tracking-widest block mb-1">Tunnel Status</span>
-                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-success/10 text-success">
+                <span className="text-xs font-black text-muted/40 uppercase tracking-widest block mb-1">Tunnel Status</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-success/10 text-success">
                   10 Active Tunnels
                 </span>
               </div>
@@ -309,7 +309,7 @@ export default function Settings({
 
             <div className="p-3.5 rounded-xl bg-accent/5 border border-accent/15 flex items-start gap-2.5">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping mt-1.5 shrink-0" />
-              <p className="text-[9px] font-semibold text-muted uppercase tracking-wide leading-relaxed">
+              <p className="text-xs font-semibold text-muted uppercase tracking-wide leading-relaxed">
                 <strong>Real-Time Optimization Active:</strong> After the initial payload, Firestore caches documents locally. Subsequent queries and live updates incur <strong>0 reads</strong> unless a document has been modified!
               </p>
             </div>
@@ -317,7 +317,7 @@ export default function Settings({
         </section>
 
         {/* Dangerous Zone */}
-        <section className="soothing-card p-6 md:p-8 border-l-4 border-alert relative overflow-hidden group" aria-labelledby="settings-system-reset-title">
+        <section className="soothing-card p-6 md:p-8 hover:border-alert/40 relative overflow-hidden group" aria-labelledby="settings-system-reset-title">
           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
             <Lock className="w-32 h-32 rotate-12" />
           </div>
@@ -337,7 +337,7 @@ export default function Settings({
             
             <button 
               onClick={() => {
-                if (window.confirm("CRITICAL WARNING: This will permanently purge all mission data, financial ledgers, and system configurations. Are you sure you want to proceed?")) {
+                if (window.confirm("CRITICAL WARNING: You are about to permanently purge all tasks, financial ledgers, biological logs, loans, and system configurations. This action cannot be reversed.\n\nClick OK to Purge System, or Cancel to Abort.")) {
                   onSystemReset();
                 }
               }}

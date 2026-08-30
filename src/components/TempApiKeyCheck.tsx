@@ -62,7 +62,7 @@ export default function TempApiKeyCheck() {
 
     setStatus('checking');
     setErrorCode(null);
-    setMessage('Checking credentials...');
+    setMessage('Checking credentials…');
 
     try {
       const token = await user.getIdToken();
@@ -248,7 +248,7 @@ export default function TempApiKeyCheck() {
             }}
             className="precise-button px-6 py-3 text-xs"
           >
-            {isSaving ? 'Saving...' : 'Save for Trade Tracker'}
+            {isSaving ? 'Saving…' : 'Save for Trade Tracker'}
           </button>
           <button
             type="button"

@@ -236,7 +236,7 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
                           <Icon className="w-4.5 h-4.5" aria-hidden="true" />
                         </div>
                         <span className={`text-xs font-bold uppercase tracking-wide block transition-colors ${isActive ? 'text-white' : 'text-ink'}`}>{item.label}</span>
-                        <span className="text-[10px] font-medium text-muted/70 block mt-1 leading-snug group-hover:text-muted/95 transition-colors">{item.desc}</span>
+                        <span className="text-xs font-medium text-muted/70 block mt-1 leading-snug group-hover:text-muted/95 transition-colors">{item.desc}</span>
                       </button>
                     );
                   })}
@@ -266,7 +266,7 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
                           {user?.displayName || user?.email?.split('@')[0] || 'Guest'}
                         </p>
                         <div aria-live="polite" aria-atomic="true" className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`text-[10px] font-medium ${user ? 'text-success' : 'text-muted/60'}`}>
+                          <span className={`text-xs font-medium ${user ? 'text-success' : 'text-muted/60'}`}>
                             {user ? 'Synced' : 'Local Mode'}
                           </span>
                         </div>

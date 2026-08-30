@@ -75,11 +75,11 @@ export default function Loans({
   const [loadingStageText, setLoadingStageText] = useState('');
 
   const loadingStages = [
-    "Initiating secure authentication tunnel...",
-    "Querying decentralized ledger records...",
-    "Decrypting transaction hash chains...",
-    "Reconciling ledger entries & outstanding balances...",
-    "Establishing high-fidelity audit connection..."
+    "Initiating secure authentication tunnel…",
+    "Querying decentralized ledger records…",
+    "Decrypting transaction hash chains…",
+    "Reconciling ledger entries & outstanding balances…",
+    "Establishing high-fidelity audit connection…"
   ];
 
   // Group all loans by normalized counterparty name
@@ -296,7 +296,7 @@ export default function Loans({
           { label: 'Settled Ledger Count', value: settledCount, color: 'text-accent', prefix: '' },
         ].map((m, i) => (
             <div key={i} className="p-4 sm:p-5 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors border-border/10">
-            <span className="text-[9px] font-black text-muted/70 uppercase tracking-[0.2em] mb-1">{m.label}</span>
+            <span className="text-xs font-black text-muted/70 uppercase tracking-[0.2em] mb-1">{m.label}</span>
             <div className="flex items-baseline gap-2">
                <span className={`text-sm sm:text-lg lg:text-xl font-mono font-black tracking-tighter ${m.color}`}>
                   <AnimatedNumber value={Math.abs(m.value)} prefix={m.prefix} />
@@ -310,7 +310,7 @@ export default function Loans({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border/50">
         <div>
           <h3 className="text-2xl sm:text-3xl font-display font-black text-ink uppercase tracking-tighter">Debt Registry</h3>
-          <p className="text-[10px] font-black text-muted/40 uppercase tracking-[0.2em] mt-1">
+          <p className="text-xs font-black text-muted/40 uppercase tracking-[0.2em] mt-1">
             Audit and reconcile outstanding peer accounts
           </p>
         </div>
@@ -320,7 +320,7 @@ export default function Loans({
             <Search className="w-3.5 h-3.5 text-muted/70" />
             <input
               type="text"
-              placeholder="Search counterparty..."
+              placeholder="Search counterparty…"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/70 font-bold"
@@ -331,7 +331,7 @@ export default function Loans({
             {loans.length > 0 && (
               <button 
                 onClick={() => {
-                  if (window.confirm("CRITICAL WARNING: This will permanently delete all active and settled loan transactions from your database. Continue?")) {
+                  if (window.confirm("CRITICAL WARNING: You are about to permanently delete all active and settled loan transactions from cloud storage. This action cannot be undone.\n\nClick OK to Confirm Deletion, or Cancel to Keep Transactions.")) {
                     const deletePromises = loans.map(l => onDeleteLoan(l.id));
                     Promise.all(deletePromises)
                       .then(() => {
@@ -346,7 +346,7 @@ export default function Loans({
                 className="precise-button !px-4 sm:!px-6 !py-2.5 !bg-alert/10 !text-alert !border-alert/20 hover:!bg-alert hover:!text-white transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="text-[10px] uppercase font-black tracking-widest">Clear Ledger</span>
+                <span className="text-xs uppercase font-black tracking-widest">Clear Ledger</span>
               </button>
             )}
 
@@ -355,7 +355,7 @@ export default function Loans({
               className="precise-button !px-4 sm:!px-6 !py-2.5 flex items-center justify-center gap-2 flex-1 sm:flex-initial"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="text-[10px] uppercase font-black tracking-widest">Add Loan</span>
+              <span className="text-xs uppercase font-black tracking-widest">Add Loan</span>
             </button>
           </div>
         </div>
@@ -371,7 +371,7 @@ export default function Loans({
               <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
               <h4 className="text-base font-black text-ink uppercase tracking-tight">Receivables (Gave to People)</h4>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-mono font-black">
+            <span className="px-2.5 py-0.5 rounded-full bg-success/10 text-success text-xs font-mono font-black">
               ${totalLent.toLocaleString()} Pending
             </span>
           </div>
@@ -391,7 +391,7 @@ export default function Loans({
                 ))
               ) : (
                 <EmptyState 
-                  iconName={searchTerm ? "Search" : "Coins"}
+                  icon={searchTerm ? <Search className="w-8 h-8" /> : <Coins className="w-8 h-8" />}
                   title={searchTerm ? "No matches found" : "No receivables found"}
                   description={searchTerm ? `No counterparties match "${searchTerm}".` : lentEmptyText}
                   actionText={searchTerm ? undefined : "Log Loan"}
@@ -404,7 +404,7 @@ export default function Loans({
               <div className="flex justify-center pt-2">
                 <button
                   onClick={() => setShowSettledLent(!showSettledLent)}
-                  className="px-4 py-2 rounded-full bg-surface border border-border text-[9px] font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-full bg-surface border border-border text-xs font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
                   {showSettledLent ? "Hide" : "Show"} {settledLentAccountsCount} Settled {settledLentAccountsCount === 1 ? "Account" : "Accounts"}
                 </button>
@@ -420,7 +420,7 @@ export default function Loans({
               <div className="w-2 h-2 rounded-full bg-alert shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
               <h4 className="text-base font-black text-ink uppercase tracking-tight">Payables (Have to Give)</h4>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-alert/10 text-alert text-[10px] font-mono font-black">
+            <span className="px-2.5 py-0.5 rounded-full bg-alert/10 text-alert text-xs font-mono font-black">
               ${totalBorrowed.toLocaleString()} Pending
             </span>
           </div>
@@ -440,7 +440,7 @@ export default function Loans({
                 ))
               ) : (
                 <EmptyState 
-                  iconName={searchTerm ? "Search" : "Scale"}
+                  icon={searchTerm ? <Search className="w-8 h-8" /> : <Scale className="w-8 h-8" />}
                   title={searchTerm ? "No matches found" : "No payables found"}
                   description={searchTerm ? `No counterparties match "${searchTerm}".` : borrowedEmptyText}
                   actionText={searchTerm ? undefined : "Log Loan"}
@@ -453,7 +453,7 @@ export default function Loans({
               <div className="flex justify-center pt-2">
                 <button
                   onClick={() => setShowSettledBorrowed(!showSettledBorrowed)}
-                  className="px-4 py-2 rounded-full bg-surface border border-border text-[9px] font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-full bg-surface border border-border text-xs font-black uppercase tracking-widest text-muted hover:text-ink hover:border-dark-border hover:bg-white active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
                   {showSettledBorrowed ? "Hide" : "Show"} {settledBorrowedAccountsCount} Settled {settledBorrowedAccountsCount === 1 ? "Account" : "Accounts"}
                 </button>
@@ -486,10 +486,10 @@ export default function Loans({
             <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-xs rounded-[32px] shadow-2xl border border-white/10 p-10 text-center">
               <div className="w-16 h-16 bg-alert/20 rounded-full flex items-center justify-center mx-auto mb-6"><Trash2 className="w-6 h-6 text-alert" /></div>
               <h3 className="text-2xl font-display font-black text-ink mb-2 uppercase tracking-tight">Delete Record?</h3>
-              <p className="text-muted text-[11px] mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
+              <p className="text-muted text-xs mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
               <div className="flex gap-4">
-                <button onClick={() => setLoanToDelete(null)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-full font-bold text-[9px] uppercase tracking-widest text-ink/70">Cancel</button>
-                <button onClick={() => { onDeleteLoan(loanToDelete); setLoanToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-bold text-[9px] uppercase tracking-widest shadow-2xl shadow-alert/30">Confirm</button>
+                <button onClick={() => setLoanToDelete(null)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-full font-bold text-xs uppercase tracking-widest text-ink/70">Cancel</button>
+                <button onClick={() => { onDeleteLoan(loanToDelete); setLoanToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-bold text-xs uppercase tracking-widest shadow-2xl shadow-alert/30">Confirm</button>
               </div>
             </motion.div>
           </div>
@@ -524,7 +524,7 @@ export default function Loans({
                 Unlock Personal Ledger
               </h3>
               
-              <p className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] mb-4">
+              <p className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] mb-4">
                 Authorization Required
               </p>
               
@@ -535,13 +535,13 @@ export default function Loans({
               <div className="flex gap-4">
                 <button 
                   onClick={() => { setPermissionGateOpen(false); setSelectedCounterparty(null); }} 
-                  className="flex-1 py-3.5 bg-surface-subtle/50 hover:bg-surface-subtle border border-border rounded-full font-black text-[9px] uppercase tracking-widest text-muted hover:text-ink transition-all active:scale-[0.98]"
+                  className="flex-1 py-3.5 bg-surface-subtle/50 hover:bg-surface-subtle border border-border rounded-full font-black text-xs uppercase tracking-widest text-muted hover:text-ink transition-all active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={confirmLedgerUnlock} 
-                  className="flex-1 py-3.5 bg-accent text-white hover:bg-accent-hover rounded-full font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 bg-accent text-white hover:bg-accent-hover rounded-full font-black text-xs uppercase tracking-widest shadow-xl shadow-accent/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <Unlock className="w-3.5 h-3.5" />
                   <span>Unlock Ledger</span>
@@ -580,7 +580,7 @@ export default function Loans({
               </div>
               
               <h4 className="text-base font-black text-ink uppercase tracking-wider mb-2">Decrypting Archives</h4>
-              <p className="text-[10px] font-mono text-accent uppercase tracking-widest font-black h-8 leading-snug animate-pulse">
+              <p className="text-xs font-mono text-accent uppercase tracking-widest font-black h-8 leading-snug animate-pulse">
                 {loadingStageText}
               </p>
             </motion.div>
@@ -617,7 +617,7 @@ export default function Loans({
                     <h3 className="text-xl font-display font-black text-ink uppercase tracking-tight leading-none">
                       {activeCounterpartyData.personName}
                     </h3>
-                    <p className="text-[9px] font-black text-muted/50 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-1">
+                    <p className="text-xs font-black text-muted/50 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-success" />
                       SECURE AUDIT PATHWAY
                     </p>
@@ -631,7 +631,7 @@ export default function Loans({
                     title="Log new transaction for this person"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-wider">Quick Log</span>
+                    <span className="text-xs font-black uppercase tracking-wider">Quick Log</span>
                   </button>
                   <button 
                     onClick={() => { setActiveLedgerOpen(false); setSelectedCounterparty(null); }}
@@ -645,7 +645,7 @@ export default function Loans({
               {/* Net Balance Banner */}
               <div className="mt-5 p-4 rounded-2xl bg-surface-subtle/40 border border-border/30 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-muted/60 uppercase tracking-widest block mb-1">Account Net Balance</span>
+                  <span className="text-xs font-black text-muted/60 uppercase tracking-widest block mb-1">Account Net Balance</span>
                   <div className="flex items-center gap-2">
                     <span className={`text-xl sm:text-2xl font-mono font-black tracking-tight ${
                       activeCounterpartyData.netPending > 0 
@@ -657,13 +657,13 @@ export default function Loans({
                       {activeCounterpartyData.netPending > 0 ? '+' : activeCounterpartyData.netPending < 0 ? '-' : ''}
                       ${Math.abs(activeCounterpartyData.netPending).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] font-bold text-muted/70 uppercase tracking-wider font-mono">USD</span>
+                    <span className="text-xs font-bold text-muted/70 uppercase tracking-wider font-mono">USD</span>
                   </div>
                 </div>
                 
                 <div className="text-right">
-                  <span className="text-[9px] font-black text-muted/40 uppercase tracking-widest block mb-1">State</span>
-                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                  <span className="text-xs font-black text-muted/40 uppercase tracking-widest block mb-1">State</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                     activeCounterpartyData.netPending > 0
                       ? 'bg-success/10 text-success'
                       : activeCounterpartyData.netPending < 0
@@ -678,8 +678,8 @@ export default function Loans({
               {/* Internal transaction logs */}
               <div className="flex-1 overflow-y-auto scrollbar-custom py-4 space-y-3 mt-4">
                 <div className="flex items-center justify-between px-1 mb-2">
-                  <span className="text-[9px] font-black text-muted uppercase tracking-[0.25em]">Transaction Audit Log ({activeCounterpartyData.loans.length})</span>
-                  <span className="text-[9px] font-black text-muted/40 uppercase tracking-[0.2em]">{activeCounterpartyData.activeCount} Pending, {activeCounterpartyData.settledCount} Settled</span>
+                  <span className="text-xs font-black text-muted uppercase tracking-[0.25em]">Transaction Audit Log ({activeCounterpartyData.loans.length})</span>
+                  <span className="text-xs font-black text-muted/40 uppercase tracking-[0.2em]">{activeCounterpartyData.activeCount} Pending, {activeCounterpartyData.settledCount} Settled</span>
                 </div>
 
                 <div className="space-y-3">
@@ -709,7 +709,7 @@ export default function Loans({
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                              <span className={`text-xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
                                 isSettled 
                                   ? 'bg-muted/10 text-muted' 
                                   : loan.type === 'lent' 
@@ -718,7 +718,7 @@ export default function Loans({
                               }`}>
                                 {loan.type === 'lent' ? 'Lent' : 'Borrowed'}
                               </span>
-                              <span className="text-[10px] font-semibold text-muted/60 font-mono">
+                              <span className="text-xs font-semibold text-muted/60 font-mono">
                                 {formatDateSafely(loan.createdAt)}
                               </span>
                             </div>
@@ -730,7 +730,7 @@ export default function Loans({
                             )}
 
                             {loan.dueDate && !isSettled && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-alert mt-1">
+                              <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-alert mt-1">
                                 <Calendar className="w-2.5 h-2.5" />
                                 Due {formatDateSafely(loan.dueDate)}
                               </span>
@@ -773,7 +773,7 @@ export default function Loans({
               </div>
 
               {/* Footer */}
-              <div className="mt-4 pt-4 border-t border-border flex justify-between items-center text-[10px] font-mono text-muted/40 uppercase">
+              <div className="mt-4 pt-4 border-t border-border flex justify-between items-center text-xs font-mono text-muted/40 uppercase">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
                   LEDGER INTEGRITY VERIFIED
@@ -850,7 +850,7 @@ function CounterpartyCard({ counterparty: c, index, type, onClick, formatDate }:
             <span className={`text-sm sm:text-base font-black text-ink leading-none truncate group-hover:text-accent transition-colors ${isSettled ? 'text-muted line-through' : ''}`}>
               {c.personName}
             </span>
-            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest leading-none ${
+            <span className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest leading-none ${
               isSettled 
                 ? 'bg-muted/10 text-muted' 
                 : isReceivable 
@@ -861,7 +861,7 @@ function CounterpartyCard({ counterparty: c, index, type, onClick, formatDate }:
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-muted text-[10px]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-muted text-xs">
             <span className="font-semibold">{subtitleText}</span>
             {c.earliestDueDate && !isSettled && (
               <>
@@ -887,7 +887,7 @@ function CounterpartyCard({ counterparty: c, index, type, onClick, formatDate }:
           }`}>
             ${Math.abs(c.netPending > 0 ? c.netPending : c.netPending < 0 ? c.netPending : c.netSettled).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <span className="text-[8px] font-black text-muted/40 uppercase tracking-widest">
+          <span className="text-xs font-black text-muted/40 uppercase tracking-widest">
             {isSettled ? 'Settled Value' : isReceivable ? 'Owes You' : 'You Owe'}
           </span>
         </div>

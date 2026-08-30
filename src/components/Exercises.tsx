@@ -3,6 +3,7 @@ import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, CartesianGrid, XAxis
 import { motion } from 'motion/react';
 import { Exercise } from '../types';
 import ModuleCard from './ModuleCard';
+import EmptyState from './EmptyState';
 import { parseISO, startOfWeek, addDays, format, isSameDay } from 'date-fns';
 
 import { useMemo } from 'react';
@@ -59,7 +60,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
           aria-label="Log new exercise session"
         >
           <PlusCircle className="w-4 h-4" aria-hidden="true" />
-          <span className="ml-2">Log Session</span>
+          <span className="ml-2 flex items-center gap-1.5 justify-center">Log Session <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono font-normal tracking-normal lowercase hidden sm:inline-block">alt+g</kbd></span>
         </button>
       </div>
 
@@ -71,10 +72,10 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
           { label: 'Last Workout', value: sessions[0]?.title || 'None', sub: sessions[0]?.date || 'NO DATA', color: 'text-teal-500' },
         ].map((m, i) => (
           <div key={i} className="flex-1 w-1/2 sm:w-auto p-4 sm:p-6 flex flex-col justify-center items-center sm:items-start text-center sm:text-left hover:bg-surface/50 transition-colors">
-            <span className="text-[9px] font-bold text-muted/70 uppercase tracking-[0.2em] mb-1.5">{m.label}</span>
+            <span className="text-xs font-bold text-muted/70 uppercase tracking-[0.2em] mb-1.5">{m.label}</span>
             <div className="flex items-baseline gap-2">
                <span className={`text-xl sm:text-2xl lg:text-3xl font-mono font-black tracking-tighter ${m.color} truncate max-w-[120px]`}>{m.value}</span>
-               {m.sub && <span className="text-[9px] font-bold text-muted/70 uppercase hidden sm:inline-block">{m.sub}</span>}
+               {m.sub && <span className="text-xs font-bold text-muted/70 uppercase hidden sm:inline-block">{m.sub}</span>}
             </div>
             {i === 0 && (
                <div className="w-full bg-surface h-1 rounded-full overflow-hidden mt-3 max-w-[100px]">
@@ -100,10 +101,13 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
           >
             <div className="space-y-6 pt-4">
             {sessions.length === 0 ? (
-              <div className="p-8 text-center border border-dashed border-border/40 rounded-2xl bg-surface/60">
-                <Dumbbell className="w-8 h-8 mx-auto text-muted/70 mb-3" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/70">No sessions logged yet</p>
-              </div>
+              <EmptyState
+                iconName="Dumbbell"
+                title="No training logged"
+                description="Keep your biological status and active recovery metrics audited by logging a workout."
+                actionText="Log Session"
+                onAction={onLogSession}
+              />
             ) : sessions.map((session, i) => {
               const Icon = getIcon(session.icon);
               return (
@@ -120,20 +124,20 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                   <div className="flex-1 pb-8 border-b border-border/40 w-full">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <span className="text-[9px] uppercase tracking-[0.2em] font-black text-accent mb-2 block">{session.category}</span>
+                        <span className="text-xs uppercase tracking-[0.2em] font-black text-accent mb-2 block">{session.category}</span>
                         <h4 className="text-xl sm:text-2xl font-display font-bold text-ink group-hover:text-accent transition-colors uppercase tracking-tight">{session.title}</h4>
                       </div>
-                        <span className="text-[9px] font-mono font-bold text-muted/70 uppercase tracking-widest">{session.date}</span>
+                        <span className="text-xs font-mono font-bold text-muted/70 uppercase tracking-widest">{session.date}</span>
                     </div>
-                    <p className="text-[13px] text-muted leading-relaxed mb-6 max-w-2xl font-medium opacity-70">
+                    <p className="text-sm text-muted leading-relaxed mb-6 max-w-2xl font-medium opacity-70">
                       {session.description}
                     </p>
                     <div className="flex items-center gap-8">
-                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-ink uppercase tracking-wider">
+                      <div className="flex items-center gap-2.5 text-xs font-bold text-ink uppercase tracking-wider">
                         <Clock className="w-3.5 h-3.5 text-accent" />
                         {session.duration}
                       </div>
-                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-ink uppercase tracking-wider">
+                      <div className="flex items-center gap-2.5 text-xs font-bold text-ink uppercase tracking-wider">
                         <Icon className="w-3.5 h-3.5 text-accent" />
                         {session.intensity}
                       </div>
@@ -150,8 +154,8 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full pt-8 border-t border-border/50">
           <div className="glass-card p-6 md:p-10 h-full flex flex-col justify-center">
             <div className="flex justify-between items-center mb-10">
-              <span className="text-[10px] font-black text-ink uppercase tracking-[0.2em]">Weekly activity</span>
-              <span className="text-[9px] font-bold text-white px-2.5 py-1 bg-accent/14 rounded-full uppercase tracking-widest border border-accent/30">Load</span>
+              <span className="text-xs font-black text-ink uppercase tracking-[0.2em]">Weekly activity</span>
+              <span className="text-xs font-bold text-white px-2.5 py-1 bg-accent/14 rounded-full uppercase tracking-widest border border-accent/30">Load</span>
             </div>
             <div style={{ height: 160, minHeight: 160 }} className="w-full min-w-0">
               <ResponsiveContainer width="100%" height={160} minWidth={0} minHeight={160}>
@@ -162,7 +166,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                       if (active && payload && payload.length) {
                         return (
                           <div className="glass-card !p-3 shadow-xl border-border/30">
-                            <p className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em] mb-1">{payload[0].payload.full}</p>
+                            <p className="text-xs font-black text-muted/70 uppercase tracking-[0.2em] mb-1">{payload[0].payload.full}</p>
                             <p className="text-sm font-mono font-black text-accent">{payload[0].value} MIN</p>
                           </div>
                         );
@@ -199,19 +203,19 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
               className="w-full"
             >
               <div className="pt-4">
-                <div className="p-6 soothing-card border-l-4 border-accent bg-surface hover:border-accent/60 transition-colors">
+                <div className="p-6 soothing-card hover:border-accent/40 bg-surface hover:border-accent/60 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <h5 className="text-lg font-display font-bold text-ink uppercase tracking-tight">PPL Split: Phase 2</h5>
-                    <span className="text-[9px] font-black text-accent uppercase tracking-widest">W6/12</span>
+                    <span className="text-xs font-black text-accent uppercase tracking-widest">W6/12</span>
                   </div>
-                  <p className="text-[10px] uppercase font-bold text-muted mb-6 tracking-wide opacity-40">Progression plan in progress.</p>
+                  <p className="text-xs uppercase font-bold text-muted mb-6 tracking-wide opacity-40">Progression plan in progress.</p>
                   <div className="flex justify-between items-center">
                     <div className="flex -space-x-2">
                       {[1, 2, 3].map(i => (
                         <div key={i} className="w-7 h-7 rounded-lg bg-surface-subtle/20 border border-border/40 grayscale" />
                       ))}
                     </div>
-                    <button className="text-[9px] font-bold text-accent uppercase tracking-widest flex items-center gap-1.5 hover:text-ink transition-colors">
+                    <button className="text-xs font-bold text-accent uppercase tracking-widest flex items-center gap-1.5 hover:text-ink transition-colors">
                       Resume <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -222,8 +226,8 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
             <div className="relative overflow-hidden rounded-[24px] p-8 bg-surface-subtle/10 border border-border/40 backdrop-blur-xl text-ink shadow-sm hover:border-border/30 transition-colors">
               <div className="relative z-10">
                 <h4 className="text-lg font-display font-black mb-2 uppercase tracking-tight">Ready Protocol?</h4>
-                <p className="text-muted/70 text-[9px] mb-6 font-bold uppercase tracking-wide">Scheduled for T+07:00 PHT.</p>
-                <button className="precise-button w-full py-3 sm:py-4 text-[10px] uppercase">
+                <p className="text-muted/70 text-xs mb-6 font-bold uppercase tracking-wide">Scheduled for T+07:00 PHT.</p>
+                <button className="precise-button w-full py-3 sm:py-4 text-xs uppercase">
                   Preview Plan
                 </button>
               </div>

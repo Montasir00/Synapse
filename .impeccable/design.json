@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-30T20:13:30Z",
+  "title": "Design System: Synapse",
+  "extensions": {
+    "colorMeta": {
+      "bg": { "role": "neutral", "displayName": "Obsidian Black", "canonical": "oklch(0.12 0.01 260)", "tonalRamp": ["oklch(0.04 0.01 260)", "oklch(0.08 0.01 260)", "oklch(0.12 0.01 260)", "oklch(0.15 0.01 260)", "oklch(0.30 0.01 260)", "oklch(0.50 0.01 260)", "oklch(0.75 0.01 260)", "oklch(0.96 0.01 260)"] },
+      "surface": { "role": "neutral", "displayName": "Card Obsidian", "canonical": "oklch(0.15 0.01 260)", "tonalRamp": ["oklch(0.05 0.01 260)", "oklch(0.10 0.01 260)", "oklch(0.15 0.01 260)", "oklch(0.20 0.01 260)", "oklch(0.40 0.01 260)", "oklch(0.60 0.01 260)", "oklch(0.80 0.01 260)", "oklch(0.96 0.01 260)"] },
+      "todo": { "role": "primary", "displayName": "Electric Periwinkle", "canonical": "oklch(0.68 0.16 265)", "tonalRamp": ["oklch(0.15 0.16 265)", "oklch(0.30 0.16 265)", "oklch(0.45 0.16 265)", "oklch(0.58 0.16 265)", "oklch(0.68 0.16 265)", "oklch(0.78 0.14 265)", "oklch(0.88 0.10 265)", "oklch(0.95 0.05 265)"] },
+      "expense": { "role": "secondary", "displayName": "Cyber Mint", "canonical": "oklch(0.74 0.14 165)", "tonalRamp": ["oklch(0.15 0.14 165)", "oklch(0.30 0.14 165)", "oklch(0.45 0.14 165)", "oklch(0.60 0.14 165)", "oklch(0.74 0.14 165)", "oklch(0.82 0.12 165)", "oklch(0.90 0.08 165)", "oklch(0.95 0.04 165)"] },
+      "trade": { "role": "accent", "displayName": "Coral Terracotta", "canonical": "oklch(0.66 0.15 35)", "tonalRamp": ["oklch(0.15 0.15 35)", "oklch(0.30 0.15 35)", "oklch(0.45 0.15 35)", "oklch(0.55 0.15 35)", "oklch(0.66 0.15 35)", "oklch(0.76 0.12 35)", "oklch(0.86 0.08 35)", "oklch(0.95 0.04 35)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Title", "purpose": "Main page headers and metric summary display values." },
+      "body": { "displayName": "Body Copy", "purpose": "Prose descriptions, notes list items, and settings labels." },
+      "label": { "displayName": "Tabular Label", "purpose": "Metadata, category markers, and table header tags." }
+    },
+    "shadows": [
+      { "name": "shadow-md", "value": "0 4px 20px rgba(0, 0, 0, 0.5)", "purpose": "Card elevation hover feedback." },
+      { "name": "shadow-lg", "value": "0 20px 40px rgba(0, 0, 0, 0.6)", "purpose": "Modal box overlay and primary dialog wrappers." }
+    ],
+    "motion": [
+      { "name": "standard-ease", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Transitions for general state changes." },
+      { "name": "spring-physics", "value": "spring(1, 80, 10, 0)", "purpose": "tactile swipe and pull-to-refresh action updates." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Standard elevated execution button with tactical accent background.",
+      "html": "<button class=\"ds-btn-primary\">EXECUTE COMMAND</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; padding: 10px 24px; background-color: oklch(0.68 0.16 265); color: oklch(0.96 0.01 260); font-family: \"Inter\", sans-serif; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid transparent; border-radius: 20px; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background-color: oklch(0.72 0.18 265); } .ds-btn-primary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "A pill-shaped text container used for search filters and protocol entries.",
+      "html": "<input type=\"text\" class=\"ds-input-field\" placeholder=\"Enter metric protocol...\" />",
+      "css": ".ds-input-field { width: 100%; padding: 12px 24px; background-color: oklch(0.15 0.01 260); border: 1px solid oklch(0.28 0.01 260 / 0.7); border-radius: 9999px; color: oklch(0.96 0.01 260); font-family: \"Inter\", sans-serif; font-size: 0.875rem; outline: none; transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-input-field:focus { border-color: oklch(0.68 0.16 265); box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15); }"
+    },
+    {
+      "name": "Glass Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Subtle transparent card panel used for module grids and layouts.",
+      "html": "<div class=\"ds-glass-card\"><h3 class=\"ds-card-title\">Operator Status</h3><p class=\"ds-card-text\">System metrics fully synchronized.</p></div>",
+      "css": ".ds-glass-card { background-color: oklch(0.15 0.01 260); border: 1px solid oklch(0.28 0.01 260 / 0.7); border-radius: 20px; padding: 16px; transition: all 300ms cubic-bezier(0.25, 0.8, 0.25, 1); } .ds-glass-card:hover { border-color: oklch(0.32 0.01 260 / 0.9); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); transform: translateY(-1px); } .ds-card-title { margin: 0 0 8px 0; font-family: \"Plus Jakarta Sans\", sans-serif; font-size: 1.125rem; font-weight: 700; color: oklch(0.96 0.01 260); } .ds-card-text { margin: 0; font-family: \"Inter\", sans-serif; font-size: 0.875rem; color: oklch(0.75 0.01 260); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Obsidian Command Console",
+    "overview": "Synapse is structured as a premium, high-fidelity telemetry interface. Grounded in a dark Obsidian palette, it uses precise geometric layouts, subtle borders, and neon cyber-glow accents to serve as an executive terminal for personal metrics. The user experience balances tactical clarity with visual depth, feeling fast, responsive, and carefully crafted.",
+    "keyCharacteristics": [
+      "Deep mineral and Obsidian backdrops, never pure solid blacks.",
+      "Heavy corner rounding (20px) on panels and pills to soften the high-density layout.",
+      "Cyan-periwinkle, mint, and terracotta accents mapped to distinct life sectors (Tasks, Expenses, Trades).",
+      "Soft ambient shadows and glowing overlays that respond dynamically to user hover actions."
+    ],
+    "rules": [
+      { "name": "The Containment Rule", "body": "Accents (Periwinkle, Mint, Coral) represent functional status or active focus only. Interactive controls use these for active hover/states; background borders and panels stay neutral.", "section": "colors" },
+      { "name": "The OKLCH Rule", "body": "All new system colors must be defined in the OKLCH space to maintain predictable luminance ramp transitions.", "section": "colors" },
+      { "name": "The 12px Floor Rule", "body": "Micro-labels and tag subscripts must not scale below 0.75rem (12px) to ensure clean rendering and readability on high-density Obsidian grounds.", "section": "typography" },
+      { "name": "The Hover Lift Rule", "body": "Active cards translate upward (translate-y-[-1px]) and transition their borders to border-strong while scaling up their shadow index.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do map layout wrapper states to contextual themes (.theme-tasks, .theme-expenses) to dynamically sync the active accent colors.",
+      "Do utilize prefers-reduced-motion media overrides to compress animation durations to 0.01ms for keyboard and accessibility users.",
+      "Do format numbers, prices, and timestamps in tabular monospace styles to guarantee clean alignment in ledgers."
+    ],
+    "donts": [
+      "Don't use pure solid blacks (#000000) for visual ground; always stick to deep Obsidian oklch(0.12 0.01 260).",
+      "Don't add text gradients or flashy multi-color glows.",
+      "Don't overlay low-contrast text on bright backgrounds; maintain a minimum 4.5:1 contrast ratio."
+    ]
+  }
+}

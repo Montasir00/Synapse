@@ -141,7 +141,7 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                       <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                       <span className="text-xs font-black text-ink uppercase tracking-[0.12em] sm:tracking-[0.3em]">Log session</span>
                     </div>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/60">Use one entry per workout to keep the timeline readable.</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted/60">Use one entry per workout to keep the timeline readable.</p>
                   </div>
                   <button 
                     onClick={() => !isSubmitting && onClose()}
@@ -195,7 +195,7 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                   </div>
                   <div className="space-y-3">
                     <label htmlFor="exercise-duration" className="micro-label text-muted">Duration (min)</label>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted/50">Use total active minutes for the session.</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted/50">Use total active minutes for the session.</p>
                     <div className="relative group">
                       <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent w-4 h-4 transition-colors" />
                       <input 
@@ -242,7 +242,7 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                       id="exercise-notes"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Feedback loop notes..." 
+                      placeholder="Feedback loop notes…" 
                       className="w-full bg-surface-subtle rounded-[32px] py-4 pl-12 pr-6 text-sm font-medium focus:border-accent/40 outline-none transition-all min-h-[100px] resize-none border border-border text-ink placeholder:text-muted"
                     />
                   </div>
@@ -253,7 +253,7 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                   disabled={isSubmitting}
                   className="precise-button w-full py-4 text-xs tracking-[0.12em] sm:tracking-[0.3em] font-black mt-4 shadow-xl active:scale-[0.98]"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Session'}
+                  {isSubmitting ? 'Committing…' : 'Commit Session'}
                 </button>
               </form>
             </div>

@@ -91,7 +91,7 @@ export const JournalMigrator: React.FC = () => {
       <div className="glass-card p-4 border-emerald-500/20 bg-emerald-500/5">
         <div className="flex items-center gap-3 text-emerald-400">
           <CheckCircle className="w-4 h-4" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Journal Migration Complete</span>
+          <span className="text-xs font-bold uppercase tracking-widest">Journal Migration Complete</span>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ export const JournalMigrator: React.FC = () => {
         {status === 'MIGRATING' && <Loader2 className="w-4 h-4 text-accent animate-spin" />}
       </div>
 
-      <p className="text-[10px] font-medium text-muted/60 leading-relaxed mb-6 uppercase">
+      <p className="text-xs font-medium text-muted/60 leading-relaxed mb-6 uppercase">
         Safe isolation of qualitative trade insights. This will transition your legacy notes and tags to the immutable 
         <span className="text-accent mx-1">trade_journals</span> collection.
       </p>
@@ -115,15 +115,15 @@ export const JournalMigrator: React.FC = () => {
       {status === 'ERROR' && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded mb-4 flex items-center gap-2 text-red-400">
           <AlertCircle className="w-4 h-4" />
-          <span className="text-[9px] font-bold uppercase leading-none">{error}</span>
+          <span className="text-xs font-bold uppercase leading-none">{error}</span>
         </div>
       )}
 
       {status === 'SUCCESS' ? (
         <div className="text-center py-4">
           <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-          <p className="text-[10px] font-black text-ink uppercase tracking-widest">Mission Complete</p>
-          <p className="text-[9px] font-bold text-muted/40 uppercase mt-1">
+          <p className="text-xs font-black text-ink uppercase tracking-widest">Mission Complete</p>
+          <p className="text-xs font-bold text-muted/40 uppercase mt-1">
             {stats.migrated} Journals Isolated / {stats.scanned} Positions Audited
           </p>
         </div>
@@ -131,9 +131,9 @@ export const JournalMigrator: React.FC = () => {
         <button
           onClick={runMigration}
           disabled={status === 'MIGRATING'}
-          className="w-full py-3 bg-accent text-white font-black text-[10px] uppercase tracking-[0.2em] rounded hover:bg-accent-hover transition-all disabled:opacity-50"
+          className="w-full py-3 bg-accent text-white font-black text-xs uppercase tracking-[0.2em] rounded hover:bg-accent-hover transition-all disabled:opacity-50"
         >
-          {status === 'MIGRATING' ? 'Executing Bridge...' : 'Initiate Migration'}
+          {status === 'MIGRATING' ? 'Executing Bridge…' : 'Initiate Migration'}
         </button>
       )}
     </div>

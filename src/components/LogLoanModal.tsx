@@ -173,7 +173,7 @@ export default function LogLoanModal({
                     <div className="w-3 h-3 rounded-full bg-accent animate-ping absolute inset-0" />
                     <div className="w-3 h-3 rounded-full bg-accent relative" />
                   </div>
-                  <span className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">Debt Ledger Synchronization</span>
+                  <span className="text-xs font-black text-ink uppercase tracking-[0.25em]">Debt Ledger Synchronization</span>
                 </div>
                   <button 
                     onClick={() => !isSubmitting && onClose()}
@@ -188,14 +188,14 @@ export default function LogLoanModal({
                   <button 
                     type="button"
                     onClick={() => { setType('lent'); haptics.light(); }}
-                    className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'lent' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
+                    className={`flex-1 py-3 text-center rounded-full text-xs font-black uppercase tracking-widest transition-all ${type === 'lent' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
                   >
                     Lent (Gave to)
                   </button>
                   <button 
                     type="button"
                     onClick={() => { setType('borrowed'); haptics.light(); }}
-                    className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'borrowed' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
+                    className={`flex-1 py-3 text-center rounded-full text-xs font-black uppercase tracking-widest transition-all ${type === 'borrowed' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                   >
                     Borrowed (Owe)
                   </button>
@@ -205,10 +205,10 @@ export default function LogLoanModal({
                 {/* Hero Amount Field */}
                 <div className="space-y-4 group">
                   <div className="flex justify-between items-end px-1">
-                    <label htmlFor="loan-amount" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Principal Value</label>
+                    <label htmlFor="loan-amount" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em]">Principal Value</label>
                     <div className="flex items-center gap-1.5 text-accent">
                       <Sparkles className="w-3 h-3" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Precision Entry</span>
+                      <span className="text-xs font-bold uppercase tracking-widest">Precision Entry</span>
                     </div>
                   </div>
                   
@@ -235,7 +235,7 @@ export default function LogLoanModal({
                     </div>
                   </div>
                   {amountError && (
-                    <p className="text-[10px] font-black text-alert uppercase tracking-widest px-2">Verify loan principal magnitude</p>
+                    <p className="text-xs font-black text-alert uppercase tracking-widest px-2">Verify loan principal magnitude</p>
                   )}
                 </div>
 
@@ -243,7 +243,7 @@ export default function LogLoanModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Counterparty Name Field */}
                   <div className="space-y-3">
-                    <label htmlFor="loan-name" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Counterparty (Person)</label>
+                    <label htmlFor="loan-name" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Counterparty (Person)</label>
                     <div className="relative group">
                       <User className="absolute left-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                       <input 
@@ -259,13 +259,13 @@ export default function LogLoanModal({
                       />
                     </div>
                     {nameError && (
-                      <p className="text-[10px] font-black text-alert uppercase tracking-widest px-2">Counterparty is required</p>
+                      <p className="text-xs font-black text-alert uppercase tracking-widest px-2">Counterparty is required</p>
                     )}
                   </div>
 
                   {/* Due Date Field */}
                   <div className="space-y-3">
-                    <label htmlFor="loan-due-date" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Due Date (Optional)</label>
+                    <label htmlFor="loan-due-date" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Due Date (Optional)</label>
                     <div className="relative">
                       <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <input 
@@ -282,14 +282,14 @@ export default function LogLoanModal({
 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label htmlFor="loan-notes" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Internal Log / Memo</label>
+                  <label htmlFor="loan-notes" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Internal Log / Memo</label>
                   <div className="relative group">
                     <FileText className="absolute left-5 top-4.5 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                     <textarea 
                       id="loan-notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="ENTER MEMO DETAILS..." 
+                      placeholder="ENTER MEMO DETAILS…" 
                       className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/70 uppercase tracking-widest"
                     />
                   </div>

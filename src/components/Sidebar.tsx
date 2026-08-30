@@ -40,7 +40,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
           </div>
           <div className="min-w-0">
             <span className="text-sm font-display font-black text-ink tracking-tight block leading-none">Synapse</span>
-            <span className="text-[10px] text-muted/50 font-medium tracking-wide">Neural OS</span>
+            <span className="text-xs text-muted/50 font-medium tracking-wide">Neural OS</span>
           </div>
         </div>
 
@@ -115,12 +115,12 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
                 </p>
                 <div aria-live="polite" aria-atomic="true" className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${user ? 'bg-success/10 border-success/20' : 'bg-muted/10 border-border/40'}`}>
                   <div className={`w-1 h-1 rounded-full animate-pulse ${user ? 'bg-success shadow-[0_0_8px_rgba(0,212,170,0.4)]' : 'bg-muted/40 shadow-none'}`} />
-                  <span className={`text-[10px] font-semibold ${user ? 'text-success' : 'text-muted'}`}>
+                  <span className={`text-xs font-semibold ${user ? 'text-success' : 'text-muted'}`}>
                     {user ? 'Synced' : 'Local'}
                   </span>
                 </div>
               </div>
-              <p className="text-[10px] font-semibold text-muted/70 truncate tracking-wide mt-0.5">{user ? 'Cloud Sync Mode' : 'Local Data Mode'}</p>
+              <p className="text-xs font-semibold text-muted/70 truncate tracking-wide mt-0.5">{user ? 'Cloud Sync Mode' : 'Local Data Mode'}</p>
             </div>
           </div>
 
@@ -131,7 +131,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
               aria-label="Securely sign out of current session"
             >
               <LogOut className="w-3.5 h-3.5 transition-colors group-hover:text-alert shrink-0" aria-hidden="true" />
-              <span className="text-[10px] uppercase tracking-[0.12em] font-bold">Sign Out</span>
+              <span className="text-xs uppercase tracking-[0.12em] font-bold">Sign Out</span>
             </button>
           )}
         </div>

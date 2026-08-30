@@ -1,4 +1,4 @@
-import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Download, Plus, PieChart, ArrowUpRight, ArrowDownRight, Trash2, Edit3, Settings2, KeyRound, Check, X, ChevronDown, Search, Maximize2, CalendarRange, RotateCcw, History as HistoryIcon } from 'lucide-react';
+import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Download, Plus, PieChart, ArrowUpRight, ArrowDownRight, Trash2, Edit3, Settings2, KeyRound, Check, X, ChevronDown, Search, Maximize2, CalendarRange, RotateCcw, History as HistoryIcon, Receipt } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Transaction, Budget } from '../types';
 import AnimatedNumber from './AnimatedNumber';
@@ -37,11 +37,11 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
         style={{ backgroundColor: bg }}
         className="absolute inset-0 flex items-center justify-between px-8 z-0"
       >
-        <motion.div style={{ opacity: editOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+        <motion.div style={{ opacity: editOpacity }} className="flex items-center gap-2 text-white font-black text-xs uppercase tracking-widest">
           <Edit3 className="w-5 h-5" />
           <span>Edit</span>
         </motion.div>
-        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-2 text-white font-black text-xs uppercase tracking-widest">
           <span>Delete</span>
           <Trash2 className="w-5 h-5" />
         </motion.div>
@@ -67,7 +67,7 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
             onEdit(t);
           }
         }}
-        className={`relative z-10 p-4 sm:p-6 bg-white/[0.01] border-b border-white/[0.03] flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-colors cursor-pointer ${isLatest ? 'border-l-4 border-l-success bg-success/[0.02]' : ''} hover:bg-black/[0.02] ${t.id.toString().startsWith('temp-') ? 'opacity-50 grayscale-[0.5]' : ''}`}
+        className={`relative z-10 p-4 sm:p-6 bg-white/[0.01] border-b border-white/[0.03] flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-colors cursor-pointer ${isLatest ? 'border-l-2 border-l-success bg-success/[0.02]' : ''} hover:bg-black/[0.02] ${t.id.toString().startsWith('temp-') ? 'opacity-50 grayscale-[0.5]' : ''}`}
       >
         <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-subtle rounded-full flex items-center justify-center border border-border transition-all group-hover:scale-110 group-hover:border-accent/30 flex-shrink-0">
@@ -77,18 +77,18 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
             <div className="flex items-center gap-3 mb-1">
               <p className="text-sm sm:text-base font-black text-ink leading-tight truncate">{t.description || t.category || t.merchant}</p>
               {isLatest && !t.id.toString().startsWith('temp-') && (
-                <span className="px-2 py-1 rounded-lg bg-accent text-[9px] font-black text-white uppercase tracking-widest shadow-lg shadow-accent/20">Latest</span>
+                <span className="px-2 py-1 rounded-lg bg-accent text-xs font-black text-white uppercase tracking-widest shadow-lg shadow-accent/20">Latest</span>
               )}
               {t.id.toString().startsWith('temp-') && (
-                <span className="px-2 py-1 rounded-lg bg-warning/20 border border-warning/30 text-[9px] font-black text-warning uppercase tracking-widest animate-pulse">Syncing...</span>
+                <span className="px-2 py-1 rounded-lg bg-warning/20 border border-warning/30 text-xs font-black text-warning uppercase tracking-widest animate-pulse">Syncing…</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-[10px] uppercase font-black tracking-widest text-muted">{t.category}</span>
+              <span className="text-xs uppercase font-black tracking-widest text-muted">{t.category}</span>
               <span className="w-1 h-1 bg-white/10 rounded-full" />
-              <span className="text-[10px] font-mono text-muted truncate max-w-[100px] sm:max-w-none">{t.merchant}</span>
+              <span className="text-xs font-mono text-muted truncate max-w-[100px] sm:max-w-none">{t.merchant}</span>
               <span className="w-1 h-1 bg-white/10 rounded-full" />
-              <span className="text-[10px] font-mono text-muted">{format(parseISO(t.date), 'MMM d, yyyy')}</span>
+              <span className="text-xs font-mono text-muted">{format(parseISO(t.date), 'MMM d, yyyy')}</span>
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@ const NoirTooltip = ({ active, payload }: any) => {
     const val = payload[0].value;
     return (
       <div className="bg-surface backdrop-blur-md border border-border p-3 rounded-2xl shadow-xl">
-        <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.name}</p>
+        <p className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.name}</p>
         <p className={`text-sm font-mono font-black ${val >= 0 ? 'text-success' : 'text-alert'}`}>
           {val >= 0 ? '+' : '-'}${Math.abs(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
@@ -360,7 +360,7 @@ export default function Expenses({
 
   const handleExportAllTime = async () => {
     if (!auth.currentUser) return;
-    toast.info('Preparing full ledger export...');
+    toast.info('Preparing full ledger export…');
     try {
       const q = query(collection(db, 'transactions'), where('uid', '==', auth.currentUser.uid));
       const snap = await getDocs(q);
@@ -456,8 +456,8 @@ export default function Expenses({
                 className="precise-button !px-6 !py-2.5 flex items-center gap-2 group/btn disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform" />
-                <span className="hidden sm:inline text-[10px] uppercase font-black tracking-widest">New Entry</span>
-                <span className="sm:hidden text-[10px] uppercase font-black tracking-widest">Add</span>
+                <span className="hidden sm:inline text-xs uppercase font-black tracking-widest flex items-center gap-1.5">New Entry <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono font-normal tracking-normal lowercase">alt+a</kbd></span>
+                <span className="sm:hidden text-xs uppercase font-black tracking-widest">Add</span>
               </button>
             </div>
           </div>
@@ -528,7 +528,7 @@ export default function Expenses({
            {dateRange ? (
               <button 
                  onClick={() => setDateRange(null)}
-                 className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-alert/10 text-muted hover:text-alert border border-border rounded-xl transition-all text-[10px] uppercase font-black tracking-widest w-full sm:w-auto justify-center"
+                 className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-alert/10 text-muted hover:text-alert border border-border rounded-xl transition-all text-xs uppercase font-black tracking-widest w-full sm:w-auto justify-center"
               >
                  <RotateCcw className="w-3.5 h-3.5" />
                  Reset Filter
@@ -547,14 +547,14 @@ export default function Expenses({
           <div className="space-y-2 md:space-y-4">
             <div className="flex items-center gap-2 mb-1 md:mb-2">
               <Landmark className="w-3.5 md:w-4 h-3.5 md:h-4 text-accent animate-pulse" />
-              <span className="text-[10px] md:micro-label !text-accent tracking-[0.12em] sm:tracking-[0.3em] font-black uppercase">Historical Reserves</span>
+              <span className="text-xs md:micro-label !text-accent tracking-[0.12em] sm:tracking-[0.3em] font-black uppercase">Historical Reserves</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-black text-ink tracking-tighter tabular-nums">
               ${allTimeSavings.toLocaleString()}
             </h2>
             <div className="flex items-center gap-2 text-muted">
               <TrendingUp className="w-3 md:w-3.5 h-3 md:h-3.5 text-success" />
-              <span className="text-[10px] md:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest leading-none">Cumulative Savings Volume</span>
+              <span className="text-xs md:text-xs font-bold uppercase tracking-wide sm:tracking-widest leading-none">Cumulative Savings Volume</span>
             </div>
           </div>
           
@@ -563,8 +563,8 @@ export default function Expenses({
                <div>
               {allTimeSavings <= 0 ? (
                 <div className="mt-4 p-4 rounded-xl border border-dashed border-border bg-bg/50 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60">No reserve growth yet</p>
-                  <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted/40 mt-1">Income will appear here as transactions are logged.</p>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-muted/60">No reserve growth yet</p>
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted/40 mt-1">Income will appear here as transactions are logged.</p>
                 </div>
               ) : null}
                  <p className="text-xs font-black uppercase text-ink tracking-wide sm:tracking-widest mb-1">Target Milestone</p>
@@ -654,7 +654,7 @@ export default function Expenses({
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 border border-dashed border-border/40 rounded-[28px] bg-bg/40">
                   <PieChart className="w-8 h-8 text-muted/40 mb-3" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted/60">No spending data yet</p>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-muted/60">No spending data yet</p>
                 </div>
               )}
             </div>
@@ -679,7 +679,7 @@ export default function Expenses({
                   </div>
                   <div>
                     <h3 className="text-xs font-black text-ink uppercase tracking-widest">Global Spend Limit</h3>
-                    <p className="text-[9px] text-muted/60 uppercase tracking-tight">Primary Monthly Benchmark</p>
+                    <p className="text-xs text-muted/60 uppercase tracking-tight">Primary Monthly Benchmark</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 focus-within:border-accent/40 transition-all">
@@ -697,7 +697,7 @@ export default function Expenses({
 
                <div className="mb-6 flex items-center gap-4">
                 <div className="h-px flex-1 bg-border/30" />
-                <span className="text-[10px] font-black text-muted/70 uppercase tracking-[0.12em] sm:tracking-[0.3em]">Mapping Controls</span>
+                <span className="text-xs font-black text-muted/70 uppercase tracking-[0.12em] sm:tracking-[0.3em]">Mapping Controls</span>
                 <div className="h-px flex-1 bg-border/30" />
               </div>
 
@@ -708,7 +708,7 @@ export default function Expenses({
                   return (
                     <div key={cat} className="p-4 bg-bg rounded-2xl border border-border flex items-center justify-between gap-4">
                       <div className="flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted mb-1">{cat}</p>
+                        <p className="text-xs font-bold uppercase tracking-wide sm:tracking-widest text-muted mb-1">{cat}</p>
                         {isEditing ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-mono text-ink">$</span>
@@ -757,7 +757,7 @@ export default function Expenses({
                       onClick={handleExportFiltered} 
                       aria-label="Export filtered" 
                       title="Export Current View"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-accent/10 text-muted/70 hover:text-accent rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-accent/10 text-muted/70 hover:text-accent rounded-full transition-all text-xs font-black uppercase tracking-widest"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Filtered
@@ -767,7 +767,7 @@ export default function Expenses({
                       onClick={handleExportAllTime} 
                       aria-label="Export all time" 
                       title="Export All-Time History"
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-success/10 text-muted/70 hover:text-success rounded-full transition-all text-[10px] font-black uppercase tracking-widest"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-success/10 text-muted/70 hover:text-success rounded-full transition-all text-xs font-black uppercase tracking-widest"
                     >
                       <HistoryIcon className="w-3.5 h-3.5" />
                       All-Time
@@ -820,7 +820,7 @@ export default function Expenses({
             <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="relative bg-surface w-full max-w-xs rounded-[32px] shadow-2xl border border-border/30 p-10 text-center">
               <div className="w-16 h-16 bg-alert/20 rounded-full flex items-center justify-center mx-auto mb-6"><Trash2 className="w-6 h-6 text-alert" /></div>
               <h3 className="text-2xl font-display font-black text-ink mb-2 uppercase tracking-tight">Delete Entry?</h3>
-              <p className="text-muted text-[11px] mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
+              <p className="text-muted text-xs mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
               <div className="flex gap-4">
                 <button onClick={() => setTransactionToDelete(null)} className="flex-1 py-3 bg-surface-subtle/20 border border-border/40 rounded-full font-semibold text-sm text-muted/70 transition-all hover:bg-surface/50">Cancel</button>
                 <button onClick={() => { onDeleteExpense(transactionToDelete); setTransactionToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-semibold text-sm shadow-2xl shadow-alert/30 hover:bg-alert/90 transition-all">Delete</button>

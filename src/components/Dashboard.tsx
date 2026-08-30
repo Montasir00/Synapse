@@ -137,14 +137,14 @@ export default function Dashboard({
             className="precise-button flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px]"
           >
             <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Add Task</span>
+            <span className="text-xs font-black uppercase tracking-widest">Add Task</span>
           </button>
           <button
             onClick={onAddExpense}
             className="precise-button flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px]"
           >
             <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">Log Expense</span>
+            <span className="text-xs font-black uppercase tracking-widest">Log Expense</span>
           </button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function Dashboard({
         
         {/* Savings Reserve */}
         <div className="space-y-2 border-b border-border/20 md:border-b-0 pb-6 md:pb-0">
-          <span className="text-[10px] font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
+          <span className="text-xs font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
             <PiggyBank className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             Savings Reserve
           </span>
@@ -168,7 +168,7 @@ export default function Dashboard({
 
         {/* Monthly Expenditure */}
         <div className="space-y-2">
-          <span className="text-[10px] font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
+          <span className="text-xs font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
             <Calculator className="w-3.5 h-3.5 text-alert" aria-hidden="true" />
             Monthly Spend
           </span>
@@ -191,12 +191,12 @@ export default function Dashboard({
             <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-muted/60 uppercase tracking-wide block">Receivables (Lent)</span>
+            <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block">Receivables (Lent)</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-mono font-black text-success tracking-tight tabular-nums">
                 +${totalLentPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[9px] font-bold text-muted/50 font-mono">USD</span>
+              <span className="text-xs font-bold text-muted/50 font-mono">USD</span>
             </div>
           </div>
         </div>
@@ -207,12 +207,12 @@ export default function Dashboard({
             <ArrowDownRight className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-muted/60 uppercase tracking-wide block">Payables (Borrowed)</span>
+            <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block">Payables (Borrowed)</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-mono font-black text-alert tracking-tight tabular-nums">
                 -${totalBorrowedPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[9px] font-bold text-muted/50 font-mono">USD</span>
+              <span className="text-xs font-bold text-muted/50 font-mono">USD</span>
             </div>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function Dashboard({
         {/* Column Left: Digital Exposures (Asset Inventory) */}
         <div className="lg:col-span-3 space-y-6">
           <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
-            <span className="text-[10px] font-bold text-ink uppercase tracking-wide flex items-center gap-2">
+            <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-accent" />
               Digital Asset Wealth
             </span>
@@ -238,7 +238,7 @@ export default function Dashboard({
               </h2>
               <span className="text-xs font-mono font-bold text-muted/60 tracking-widest uppercase">USD</span>
             </div>
-            <p className="text-[10px] font-bold text-muted/75 uppercase tracking-wider">
+            <p className="text-xs font-bold text-muted/75 uppercase tracking-wider">
               Total estimated valuation of your open digital exposures ({openPositions.length} active assets).
             </p>
           </div>
@@ -247,7 +247,7 @@ export default function Dashboard({
         {/* Column Right: Task Execution Index */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
-            <span className="text-[10px] font-bold text-ink uppercase tracking-wide flex items-center gap-2">
+            <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
               <ListTodo className="w-4 h-4 text-accent" />
               Task Progress
             </span>
@@ -256,7 +256,7 @@ export default function Dashboard({
           <div className="space-y-5">
             {/* Completion Index Ratio */}
             <div className="space-y-2">
-              <div className="flex items-baseline justify-between text-[11px] font-mono">
+              <div className="flex items-baseline justify-between text-xs font-mono">
                 <span className="font-semibold text-muted uppercase tracking-wide">COMPLETION RATE</span>
                 <span className="font-black text-ink">
                   {doneCount} / {totalTasksCount} ({taskCompletionRate}%)
@@ -276,7 +276,7 @@ export default function Dashboard({
             {/* List of High-Priority Pending Tasks */}
             {urgentTasks.length > 0 ? (
               <div className="space-y-3 pt-3 border-t border-border/10">
-                <span className="text-[10px] font-bold text-muted/60 uppercase tracking-wide block mb-1">
+                <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block mb-1">
                   CRITICAL TASKS PENDING
                 </span>
                 
@@ -291,7 +291,7 @@ export default function Dashboard({
                       {task.title}
                     </span>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono ${
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-widest font-mono ${
                         task.priority === 'High' 
                           ? 'bg-alert/10 text-alert' 
                           : task.priority === 'Medium' 
@@ -307,7 +307,7 @@ export default function Dashboard({
               </div>
             ) : (
               <div className="py-6 text-center rounded-xl bg-surface-subtle/10 border border-dashed border-border/20">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted/40">
+                <p className="text-xs font-black uppercase tracking-widest text-muted/40">
                   No pending critical tasks
                 </p>
               </div>

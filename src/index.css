@@ -243,16 +243,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   }
 }
 
-/* Typography guardrail: enforce minimum readable size (12px) for all ad-hoc tiny text */
-:where(.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[7px\], .text-\[8px\]) {
-  font-size: var(--text-xs) !important;
-  line-height: 1.25rem;
-}
-
-:where(.sm\:text-\[11px\], .md\:text-\[10px\], .lg\:text-\[9px\], .sm\:text-\[10px\], .text-[10px], .text-[11px]) {
-  font-size: var(--text-xs) !important;
-  line-height: 1.25rem;
-}
+/* Typography guardrail is handled at the component level */
 
 /* Custom scrollbar — thin & geometric */
 ::-webkit-scrollbar {
@@ -261,12 +252,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 ::-webkit-scrollbar-track {
   background: var(--color-surface-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-accent);
   border: 1px solid var(--color-surface-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent-hover);
@@ -284,9 +275,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* Reduced motion accessibility */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-duration: 100ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 100ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

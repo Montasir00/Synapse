@@ -240,7 +240,7 @@ export default function LogExpenseModal({
                     <div className="w-3 h-3 rounded-full bg-accent animate-ping absolute inset-0" />
                     <div className="w-3 h-3 rounded-full bg-accent relative" />
                   </div>
-                  <h2 id="expense-modal-title" className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">Ledger Synchronization</h2>
+                  <h2 id="expense-modal-title" className="text-xs font-black text-ink uppercase tracking-[0.25em]">Ledger Synchronization</h2>
                 </div>
                 <button 
                   onClick={() => !isSubmitting && onClose()}
@@ -257,7 +257,7 @@ export default function LogExpenseModal({
                   type="button"
                   onClick={() => { setType('expense'); haptics.light(); }}
                   aria-pressed={type === 'expense'}
-                  className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'expense' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
+                  className={`flex-1 py-3 text-center rounded-full text-xs font-black uppercase tracking-widest transition-all ${type === 'expense' ? 'bg-surface text-ink shadow-sm border border-border' : 'text-muted hover:text-ink'}`}
                 >
                   Expense
                 </button>
@@ -265,7 +265,7 @@ export default function LogExpenseModal({
                   type="button"
                   onClick={() => { setType('income'); haptics.light(); }}
                   aria-pressed={type === 'income'}
-                  className={`flex-1 py-3 text-center rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${type === 'income' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
+                  className={`flex-1 py-3 text-center rounded-full text-xs font-black uppercase tracking-widest transition-all ${type === 'income' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-muted hover:text-ink'}`}
                 >
                   Income
                 </button>
@@ -275,10 +275,10 @@ export default function LogExpenseModal({
                 {/* Hero Amount Field */}
                 <div className="space-y-4 group">
                   <div className="flex justify-between items-end px-1">
-                    <label htmlFor="expense-amount" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Transaction Flow</label>
+                    <label htmlFor="expense-amount" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em]">Transaction Flow</label>
                     <div className="flex items-center gap-1.5 text-accent">
                       <Sparkles className="w-3 h-3" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Precision Entry</span>
+                      <span className="text-xs font-bold uppercase tracking-widest">Precision Entry</span>
                     </div>
                   </div>
                   
@@ -306,7 +306,7 @@ export default function LogExpenseModal({
                     </div>
                   </div>
                   {amountError && (
-                    <p className="text-[10px] font-black text-alert uppercase tracking-widest px-2">Verify transaction magnitude</p>
+                    <p className="text-xs font-black text-alert uppercase tracking-widest px-2">Verify transaction magnitude</p>
                   )}
                 </div>
 
@@ -315,11 +315,11 @@ export default function LogExpenseModal({
                   {/* Merchant Field */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label htmlFor="expense-merchant" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Counterparty</label>
+                      <label htmlFor="expense-merchant" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em]">Counterparty</label>
                       <button 
                         type="button"
                         onClick={() => setIsAddingSource(!isAddingSource)}
-                        className="text-[10px] font-black text-accent hover:text-ink transition-colors"
+                        className="text-xs font-black text-accent hover:text-ink transition-colors"
                       >
                         {isAddingSource ? 'CLOSE' : '+ SOURCE'}
                       </button>
@@ -367,7 +367,7 @@ export default function LogExpenseModal({
 
                   {/* Date Field */}
                   <div className="space-y-3">
-                    <label htmlFor="expense-date" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em] px-1">Execution Date</label>
+                    <label htmlFor="expense-date" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em] px-1">Execution Date</label>
                     <div className="relative">
                       <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/70 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <input 
@@ -385,11 +385,11 @@ export default function LogExpenseModal({
                 {/* Category Picker */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center px-1">
-                    <label htmlFor="expense-category" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em]">Allocation Class</label>
+                    <label htmlFor="expense-category" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em]">Allocation Class</label>
                     <button 
                       type="button"
                       onClick={() => setIsAddingCategory(!isAddingCategory)}
-                      className="text-[10px] font-black text-accent hover:text-ink transition-colors"
+                      className="text-xs font-black text-accent hover:text-ink transition-colors"
                     >
                       {isAddingCategory ? 'CLOSE' : '+ CLASS'}
                     </button>
@@ -430,7 +430,7 @@ export default function LogExpenseModal({
 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label htmlFor="expense-notes" className="text-[10px] font-black text-muted/70 uppercase tracking-[0.2em] px-1">Internal Log</label>
+                  <label htmlFor="expense-notes" className="text-xs font-black text-muted/70 uppercase tracking-[0.2em] px-1">Internal Log</label>
                   <div className="relative group">
                     <FileText className="absolute left-5 top-4.5 text-muted/70 w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                     <textarea 

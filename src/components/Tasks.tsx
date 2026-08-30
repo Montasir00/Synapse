@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Edit2, Trash2, CheckCircle2, Circle, ListChecks, Calendar as CalendarIcon, History, ShieldAlert, ChevronDown, ChevronUp, BrainCircuit, Zap, RotateCcw } from 'lucide-react';
 import CalendarView from './CalendarView';
 import ModuleCard from './ModuleCard';
+import EmptyState from './EmptyState';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Task, Note } from '../types';
 
@@ -35,11 +36,11 @@ function SwipeableTaskItem({ task, onUpdateStatus, onDeleteTask, onEditTask, var
         style={{ backgroundColor: bg }}
         className="absolute inset-0 flex items-center justify-between px-6 z-0"
       >
-        <motion.div style={{ opacity: completeOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+        <motion.div style={{ opacity: completeOpacity }} className="flex items-center gap-2 text-white font-black text-xs uppercase tracking-widest">
           <CheckCircle2 className="w-5 h-5" />
           <span>Complete</span>
         </motion.div>
-        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest">
+        <motion.div style={{ opacity: deleteOpacity }} className="flex items-center gap-2 text-white font-black text-xs uppercase tracking-widest">
           <span>Delete</span>
           <Trash2 className="w-5 h-5" />
         </motion.div>
@@ -210,7 +211,7 @@ export default function Tasks({
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 lg:gap-8 pb-6 sm:pb-8 border-b border-border/50 relative overflow-hidden group">
          <div className="space-y-1 relative z-10">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-ink tracking-tighter text-balance">Task Board</h1>
-            <p className="text-muted text-[10px] sm:text-xs font-medium uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-2">
+            <p className="text-muted text-xs sm:text-xs font-medium uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-2">
                <Zap className={`w-3 h-3 ${isFocusMode ? 'text-accent animate-spin-slow' : 'text-accent animate-pulse'}`} /> 
                {isFocusMode ? 'Focus view active' : 'Board view active'}
             </p>
@@ -244,8 +245,8 @@ export default function Tasks({
                <span className="sm:hidden">{isFocusMode ? 'All' : 'Focus'}</span>
             </button>
 
-            <button onClick={onAddTask} className="precise-button !px-6 sm:!px-8 !py-2.5 sm:!py-3 shadow-accent/10 w-full sm:w-auto text-[10px] sm:text-[11px]">
-               Add Task
+            <button onClick={onAddTask} className="precise-button !px-6 sm:!px-8 !py-2.5 sm:!py-3 shadow-accent/10 w-full sm:w-auto text-xs sm:text-xs">
+               <span className="flex items-center gap-1.5 justify-center">Add Task <kbd className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono font-normal tracking-normal lowercase hidden sm:inline-block">alt+n</kbd></span>
             </button>
          </div>
       </div>
@@ -266,9 +267,13 @@ export default function Tasks({
                badge={isFocusMode ? "Priority Focus" : "Daily"}
             >
                {dailyTasks.length === 0 ? (
-                  <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center">
-                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">No daily tasks yet</p>
-                  </div>
+                  <EmptyState
+                     icon={<Zap className="w-8 h-8" />}
+                     title="No daily protocols"
+                     description="Establish a daily routine to keep your focus sharp and your performance audited."
+                     actionText="Add Protocol"
+                     onAction={onAddTask}
+                  />
                ) : (
                   <AnimatePresence mode="popLayout">
                      {dailyTasks.map(task => (
@@ -319,11 +324,15 @@ export default function Tasks({
                      status="active"
                      maxItems={3}
                   >
-                     {longTermTasks.length === 0 ? (
-                        <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center">
-                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">No long-term tasks yet</p>
-                        </div>
-                     ) : (
+                      {longTermTasks.length === 0 ? (
+                         <EmptyState
+                            icon={<ListChecks className="w-8 h-8" />}
+                            title="No active epics"
+                            description="Define strategic milestones to track your execution over longer horizons."
+                            actionText="Create Epic"
+                            onAction={onAddTask}
+                         />
+                      ) : (
                         <AnimatePresence mode="popLayout">
                            {longTermTasks.map(task => (
                               <motion.div 
@@ -358,7 +367,7 @@ export default function Tasks({
                   >
                      {overdueTasks.length === 0 ? (
                         <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center">
-                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">Nothing overdue</p>
+                           <p className="text-xs font-black uppercase tracking-[0.18em] text-muted/60">Nothing overdue</p>
                         </div>
                      ) : (
                         <AnimatePresence mode="popLayout">
@@ -413,11 +422,13 @@ export default function Tasks({
                      aria-label="Record memo"
                   />
                   <div className="space-y-3">
-                     {notes.length === 0 ? (
-                        <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center">
-                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">No notes recorded</p>
-                        </div>
-                     ) : notes.map(note => (
+                      {notes.length === 0 ? (
+                         <EmptyState
+                            icon={<FileText className="w-8 h-8" />}
+                            title="No active notes"
+                            description="Log cognitive context, links, or fleeting thoughts to offload working memory."
+                         />
+                      ) : notes.map(note => (
                         <div key={note.id} className="p-3 sm:p-4 bg-surface border border-border rounded-2xl relative group hover:border-dark-border transition-all">
                            <p className="text-xs sm:text-sm font-medium text-ink/70 leading-relaxed pr-6 break-words">{note.content}</p>
                            <button onClick={() => onDeleteNote?.(note.id)} aria-label="Delete note" className="absolute top-3 right-3 p-1 opacity-70 group-hover:opacity-100 text-muted hover:text-alert transition-all"><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
@@ -435,21 +446,23 @@ export default function Tasks({
                   {historyTasks === null ? (
                      // Not loaded yet — show a load button (0 Firebase reads)
                      <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">History not loaded</p>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-muted/60">History not loaded</p>
                         {onLoadHistory ? (
                            <button
                               onClick={handleLoadHistory}
                               disabled={historyLoading}
-                              className="px-5 py-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                              className="px-5 py-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
                            >
                               {historyLoading ? 'Loading…' : 'Load History'}
                            </button>
                         ) : null}
                      </div>
                   ) : historyTasks.length === 0 ? (
-                     <div className="p-4 rounded-2xl border border-dashed border-border/40 bg-surface/60 text-center">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted/60">No completed tasks yet</p>
-                     </div>
+                      <EmptyState
+                         icon={<History className="w-8 h-8" />}
+                         title="No logged history"
+                         description="Your completed metrics and archived execution directives will materialize here."
+                      />
                   ) : historyTasks.map(task => (
                      <div key={task.id} className="flex items-start justify-between py-2 group gap-3">
                         <div className="flex items-start gap-3 opacity-90 group-hover:opacity-100 min-w-0">

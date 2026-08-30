@@ -825,7 +825,7 @@ export default function App() {
     if (!user?.uid || !settingsDocId || isSyncingFinancials) return;
     setIsSyncingFinancials(true);
     try {
-      toast.info('Recalculating all-time savings...');
+      toast.info('Recalculating all-time savings…');
       const snap = await getDocs(query(collection(db, 'transactions'), where('uid', '==', user.uid)));
       let total = 0;
       snap.forEach((d) => {
@@ -1005,7 +1005,7 @@ export default function App() {
           deleteDoc(doc(db, 'binance_metrics', user.uid))
         ]),
         {
-          loading: 'Executing Trade Tracker Hard Reset...',
+          loading: 'Executing Trade Tracker Hard Reset…',
           success: 'Trade Tracker wiped clean. System at Time Zero.',
           error: 'Hard reset failed. Please try again.'
         }
@@ -1152,6 +1152,74 @@ export default function App() {
     const interval = setInterval(checkDailyReset, 60000);
     return () => clearInterval(interval);
   }, [user?.uid]);
+
+  // Global Keyboard Shortcuts (Cockpit Nav/Log)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl && 
+        (activeEl.tagName === 'INPUT' || 
+         activeEl.tagName === 'TEXTAREA' || 
+         activeEl.tagName === 'SELECT' || 
+         activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return; // Ignore shortcuts when typing in inputs/forms
+      }
+      
+      const key = e.key.toLowerCase();
+      
+      if (e.altKey) {
+        switch (key) {
+          case 'd':
+            e.preventDefault();
+            setActiveTab('dashboard');
+            break;
+          case 't':
+            e.preventDefault();
+            setActiveTab('tasks');
+            break;
+          case 'e':
+            e.preventDefault();
+            setActiveTab('expenses');
+            break;
+          case 'l':
+            e.preventDefault();
+            setActiveTab('loans');
+            break;
+          case 'r':
+            e.preventDefault();
+            setActiveTab('trades');
+            break;
+          case 'x':
+            e.preventDefault();
+            setActiveTab('exercises');
+            break;
+          case 's':
+            e.preventDefault();
+            setActiveTab('settings');
+            break;
+          case 'n':
+            e.preventDefault();
+            setIsTaskModalOpen(true);
+            break;
+          case 'a':
+            e.preventDefault();
+            setIsExpenseModalOpen(true);
+            break;
+          case 'g':
+            e.preventDefault();
+            setIsExerciseModalOpen(true);
+            break;
+          default:
+            break;
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Persistent Memory (Notes)
   const addNote = async (content: string) => {
@@ -1411,6 +1479,35 @@ export default function App() {
   const handleViewTasks = useCallback(() => setActiveTab('tasks'), []);
   const handleViewExpenses = useCallback(() => setActiveTab('expenses'), []);
 
+  const handleLogin = async () => {
+    try {
+      await signInWithGoogle();
+      toast.success('Signed in successfully.');
+    } catch (error: any) {
+      console.error('Error signing in:', error);
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        toast.error('This domain is not authorized. Add it in Firebase Console > Authentication > Authorized domains.', {
+          duration: 10000,
+        });
+      } else if (error.code === 'auth/popup-blocked') {
+        toast.error('The sign-in popup was blocked. Please allow popups and try again.');
+      } else {
+        toast.error('Could not sign in. Please try again.');
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Signed out successfully.');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Could not sign out.');
+    }
+  };
+
   const contentView = useMemo(() => {
     switch (activeTab) {
       case 'dashboard':
@@ -1495,7 +1592,7 @@ export default function App() {
                 if (isSyncingTrades) return;
                 const idToken = await user?.getIdToken();
                 if (idToken && user?.uid) {
-                  toast.info('Starting manual sync...');
+                  toast.info('Starting manual sync…');
                   setIsSyncingTrades(true);
                   try {
                     const result = await performGlobalTradeSync(idToken, user.uid);
@@ -1580,35 +1677,6 @@ export default function App() {
     isSyncingTrades,
     exerciseSessions
   ]);
-
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-      toast.success('Signed in successfully.');
-    } catch (error: any) {
-      console.error('Error signing in:', error);
-      
-      if (error.code === 'auth/unauthorized-domain') {
-        toast.error('This domain is not authorized. Add it in Firebase Console > Authentication > Authorized domains.', {
-          duration: 10000,
-        });
-      } else if (error.code === 'auth/popup-blocked') {
-        toast.error('The sign-in popup was blocked. Please allow popups and try again.');
-      } else {
-        toast.error('Could not sign in. Please try again.');
-      }
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success('Signed out successfully.');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Could not sign out.');
-    }
-  };
 
   const orbPosition = useMemo(() => {
     switch (activeTab) {
@@ -1738,13 +1806,13 @@ export default function App() {
               </div>
               <div className="min-w-0">
                 <h4 className="text-xs font-black uppercase tracking-wider text-ink font-display">Install Synapse</h4>
-                <p className="text-[10px] text-muted font-medium mt-0.5 leading-snug">Add to your home screen for immediate offline execution.</p>
+                <p className="text-xs text-muted font-medium mt-0.5 leading-snug">Add to your home screen for immediate offline execution.</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleInstallPWA}
-                className="px-3.5 py-1.5 bg-accent text-bg font-sans font-black text-[9px] uppercase tracking-wider rounded-lg hover:bg-accent-hover transition-colors shadow-md shadow-accent/10 cursor-pointer"
+                className="px-3.5 py-1.5 bg-accent text-bg font-sans font-black text-xs uppercase tracking-wider rounded-lg hover:bg-accent-hover transition-colors shadow-md shadow-accent/10 cursor-pointer"
               >
                 Install
               </button>
@@ -1769,8 +1837,8 @@ export default function App() {
             background: 'rgba(12, 13, 16, 0.85)', 
             backdropFilter: 'blur(24px)', 
             color: 'var(--color-ink)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '14px',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
             fontFamily: 'var(--font-sans)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
           } 

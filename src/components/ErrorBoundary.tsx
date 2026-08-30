@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
               SYSTEM DEREGULATION
             </h1>
             
-            <p className="text-[10px] font-black text-alert uppercase tracking-[0.2em] mb-4">
+            <p className="text-xs font-black text-alert uppercase tracking-[0.2em] mb-4">
               Neural OS Exception Caught
             </p>
 
@@ -72,15 +72,15 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
 
             {/* Diagnostic Command Strip Terminal */}
-            <div className="w-full bg-black/60 border border-border/50 rounded-2xl p-4 md:p-5 text-left font-mono text-[11px] leading-relaxed text-muted mb-8 overflow-hidden select-text relative">
+            <div className="w-full bg-black/60 border border-border/50 rounded-2xl p-4 md:p-5 text-left font-mono text-xs leading-relaxed text-muted mb-8 overflow-hidden select-text relative">
               <div className="flex items-center gap-2 border-b border-border/30 pb-2 mb-3">
                 <Terminal className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[9px] font-bold text-accent uppercase tracking-widest">TELEMETRY DIAGNOSTICS</span>
+                <span className="text-xs font-bold text-accent uppercase tracking-widest">TELEMETRY DIAGNOSTICS</span>
               </div>
               <div className="max-h-36 overflow-y-auto space-y-2 scrollbar-custom text-muted/90 pr-1 break-words">
                 <p className="text-alert font-bold">ERROR: {this.state.error?.toString() || 'Unknown runtime anomaly.'}</p>
                 {this.state.errorInfo && (
-                  <pre className="text-[9px] leading-snug text-muted/65 whitespace-pre-wrap font-mono">
+                  <pre className="text-xs leading-snug text-muted/65 whitespace-pre-wrap font-mono">
                     {this.state.errorInfo.componentStack}
                   </pre>
                 )}
@@ -94,14 +94,14 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="precise-button !bg-accent !text-bg !px-8 hover:!bg-accent-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-4 h-4 animate-spin-reverse" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Force Reboot OS</span>
+                <span className="text-xs font-black uppercase tracking-widest">Force Reboot OS</span>
               </button>
               <button
                 onClick={() => window.location.replace('/')}
                 className="precise-button !bg-surface-subtle/50 !text-muted hover:!text-ink hover:!border-dark-border !px-8 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <Home className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Return Home</span>
+                <span className="text-xs font-black uppercase tracking-widest">Return Home</span>
               </button>
             </div>
           </div>

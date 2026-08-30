@@ -183,7 +183,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                     <div className="w-3 h-3 rounded-full bg-accent animate-ping absolute inset-0" />
                     <div className="w-3 h-3 rounded-full bg-accent relative" />
                   </div>
-                  <h2 id="task-modal-title" className="text-[11px] font-black text-ink uppercase tracking-[0.25em]">{task ? 'System: Update Task' : 'System: Create Task'}</h2>
+                  <h2 id="task-modal-title" className="text-xs font-black text-ink uppercase tracking-[0.25em]">{task ? 'System: Update Task' : 'System: Create Task'}</h2>
                 </div>
                 <button 
                   onClick={() => !isSubmitting && onClose()}
@@ -198,10 +198,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 {/* Hero Title Field */}
                 <div className="space-y-4 group">
                   <div className="flex justify-between items-end px-1">
-                    <label htmlFor="task-title" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Objective Descriptor</label>
+                    <label htmlFor="task-title" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em]">Objective Descriptor</label>
                     <div className="flex items-center gap-1.5 text-accent">
                       <Sparkles className="w-3 h-3" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Priority Sync</span>
+                      <span className="text-xs font-bold uppercase tracking-widest">Priority Sync</span>
                     </div>
                   </div>
                   
@@ -220,13 +220,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                     />
                   </div>
                   {titleError && (
-                    <p className="text-[10px] font-black text-alert uppercase tracking-widest px-2">Objective descriptor required</p>
+                    <p className="text-xs font-black text-alert uppercase tracking-widest px-2">Objective descriptor required</p>
                   )}
                 </div>
 
                 {/* Category Grid */}
                 <div className="space-y-4">
-                  <p className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Engagement Framework</p>
+                  <p className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Engagement Framework</p>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
@@ -235,7 +235,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 ${taskCategory === 'daily' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
                     >
                       <Repeat className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'daily' ? 'scale-110' : ''}`} aria-hidden="true" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Iterative (Daily)</span>
+                      <span className="text-xs font-black uppercase tracking-widest">Iterative (Daily)</span>
                     </button>
                     <button
                       type="button"
@@ -244,7 +244,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 ${taskCategory === 'long-term' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
                     >
                       <Target className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'long-term' ? 'scale-110' : ''}`} aria-hidden="true" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Linear (Long-term)</span>
+                      <span className="text-xs font-black uppercase tracking-widest">Linear (Long-term)</span>
                     </button>
                   </div>
                 </div>
@@ -260,8 +260,8 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       className="space-y-6 p-6 sm:p-8 bg-surface-subtle/30 border border-border rounded-[32px] backdrop-blur-sm"
                     >
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em]">Project Checkpoints</label>
-                        <span className="text-[10px] font-black text-accent uppercase tracking-widest">[{subtasks.length} SECURED]</span>
+                        <label className="text-xs font-black text-muted/60 uppercase tracking-[0.2em]">Project Checkpoints</label>
+                        <span className="text-xs font-black text-accent uppercase tracking-widest">[{subtasks.length} SECURED]</span>
                       </div>
                       
                       <div className="flex gap-2">
@@ -294,7 +294,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                               key={st.id} 
                               className="flex items-center justify-between bg-surface/50 p-4 rounded-2xl border border-border group/sub"
                             >
-                              <span className="text-[10px] font-black text-ink px-2 uppercase tracking-widest">{st.title}</span>
+                              <span className="text-xs font-black text-ink px-2 uppercase tracking-widest">{st.title}</span>
                               <button type="button" onClick={() => handleRemoveSubtask(st.id)} aria-label={`Remove checkpoint: ${st.title}`} className="text-muted hover:text-alert p-1 transition-colors">
                                 <X className="w-4 h-4" aria-hidden="true" />
                               </button>
@@ -311,7 +311,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       exit={{ opacity: 0, y: -10 }}
                       className="space-y-6 p-6 sm:p-8 bg-surface-subtle/30 border border-border rounded-[32px] backdrop-blur-sm"
                     >
-                      <label htmlFor="task-recurrence" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Recurrence Protocol</label>
+                      <label htmlFor="task-recurrence" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Recurrence Protocol</label>
                       <div className="relative">
                         <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" aria-hidden="true" />
                         <select 
@@ -344,7 +344,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                                   else setRecurrence({ ...recurrence, daysOfWeek: [...current, idx] });
                                   haptics.light();
                                 }}
-                                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-[10px] font-black flex items-center justify-center transition-all ${active ? 'bg-accent text-white shadow-lg' : 'bg-surface/50 text-muted border border-border'}`}
+                                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-xs font-black flex items-center justify-center transition-all ${active ? 'bg-accent text-white shadow-lg' : 'bg-surface/50 text-muted border border-border'}`}
                               >
                                 {day}
                               </button>
@@ -359,7 +359,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 {/* Additional Vitals */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label htmlFor="task-priority" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Priority Tier</label>
+                    <label htmlFor="task-priority" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Priority Tier</label>
                     <div className="relative">
                       <Flag className="absolute left-5 top-1/2 -translate-y-1/2 text-accent/50 w-4 h-4 pointer-events-none" aria-hidden="true" />
                       <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none" aria-hidden="true" />
@@ -376,7 +376,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label htmlFor="task-deadline" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Target Deadline</label>
+                    <label htmlFor="task-deadline" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Target Deadline</label>
                     <div className="relative group">
                       <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-accent/50 w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                       <input 
@@ -392,7 +392,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label htmlFor="task-notes" className="text-[10px] font-black text-muted/60 uppercase tracking-[0.2em] px-1">Supplemental Logic</label>
+                  <label htmlFor="task-notes" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Supplemental Logic</label>
                   <div className="relative group">
                     <AlignLeft className="absolute left-5 top-4.5 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                     <textarea 
