@@ -157,6 +157,7 @@ export default function Expenses({
   onLoadRange,
   isSyncing,
 }: ExpensesProps) {
+  const [periodMode, setPeriodMode] = useState<'month' | 'all' | 'custom'>('month');
   const [savingsGoal, setSavingsGoal] = useState(5000);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [tempGoal, setTempGoal] = useState('5000');
@@ -226,8 +227,37 @@ export default function Expenses({
     });
   }, [transactionPool, selectedBudgetDate]);
 
-  // Filter transactions based on time period
+  // Filter transactions based on time period or active periodMode
   const filteredTransactions = useMemo(() => {
+    if (periodMode === 'all') {
+      return [...transactionPool].sort((a, b) => {
+        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return (b.id || '').localeCompare(a.id || '');
+      });
+    }
+
+    if (periodMode === 'month') {
+      const now = new Date();
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
+      return transactionPool
+        .filter(t => {
+          try {
+            const d = parseISO(t.date);
+            return isWithinInterval(d, { start, end });
+          } catch {
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+          if (timeDiff !== 0) return timeDiff;
+          return (b.id || '').localeCompare(a.id || '');
+        });
+    }
+
+    // Custom mode with dateRange
     const hasStart = Boolean(dateRange?.start);
     const hasEnd = Boolean(dateRange?.end);
 
@@ -250,7 +280,7 @@ export default function Expenses({
       if (aCreated !== bCreated) return bCreated - aCreated;
       return (b.id || '').localeCompare(a.id || '');
     });
-  }, [transactionPool, dateRange]);
+  }, [transactionPool, periodMode, dateRange]);
 
   // Search filter for the ledger
   const searchedTransactions = useMemo(() => {
@@ -299,9 +329,11 @@ export default function Expenses({
 
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
-    filteredTransactions.filter(t => t.type === 'expense').forEach(t => {
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
-    });
+    filteredTransactions
+      .filter(t => t.type === 'expense')
+      .forEach(t => {
+        totals[t.category] = (totals[t.category] || 0) + t.amount;
+      });
     return Object.entries(totals).sort((a, b) => b[1] - a[1]);
   }, [filteredTransactions]);
 
@@ -391,7 +423,57 @@ export default function Expenses({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 sm:space-y-10 lg:space-y-12 pb-20 sm:pb-24 lg:pb-32 px-4 sm:px-6 pt-6 sm:pt-8 lg:pt-12">
-      {/* 2. Compact Metrics - 2x2 Grid on Mobile */}
+      {/* 1. Time Horizon Switcher (0-Read Client-side Switcher) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/30">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-display font-black text-ink uppercase tracking-tight">Financial Intel</h2>
+          <p className="micro-label mt-0.5">
+            {periodMode === 'month' ? 'Viewing active calendar month' : periodMode === 'all' ? 'Viewing complete transaction history' : 'Viewing custom date range'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 p-1 bg-surface-subtle/50 rounded-full border border-border self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setPeriodMode('month');
+              setDateRange(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
+              periodMode === 'month'
+                ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            This Month
+          </button>
+          <button
+            onClick={() => {
+              setPeriodMode('all');
+              setDateRange(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
+              periodMode === 'all'
+                ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            All Time
+          </button>
+          <button
+            onClick={() => {
+              setPeriodMode('custom');
+              setIsFocusedLedgerOpen(true);
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
+              periodMode === 'custom'
+                ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                : 'text-muted hover:text-ink'
+            }`}
+          >
+            Custom Range
+          </button>
+        </div>
+      </div>
 
       {/* The Command Strip (Intel Summary) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 w-full border border-border/50 rounded-2xl bg-surface-subtle/20 overflow-hidden shadow-sm divide-x divide-y divide-border/30 sm:divide-y-0">
@@ -624,7 +706,9 @@ export default function Expenses({
           <div className="soothing-card p-6 md:p-8 flex flex-col items-center justify-center gap-6 min-w-0">
             <div className="flex-1">
               <h3 className="text-lg font-display font-black text-ink uppercase tracking-tight">Spending Breakdown</h3>
-              <p className="micro-label mt-1 uppercase tracking-widest">Category mix for the current month</p>
+              <p className="micro-label mt-1 uppercase tracking-widest">
+                {periodMode === 'month' ? 'Category mix for current month' : periodMode === 'all' ? 'All-time category mix' : 'Category mix for custom range'}
+              </p>
             </div>
             <div className="w-full md:w-[300px] min-w-0" style={{ height: 250, minHeight: 220, position: 'relative' }}>
               {categoryTotals.length > 0 ? (
