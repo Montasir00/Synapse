@@ -226,43 +226,30 @@ export default function Expenses({
     });
   }, [transactionPool, selectedBudgetDate]);
 
-  const budgetPeriodTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    budgetPeriodTransactions.filter(t => t.type === 'expense').forEach(t => {
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
-    });
-    return Object.entries(totals);
-  }, [budgetPeriodTransactions]);
-
   // Filter transactions based on time period
   const filteredTransactions = useMemo(() => {
-    if (!dateRange || !dateRange.start || !dateRange.end) {
-      // No filter active: Show the entire recent pool (last 50)
-      return [...transactionPool].sort((a, b) => {
-        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (timeDiff !== 0) return timeDiff;
-        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (aCreated !== bCreated) return bCreated - aCreated;
-        return b.id.localeCompare(a.id);
+    const hasStart = Boolean(dateRange?.start);
+    const hasEnd = Boolean(dateRange?.end);
+
+    let list = transactionPool;
+
+    if (hasStart || hasEnd) {
+      list = list.filter(t => {
+        const transactionDate = t.date.split('T')[0];
+        if (hasStart && transactionDate < dateRange!.start) return false;
+        if (hasEnd && transactionDate > dateRange!.end) return false;
+        return true;
       });
     }
 
-    const { start: rangeStart, end: rangeEnd } = dateRange;
-
-    return transactionPool
-      .filter(t => {
-        const transactionDate = t.date.split('T')[0];
-        return transactionDate >= rangeStart && transactionDate <= rangeEnd;
-      })
-      .sort((a, b) => {
-        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (timeDiff !== 0) return timeDiff;
-        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (aCreated !== bCreated) return bCreated - aCreated;
-        return b.id.localeCompare(a.id);
-      });
+    return [...list].sort((a, b) => {
+      const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (aCreated !== bCreated) return bCreated - aCreated;
+      return (b.id || '').localeCompare(a.id || '');
+    });
   }, [transactionPool, dateRange]);
 
   // Search filter for the ledger
@@ -345,16 +332,16 @@ export default function Expenses({
       Number(t.amount).toFixed(2),
       t.type
     ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(","))].join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
+    const csvString = [headers.join(','), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `synapse_filtered_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     toast.success('Filtered ledger exported.');
   };
 
@@ -364,7 +351,7 @@ export default function Expenses({
     try {
       const q = query(collection(db, 'transactions'), where('uid', '==', auth.currentUser.uid));
       const snap = await getDocs(q);
-      const allTrans = snap.docs.map(doc => doc.data() as Transaction);
+      const allTrans = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Transaction));
       
       const headers = ['Date', 'Description', 'Category', 'Merchant', 'Amount', 'Type'];
       const rows = allTrans
@@ -374,7 +361,7 @@ export default function Expenses({
           const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           if (aCreated !== bCreated) return bCreated - aCreated;
-          return b.id.localeCompare(a.id);
+          return (b.id || '').localeCompare(a.id || '');
         })
         .map(t => [
         t.date,
@@ -385,16 +372,16 @@ export default function Expenses({
         t.type
       ]);
       
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + [headers.join(','), ...rows.map(e => e.join(","))].join("\n");
-      
-      const encodedUri = encodeURI(csvContent);
+      const csvString = [headers.join(','), ...rows.map(e => e.join(","))].join("\n");
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
+      link.setAttribute("href", url);
       link.setAttribute("download", `synapse_full_history_${format(new Date(), 'yyyy-MM-dd')}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success('Full history exported.');
     } catch (e) {
       console.error('Export failed', e);
@@ -599,7 +586,7 @@ export default function Expenses({
                <motion.div 
                  style={{ transformOrigin: 'left' }}
                  initial={{ scaleX: 0 }}
-                 animate={{ scaleX: Math.min(1, allTimeSavings / savingsGoal) }}
+                 animate={{ scaleX: Math.max(0, Math.min(1, allTimeSavings / savingsGoal)) }}
                  transition={{ duration: 1.5, ease: 'circOut' }}
                  className={`h-full w-full ${allTimeSavings >= savingsGoal ? 'bg-success shadow-[0_0_20px_rgba(52,211,153,0.3)]' : 'bg-accent shadow-[0_0_20px_rgba(99,102,241,0.3)]'} relative`}
                >

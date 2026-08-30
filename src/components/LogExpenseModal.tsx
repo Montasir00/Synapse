@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Calendar, Tag, FileText, ChevronDown, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Transaction } from '../types';
+import { format as formatDate } from 'date-fns';
 import { haptics } from '../utils/haptics';
 
 interface LogExpenseModalProps {
@@ -37,7 +38,7 @@ export default function LogExpenseModal({
   const [merchant, setMerchant] = useState('');
   const [category, setCategory] = useState('Technology');
   const [type, setType] = useState<'income' | 'expense'>('expense');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDate(new Date(), 'yyyy-MM-dd'));
   const [description, setDescription] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
@@ -75,7 +76,7 @@ export default function LogExpenseModal({
       setMerchant('');
       setCategory('Technology');
       setType('expense');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(formatDate(new Date(), 'yyyy-MM-dd'));
       setDescription('');
     }
     setSubmitAttempted(false);

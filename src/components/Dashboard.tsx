@@ -71,24 +71,33 @@ export default function Dashboard({
       .reduce((acc, t) => acc + t.amount, 0);
   }, [transactions, currentMonth, currentYear]);
 
+  // Total monthly budget allocated
+  const totalMonthlyBudget = useMemo(() => {
+    return budgets.reduce((acc, b) => acc + (b.monthly_limit || 0), 0);
+  }, [budgets]);
+
+  const budgetUsagePercent = totalMonthlyBudget > 0 
+    ? Math.min(100, Math.round((monthlySpend / totalMonthlyBudget) * 100))
+    : 0;
+
   // Loans Gave (Lent) and Have to Give (Borrowed)
   const totalLentPending = useMemo(() => {
     return loans
       .filter(l => l.type === 'lent' && l.status === 'pending')
-      .reduce((acc, l) => acc + l.amount, 0);
+      .reduce((acc, l) => acc + Math.abs(l.amount || 0), 0);
   }, [loans]);
 
   const totalBorrowedPending = useMemo(() => {
     return loans
       .filter(l => l.type === 'borrowed' && l.status === 'pending')
-      .reduce((acc, l) => acc + l.amount, 0);
+      .reduce((acc, l) => acc + Math.abs(l.amount || 0), 0);
   }, [loans]);
 
   const totalCryptoValue = useMemo(() => {
     return openPositions.reduce((acc, pos) => {
-      const costBasis = pos.remainingQty * pos.avgEntryPrice;
-      const pnl = pos.realizedPnl || 0;
-      return acc + costBasis + pnl;
+      const costBasis = (pos.remainingQty || 0) * (pos.avgEntryPrice || 0);
+      const unrealized = pos.unrealizedPnl || 0;
+      return acc + costBasis + unrealized;
     }, 0);
   }, [openPositions]);
 
@@ -106,13 +115,17 @@ export default function Dashboard({
   const totalTasksCount = todoCount + doneCount;
   const taskCompletionRate = totalTasksCount > 0 ? Math.round((doneCount / totalTasksCount) * 100) : 0;
 
-  // Next 3 urgent/high-priority tasks
+  // Next 3 urgent/high-priority tasks with stable secondary sorting
   const urgentTasks = useMemo(() => {
     return tasks
       .filter(t => t.status !== 'done')
       .sort((a, b) => {
         const priorityMap = { High: 3, Medium: 2, Low: 1 };
-        return (priorityMap[b.priority] || 0) - (priorityMap[a.priority] || 0);
+        const pDiff = (priorityMap[b.priority] || 0) - (priorityMap[a.priority] || 0);
+        if (pDiff !== 0) return pDiff;
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
       })
       .slice(0, 3);
   }, [tasks]);
@@ -170,7 +183,7 @@ export default function Dashboard({
         <div className="space-y-2">
           <span className="text-xs font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
             <Calculator className="w-3.5 h-3.5 text-alert" aria-hidden="true" />
-            Monthly Spend
+            Monthly Spend {totalMonthlyBudget > 0 && <span className="text-muted/40 font-mono font-normal">/ ${totalMonthlyBudget.toLocaleString()} BUDGET ({budgetUsagePercent}%)</span>}
           </span>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl sm:text-4xl lg:text-6xl font-mono font-black text-alert tracking-tighter leading-none tabular-nums">
@@ -178,6 +191,14 @@ export default function Dashboard({
             </p>
             <span className="text-xs font-mono font-bold text-muted/60 tracking-widest uppercase">USD</span>
           </div>
+          {totalMonthlyBudget > 0 && (
+            <div className="w-full bg-surface-subtle h-1.5 rounded-full overflow-hidden mt-2">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${budgetUsagePercent > 90 ? 'bg-alert' : budgetUsagePercent > 70 ? 'bg-warning' : 'bg-accent'}`}
+                style={{ width: `${budgetUsagePercent}%` }}
+              />
+            </div>
+          )}
         </div>
 
       </div>
@@ -298,7 +319,7 @@ export default function Dashboard({
                           ? 'bg-accent/10 text-accent' 
                           : 'bg-muted/15 text-muted'
                       }`}>
-                        {task.priority}
+                        {task.priority || 'Normal'}
                       </span>
                       <ChevronRight className="w-3.5 h-3.5 text-muted/40 group-hover:text-accent transition-colors" aria-hidden="true" />
                     </div>

@@ -678,6 +678,7 @@ export default function App() {
   }, [user?.uid]);
 
   // Global background sync on app entry (sessions-based lock)
+  const isSyncingTradesRef = useRef(false);
   useEffect(() => {
     if (!user || !isAuthReady) return;
 
@@ -692,12 +693,14 @@ export default function App() {
     }
 
     const triggerSync = async () => {
-      if (isSyncingTrades) return;
+      if (isSyncingTradesRef.current) return;
       try {
         const idToken = await user.getIdToken();
-        console.log("[Sync Service] Triggering daily automated background sync...");
+        console.log("[Sync Service] Triggering daily automated background sync…");
+        isSyncingTradesRef.current = true;
         setIsSyncingTrades(true);
         const result = await performGlobalTradeSync(idToken, user.uid);
+        isSyncingTradesRef.current = false;
         setIsSyncingTrades(false);
         
         if (result.success) {
@@ -707,6 +710,8 @@ export default function App() {
           console.error("[Sync Service] Daily background sync failed:", result.error);
         }
       } catch (err) {
+        isSyncingTradesRef.current = false;
+        setIsSyncingTrades(false);
         console.error("[Sync Service] Error in daily automated trigger:", err);
       }
     };
@@ -855,7 +860,7 @@ export default function App() {
     await handleRecalculateFinancials();
   };
 
-  const loadTransactionsByRange = async (start: string, end: string) => {
+  const loadTransactionsByRange = useCallback(async (start: string, end: string) => {
     if (!user?.uid) return [];
     try {
       const snap = await getDocs(
@@ -872,7 +877,7 @@ export default function App() {
       toast.error('Could not load historical transactions.');
       return [];
     }
-  };
+  }, [user?.uid]);
 
   const upsertBudget = async (category: string, monthlyLimit: number) => {
     try {
@@ -1189,7 +1194,7 @@ export default function App() {
             break;
           case 'r':
             e.preventDefault();
-            setActiveTab('trades');
+            setActiveTab('trade-tracker');
             break;
           case 'x':
             e.preventDefault();
@@ -1201,14 +1206,20 @@ export default function App() {
             break;
           case 'n':
             e.preventDefault();
+            setIsExpenseModalOpen(false);
+            setIsExerciseModalOpen(false);
             setIsTaskModalOpen(true);
             break;
           case 'a':
             e.preventDefault();
+            setIsTaskModalOpen(false);
+            setIsExerciseModalOpen(false);
             setIsExpenseModalOpen(true);
             break;
           case 'g':
             e.preventDefault();
+            setIsTaskModalOpen(false);
+            setIsExpenseModalOpen(false);
             setIsExerciseModalOpen(true);
             break;
           default:
@@ -1232,11 +1243,21 @@ export default function App() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
-    } catch (e) { console.error('Error adding note:', e); }
+      toast.success('Note recorded.');
+    } catch (e) {
+      console.error('Error adding note:', e);
+      toast.error('Could not save note.');
+    }
   };
 
   const deleteNote = async (id: string) => {
-    try { await deleteDoc(doc(db, 'notes', id)); } catch (e) { console.error('Error deleting note:', e); }
+    try {
+      await deleteDoc(doc(db, 'notes', id));
+      toast.success('Note deleted.');
+    } catch (e) {
+      console.error('Error deleting note:', e);
+      toast.error('Could not delete note.');
+    }
   };
 
   const addTask = async (task: Omit<Task, 'id'>) => {
