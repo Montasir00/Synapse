@@ -218,76 +218,83 @@ export default function Dashboard({
 
       </div>
 
-      {/* 4. Task Execution Index */}
-      <div className="space-y-6">
-        <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
+      {/* 4. Task Execution Index — Bento Module */}
+      <div className="bg-surface/50 border border-border/70 ring-1 ring-white/5 rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="flex items-baseline justify-between pb-3 border-b border-border/30">
           <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
             <ListTodo className="w-4 h-4 text-accent" />
             Task Progress
           </span>
+          <button
+            onClick={onViewTasks}
+            className="text-xs font-black text-accent hover:text-accent-hover uppercase tracking-widest transition-colors flex items-center gap-1 active:scale-[0.97]"
+          >
+            <span>View Board</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-          <div className="space-y-5">
-            {/* Completion Index Ratio */}
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between text-xs font-mono">
-                <span className="font-semibold text-muted uppercase tracking-wide">COMPLETION RATE</span>
-                <span className="font-black text-ink">
-                  {doneCount} / {totalTasksCount} ({taskCompletionRate}%)
-                </span>
-              </div>
-              <div className="w-full h-1 bg-surface-subtle rounded-full overflow-hidden">
-                <motion.div 
-                  style={{ transformOrigin: 'left' }}
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: taskCompletionRate / 100 }}
-                  transition={{ duration: 1 }}
-                  className="h-full w-full bg-accent shadow-[0_0_8px_var(--color-accent)]"
-                />
-              </div>
+        <div className="space-y-5">
+          {/* Completion Index Ratio */}
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between text-xs font-mono">
+              <span className="font-semibold text-muted uppercase tracking-wide">COMPLETION RATE</span>
+              <span className="font-black text-ink">
+                {doneCount} / {totalTasksCount} ({taskCompletionRate}%)
+              </span>
             </div>
-
-            {/* List of High-Priority Pending Tasks */}
-            {urgentTasks.length > 0 ? (
-              <div className="space-y-3 pt-3 border-t border-border/10">
-                <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block mb-1">
-                  CRITICAL TASKS PENDING
-                </span>
-                
-                {urgentTasks.map((task) => (
-                  <button
-                    key={task.id}
-                    onClick={onViewTasks}
-                    className="w-full flex items-center justify-between text-xs py-2 border-b border-border/10 last:border-b-0 hover:text-accent cursor-pointer transition-colors group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 rounded"
-                    aria-label={`View task: ${task.title}`}
-                  >
-                    <span className="font-semibold text-ink leading-tight truncate max-w-[200px] group-hover:text-accent transition-colors">
-                      {task.title}
-                    </span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-widest font-mono ${
-                        task.priority === 'High' 
-                          ? 'bg-alert/10 text-alert' 
-                          : task.priority === 'Medium' 
-                          ? 'bg-accent/10 text-accent' 
-                          : 'bg-muted/15 text-muted'
-                      }`}>
-                        {task.priority || 'Normal'}
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted/40 group-hover:text-accent transition-colors" aria-hidden="true" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center rounded-xl bg-surface-subtle/10 border border-dashed border-border/20">
-                <p className="text-xs font-black uppercase tracking-widest text-muted/40">
-                  No pending critical tasks
-                </p>
-              </div>
-            )}
+            <div className="w-full h-1.5 bg-surface-subtle rounded-full overflow-hidden">
+              <motion.div 
+                style={{ transformOrigin: 'left' }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: taskCompletionRate / 100 }}
+                transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+                className="h-full w-full bg-accent shadow-[0_0_8px_var(--color-accent)]"
+              />
+            </div>
           </div>
+
+          {/* List of High-Priority Pending Tasks */}
+          {urgentTasks.length > 0 ? (
+            <div className="space-y-2 pt-3 border-t border-border/20">
+              <span className="text-xs font-bold text-muted/75 uppercase tracking-wide block mb-1">
+                CRITICAL TASKS PENDING
+              </span>
+              
+              {urgentTasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={onViewTasks}
+                  className="w-full flex items-center justify-between text-xs py-2.5 px-3 rounded-xl border border-transparent hover:border-border/60 hover:bg-surface/80 active:scale-[0.98] cursor-pointer transition-all group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  aria-label={`View task: ${task.title}`}
+                >
+                  <span className="font-semibold text-ink leading-tight truncate max-w-[240px] sm:max-w-md group-hover:text-accent transition-colors">
+                    {task.title}
+                  </span>
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <span className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-widest font-mono ${
+                      task.priority === 'High' 
+                        ? 'bg-alert/10 text-alert border border-alert/20' 
+                        : task.priority === 'Medium' 
+                        ? 'bg-accent/10 text-accent border border-accent/20' 
+                        : 'bg-muted/15 text-muted'
+                    }`}>
+                      {task.priority || 'Normal'}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted/40 group-hover:text-accent transition-colors" aria-hidden="true" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="py-6 text-center rounded-xl bg-surface-subtle/20 border border-dashed border-border/30">
+              <p className="text-xs font-black uppercase tracking-widest text-muted/60">
+                No pending critical tasks
+              </p>
+            </div>
+          )}
         </div>
+      </div>
 
     </motion.div>
   );

@@ -436,46 +436,32 @@ export default function Expenses({
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 bg-surface-subtle/50 rounded-full border border-border self-start sm:self-auto">
-          <button
-            onClick={() => {
-              setPeriodMode('month');
-              setDateRange(null);
-            }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
-              periodMode === 'month'
-                ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                : 'text-muted hover:text-ink'
-            }`}
-          >
-            This Month
-          </button>
-          <button
-            onClick={() => {
-              setPeriodMode('all');
-              setDateRange(null);
-            }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
-              periodMode === 'all'
-                ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                : 'text-muted hover:text-ink'
-            }`}
-          >
-            All Time
-          </button>
-          <button
-            onClick={() => {
-              setPeriodMode('custom');
-              setIsFocusedLedgerOpen(true);
-            }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-all cursor-pointer ${
-              periodMode === 'custom'
-                ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                : 'text-muted hover:text-ink'
-            }`}
-          >
-            Custom Range
-          </button>
+        <div className="flex items-center gap-1 p-1 bg-surface-subtle/50 rounded-full border border-border/80 self-start sm:self-auto relative">
+          {[
+            { id: 'month', label: 'This Month', action: () => { setPeriodMode('month'); setDateRange(null); } },
+            { id: 'all', label: 'All Time', action: () => { setPeriodMode('all'); setDateRange(null); } },
+            { id: 'custom', label: 'Custom Range', action: () => { setPeriodMode('custom'); setIsFocusedLedgerOpen(true); } }
+          ].map((tab) => {
+            const isActive = periodMode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={tab.action}
+                className={`relative px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-[0.12em] transition-colors cursor-pointer z-10 ${
+                  isActive ? 'text-white' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeHorizonPill"
+                    transition={{ type: 'spring', duration: 0.35, bounce: 0.12 }}
+                    className="absolute inset-0 bg-accent rounded-full shadow-lg shadow-accent/25 -z-10"
+                  />
+                )}
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
