@@ -3,13 +3,11 @@ import {
   LayoutDashboard, 
   CheckCircle2, 
   CreditCard, 
-  LineChart, 
   Coins, 
   Dumbbell, 
   Settings, 
   Grid, 
   X, 
-  KeyRound, 
   LogOut 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -26,20 +24,18 @@ const primaryNavItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
   { id: 'expenses', label: 'Expenses', icon: CreditCard },
-  { id: 'trade-tracker', label: 'Trades', icon: LineChart },
+  { id: 'loans', label: 'Loans', icon: Coins },
 ];
 
 const secondaryNavItems = [
-  { id: 'loans', label: 'Loans', desc: 'Receivables & Payables', icon: Coins },
   { id: 'exercises', label: 'Exercises', desc: 'Physical Load & Exertion', icon: Dumbbell },
   { id: 'settings', label: 'Settings', desc: 'System Protocol Control', icon: Settings },
-  { id: 'api-check', label: 'API Check', desc: 'Verify Data Access', icon: KeyRound },
 ];
 
 export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: MobileNavProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const isMoreActive = ['loans', 'exercises', 'settings', 'api-check'].includes(activeTab);
+  const isMoreActive = ['exercises', 'settings'].includes(activeTab);
 
   // Prevent background body scrolling when drawer is open
   useEffect(() => {
@@ -88,7 +84,7 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
                 <button
                   key={item.id}
                   onClick={() => handlePrimaryClick(item.id)}
-                  className="relative isolate flex flex-col items-center justify-center flex-1 h-14 min-w-0 rounded-2xl transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                  className="relative isolate flex flex-col items-center justify-center flex-1 h-14 min-w-0 rounded-2xl transition-all duration-200 active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                   aria-label={`Navigate to ${item.label}`}
                   aria-current={isActive ? 'page' : undefined}
                 >

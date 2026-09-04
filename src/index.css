@@ -5,7 +5,6 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", sans-serif;
-  --font-serif: "Plus Jakarta Sans", sans-serif;
   --font-headline: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
@@ -58,12 +57,6 @@
     --color-accent-hover: var(--color-expense-hover);
     --color-accent-soft: var(--color-expense-tint);
     --accent-rgb: 74, 137, 104;
-  }
-  .theme-trades {
-    --color-accent: var(--color-trade);
-    --color-accent-hover: var(--color-trade-hover);
-    --color-accent-soft: var(--color-trade-tint);
-    --accent-rgb: 216, 106, 73;
   }
   .theme-loans {
     --color-accent: var(--color-todo);

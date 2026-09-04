@@ -5,7 +5,6 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   TrendingUp, 
-  Briefcase, 
   ListTodo, 
   PiggyBank, 
   Calculator,
@@ -21,23 +20,12 @@ interface DashboardProps {
   transactions: Transaction[];
   budgets: Budget[];
   loans?: Loan[];
-  openPositions?: any[];
   allTimeSavings?: number;
   onViewTasks?: () => void;
   onViewExpenses: () => void;
   onAddTask: () => void;
   onAddExpense: () => void;
   onAddClick: () => void;
-  tradeSnapshot?: {
-    openPositions: number;
-    closedPositions: number;
-    totalNetPnl: number;
-    totalFees: number;
-    avgHoldDuration: { winner: number; loser: number };
-    tagPerformance: Record<string, { pnl: number; count: number }>;
-    lastSyncAt: number | null;
-    hasError: boolean;
-  };
 }
 
 export default function Dashboard({
@@ -45,14 +33,12 @@ export default function Dashboard({
   transactions = [],
   budgets = [],
   loans = [],
-  openPositions = [],
   allTimeSavings = 0,
   onViewTasks,
   onViewExpenses,
   onAddTask,
   onAddExpense,
   onAddClick,
-  tradeSnapshot,
 }: DashboardProps) {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -92,14 +78,6 @@ export default function Dashboard({
       .filter(l => l.type === 'borrowed' && l.status === 'pending')
       .reduce((acc, l) => acc + Math.abs(l.amount || 0), 0);
   }, [loans]);
-
-  const totalCryptoValue = useMemo(() => {
-    return openPositions.reduce((acc, pos) => {
-      const costBasis = (pos.remainingQty || 0) * (pos.avgEntryPrice || 0);
-      const unrealized = pos.unrealizedPnl || 0;
-      return acc + costBasis + unrealized;
-    }, 0);
-  }, [openPositions]);
 
   // Task Counts
   const { todoCount, doneCount } = useMemo(() => {
@@ -167,7 +145,7 @@ export default function Dashboard({
         
         {/* Savings Reserve */}
         <div className="space-y-2 border-b border-border/20 md:border-b-0 pb-6 md:pb-0">
-          <span className="text-xs font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
+          <span className="text-xs font-bold text-muted/80 uppercase tracking-wide flex items-center gap-2">
             <PiggyBank className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
             Savings Reserve
           </span>
@@ -175,21 +153,21 @@ export default function Dashboard({
             <p className="text-2xl sm:text-4xl lg:text-6xl font-mono font-black text-ink tracking-tighter leading-none tabular-nums">
               ${allTimeSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <span className="text-xs font-mono font-bold text-muted/60 tracking-widest uppercase">USD</span>
+            <span className="text-xs font-mono font-bold text-muted/70 tracking-widest uppercase">USD</span>
           </div>
         </div>
 
         {/* Monthly Expenditure */}
         <div className="space-y-2">
-          <span className="text-xs font-bold text-muted/60 uppercase tracking-wide flex items-center gap-2">
+          <span className="text-xs font-bold text-muted/80 uppercase tracking-wide flex items-center gap-2">
             <Calculator className="w-3.5 h-3.5 text-alert" aria-hidden="true" />
-            Monthly Spend {totalMonthlyBudget > 0 && <span className="text-muted/40 font-mono font-normal">/ ${totalMonthlyBudget.toLocaleString()} BUDGET ({budgetUsagePercent}%)</span>}
+            Monthly Spend {totalMonthlyBudget > 0 && <span className="text-muted/70 font-mono font-normal">/ ${totalMonthlyBudget.toLocaleString()} BUDGET ({budgetUsagePercent}%)</span>}
           </span>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl sm:text-4xl lg:text-6xl font-mono font-black text-alert tracking-tighter leading-none tabular-nums">
               ${monthlySpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <span className="text-xs font-mono font-bold text-muted/60 tracking-widest uppercase">USD</span>
+            <span className="text-xs font-mono font-bold text-muted/70 tracking-widest uppercase">USD</span>
           </div>
           {totalMonthlyBudget > 0 && (
             <div className="w-full bg-surface-subtle h-1.5 rounded-full overflow-hidden mt-2">
@@ -212,12 +190,12 @@ export default function Dashboard({
             <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block">Receivables (Lent)</span>
+            <span className="text-xs font-bold text-muted/80 uppercase tracking-wide block">Receivables (Lent)</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-mono font-black text-success tracking-tight tabular-nums">
                 +${totalLentPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-xs font-bold text-muted/50 font-mono">USD</span>
+              <span className="text-xs font-bold text-muted/70 font-mono">USD</span>
             </div>
           </div>
         </div>
@@ -228,51 +206,26 @@ export default function Dashboard({
             <ArrowDownRight className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-muted/60 uppercase tracking-wide block">Payables (Borrowed)</span>
+            <span className="text-xs font-bold text-muted/80 uppercase tracking-wide block">Payables (Borrowed)</span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-mono font-black text-alert tracking-tight tabular-nums">
                 -${totalBorrowedPending.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-xs font-bold text-muted/50 font-mono">USD</span>
+              <span className="text-xs font-bold text-muted/70 font-mono">USD</span>
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* 4. Asymmetric Grid: Digital Asset Inventory & Task Execution */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-        
-        {/* Column Left: Digital Exposures (Asset Inventory) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
-            <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-accent" />
-              Digital Asset Wealth
-            </span>
-          </div>
-
-          <div className="space-y-2 py-4">
-            <div className="flex items-baseline gap-2">
-                <h2 className="text-2xl sm:text-3xl lg:text-5xl font-mono font-black text-ink tracking-tighter leading-none">
-                ${totalCryptoValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h2>
-              <span className="text-xs font-mono font-bold text-muted/60 tracking-widest uppercase">USD</span>
-            </div>
-            <p className="text-xs font-bold text-muted/75 uppercase tracking-wider">
-              Total estimated valuation of your open digital exposures ({openPositions.length} active assets).
-            </p>
-          </div>
+      {/* 4. Task Execution Index */}
+      <div className="space-y-6">
+        <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
+          <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
+            <ListTodo className="w-4 h-4 text-accent" />
+            Task Progress
+          </span>
         </div>
-
-        {/* Column Right: Task Execution Index */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-baseline justify-between pb-3 border-b border-border/20">
-            <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-2">
-              <ListTodo className="w-4 h-4 text-accent" />
-              Task Progress
-            </span>
-          </div>
 
           <div className="space-y-5">
             {/* Completion Index Ratio */}
@@ -335,8 +288,6 @@ export default function Dashboard({
             )}
           </div>
         </div>
-
-      </div>
 
     </motion.div>
   );

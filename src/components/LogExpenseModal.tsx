@@ -403,7 +403,7 @@ export default function LogExpenseModal({
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
                         placeholder="CATEGORY NAME…"
-                        className="flex-1 bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/40"
+                        className="flex-1 bg-surface-subtle/50 rounded-2xl py-3.5 px-5 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/60"
                         autoComplete="off"
                         autoFocus
                       />

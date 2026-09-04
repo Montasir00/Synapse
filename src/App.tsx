@@ -14,8 +14,6 @@ const Dashboard = lazyWithRetry(() => import('./components/Dashboard'));
 const Tasks = lazyWithRetry(() => import('./components/Tasks'));
 const Expenses = lazyWithRetry(() => import('./components/Expenses'));
 const Exercises = lazyWithRetry(() => import('./components/Exercises'));
-const TradeTracker = lazyWithRetry(() => import('./components/TradeTracker'));
-const TempApiKeyCheck = lazyWithRetry(() => import('./components/TempApiKeyCheck'));
 const Settings = lazyWithRetry(() => import('./components/Settings'));
 const Loans = lazyWithRetry(() => import('./components/Loans'));
 import LogExpenseModal from './components/LogExpenseModal';
@@ -53,13 +51,6 @@ import {
   writeBatch,
   increment
 } from 'firebase/firestore';
-import { 
-  PersistedMetrics, 
-  TradeSyncMetadata, 
-  Position as BinancePosition 
-} from './types/binance';
-import { performGlobalTradeSync } from './services/tradeSyncService';
-import { prunePersistedTrades, prunePersistedPositions } from './services/tradePersistenceService';
 
 const ITALY_TIME_ZONE = 'Europe/Rome';
 
@@ -170,18 +161,6 @@ const TabSkeleton = ({ activeTab }: { activeTab: string }) => {
     );
   }
 
-  if (activeTab === 'trade-tracker') {
-    return (
-      <div className="w-full max-w-6xl mx-auto py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8 lg:space-y-10 pb-20 sm:pb-24 lg:pb-32">
-        <ChartSkeleton />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-          <SectionSkeleton className="h-[260px]" />
-          <SectionSkeleton className="h-[260px]" />
-        </div>
-      </div>
-    );
-  }
-
   return <DashboardSkeleton />;
 };
 
@@ -223,7 +202,6 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const [isSyncingFinancials, setIsSyncingFinancials] = useState(false);
-  const [isSyncingTrades, setIsSyncingTrades] = useState(false);
 
   // Data state
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -257,18 +235,6 @@ export default function App() {
   const [exerciseSessions, setExerciseSessions] = useState<any[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
-  const [openPositions, setOpenPositions] = useState<any[]>([]);
-  const [tradeBufferState, setTradeBufferState] = useState({
-    openPositions: 0,
-    closedPositions: 0,
-    totalNetPnl: 0,
-    totalUnrealizedPnl: 0,
-    totalFees: 0,
-    avgHoldDuration: { winner: 0, loser: 0 },
-    tagPerformance: {} as Record<string, { pnl: number; count: number }>,
-    lastSyncAt: null as number | null,
-    hasError: false,
-  });
   const [settingsDocId, setSettingsDocId] = useState<string | null>(null);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [allTimeSavings, setAllTimeSavings] = useState(0);
@@ -430,7 +396,6 @@ export default function App() {
       transactions: false,
       budgets: false,
       loans: false,
-      openPositions: false,
       settings: false,
     };
 
@@ -441,7 +406,6 @@ export default function App() {
         initialLoads.transactions &&
         initialLoads.budgets &&
         initialLoads.loans &&
-        initialLoads.openPositions &&
         initialLoads.settings
       ) {
         setIsLoading(false);
@@ -533,20 +497,6 @@ export default function App() {
     });
 
     // Open Positions Listener
-    const openPositionsQuery = query(
-      collection(db, 'binance_positions', currentUid, 'items'),
-      where('status', '==', 'OPEN')
-    );
-    const unsubscribeOpenPositions = onSnapshot(openPositionsQuery, (snapshot) => {
-      const positionsData: any[] = [];
-      snapshot.forEach((doc) => positionsData.push({ ...doc.data(), id: doc.id }));
-      setOpenPositions(positionsData);
-      markLoaded('openPositions');
-    }, (error) => {
-      console.error("[Firebase Sync] Open positions listener error:", error);
-      markLoaded('openPositions');
-    });
-
     // App Settings Listener — also carries allTimeSavings aggregate.
     const appSettingsQuery = query(collection(db, 'app_settings'), where('uid', '==', currentUid));
     const unsubscribeSettings = onSnapshot(appSettingsQuery, (snapshot) => {
@@ -576,12 +526,6 @@ export default function App() {
             .catch(console.error);
         }
 
-        const cloudTradeEpoch = Number(settings.tradeTrackerEpoch || 0);
-        if (Number.isFinite(cloudTradeEpoch) && cloudTradeEpoch > 0) {
-          localStorage.setItem('binance_trade_epoch', String(cloudTradeEpoch));
-          localStorage.setItem('binance_last_pruned_epoch', String(cloudTradeEpoch));
-        }
-
         setMerchantToCategory(settings.merchantCategoryMap ?? {});
         setCustomCategories(settings.customExpenseCategories ?? []);
 
@@ -599,7 +543,6 @@ export default function App() {
           uid: currentUid,
           monthlyBudget: 0,
           allTimeSavings: 0,
-          tradeTrackerEpoch: 0,
           merchantCategoryMap: {},
           customExpenseCategories: [],
           sourceOptions: DEFAULT_SOURCE_OPTIONS,
@@ -628,97 +571,11 @@ export default function App() {
       unsubscribeExercises();
       unsubscribeNotes();
       unsubscribeLoans();
-      unsubscribeOpenPositions();
       unsubscribeSettings();
     };
   }, [user?.uid, isAuthReady]);
 
-  // Trade tracker persisted-state listeners for dashboard buffer cards.
-  // NOTE: The binance_positions sub-collection listener has been REMOVED from here.
-  // openPositions count is now read from user_trades_sync metadata (1 doc instead of N docs).
-  useEffect(() => {
-    if (!user?.uid) return;
 
-    const metricsRef = doc(db, 'binance_metrics', user.uid);
-    const syncRef = doc(db, 'user_trades_sync', user.uid);
-
-    const unsubscribeMetrics = onSnapshot(metricsRef, (snap) => {
-      const data = snap.data() as PersistedMetrics | undefined;
-      setTradeBufferState((prev) => ({
-        ...prev,
-        totalNetPnl: data?.totalNetPnl || 0,
-        totalUnrealizedPnl: data?.totalUnrealizedPnl || 0,
-        totalFees: data?.totalFees || 0,
-        avgHoldDuration: {
-          winner: data?.avgHoldTimeWinner || 0,
-          loser: data?.avgHoldTimeLoser || 0,
-        },
-        tagPerformance: data?.tagPerformance || {},
-      }));
-    });
-
-    // openPositions is now sourced from sync metadata (saved by the sync service)
-    // instead of reading every position document individually.
-    const unsubscribeSync = onSnapshot(syncRef, (snap) => {
-      const data = snap.data() as TradeSyncMetadata | undefined;
-      setTradeBufferState((prev) => ({
-        ...prev,
-        lastSyncAt: data?.lastSyncTime || null,
-        hasError: !!data?.hasError,
-        closedPositions: data?.positionsCount || 0,
-        // openPositionsCount is not in TradeSyncMetadata yet; keep previous value.
-        openPositions: prev.openPositions,
-      }));
-    });
-
-    return () => {
-      unsubscribeMetrics();
-      unsubscribeSync();
-    };
-  }, [user?.uid]);
-
-  // Global background sync on app entry (sessions-based lock)
-  const isSyncingTradesRef = useRef(false);
-  useEffect(() => {
-    if (!user || !isAuthReady) return;
-
-    const SYNC_KEY = `synapse_last_auto_sync_${user.uid}`;
-    const lastSyncStr = localStorage.getItem(SYNC_KEY);
-    const lastSyncAt = lastSyncStr ? parseInt(lastSyncStr) : 0;
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-
-    if (Date.now() - lastSyncAt < TWENTY_FOUR_HOURS) {
-      console.log("[Sync Service] Daily quota met. Skipping automated background sync.");
-      return;
-    }
-
-    const triggerSync = async () => {
-      if (isSyncingTradesRef.current) return;
-      try {
-        const idToken = await user.getIdToken();
-        console.log("[Sync Service] Triggering daily automated background sync…");
-        isSyncingTradesRef.current = true;
-        setIsSyncingTrades(true);
-        const result = await performGlobalTradeSync(idToken, user.uid);
-        isSyncingTradesRef.current = false;
-        setIsSyncingTrades(false);
-        
-        if (result.success) {
-          localStorage.setItem(SYNC_KEY, Date.now().toString());
-          console.log(`[Sync Service] Daily background sync complete. Captured ${result.tradeCount} trades.`);
-        } else {
-          console.error("[Sync Service] Daily background sync failed:", result.error);
-        }
-      } catch (err) {
-        isSyncingTradesRef.current = false;
-        setIsSyncingTrades(false);
-        console.error("[Sync Service] Error in daily automated trigger:", err);
-      }
-    };
-
-    const timer = setTimeout(triggerSync, 500); // Slight delay for main UI to settle
-    return () => clearTimeout(timer);
-  }, [user, isAuthReady]);
 
   // Navigation Scroll-to-Top Protocol
   useEffect(() => {
@@ -966,60 +823,7 @@ export default function App() {
     }
   };
 
-  const handleUpdateTradeEpoch = async (timestamp: number) => {
-    if (!user?.uid || isSyncingTrades) {
-      if (isSyncingTrades) toast.error('Sync in progress. Cannot change settings.');
-      return;
-    }
-    
-    try {
-      const resetEpoch = timestamp.toString();
-      localStorage.setItem('binance_trade_epoch', resetEpoch);
-      localStorage.setItem('binance_last_pruned_epoch', resetEpoch);
-      localStorage.removeItem('binance_price_snapshot');
-      localStorage.removeItem('binance_baseline_trades');
-      
-      await upsertAppSettings({ tradeTrackerEpoch: timestamp });
-      toast.success('Tracking start date updated.');
-    } catch (error) {
-      console.error('Epoch Update Error:', error);
-      toast.error('Could not update tracking start date.');
-    }
-  };
 
-  const handleTradeTrackerHardReset = async () => {
-    if (!user?.uid || isSyncingTrades) {
-      if (isSyncingTrades) toast.error('Sync in progress. Cannot reset now.');
-      return;
-    }
-    
-    try {
-      const resetEpoch = Date.now().toString();
-      const resetEpochNumber = Number(resetEpoch);
-      localStorage.setItem('binance_trade_epoch', resetEpoch);
-      localStorage.setItem('binance_last_pruned_epoch', resetEpoch);
-      localStorage.removeItem('binance_price_snapshot');
-      localStorage.removeItem('binance_baseline_trades');
-      
-      toast.promise(
-        Promise.all([
-          upsertAppSettings({ tradeTrackerEpoch: resetEpochNumber }),
-          prunePersistedTrades(user.uid),
-          prunePersistedPositions(user.uid),
-          deleteDoc(doc(db, 'user_trades_sync', user.uid)),
-          deleteDoc(doc(db, 'binance_metrics', user.uid))
-        ]),
-        {
-          loading: 'Executing Trade Tracker Hard Reset…',
-          success: 'Trade Tracker wiped clean. System at Time Zero.',
-          error: 'Hard reset failed. Please try again.'
-        }
-      );
-    } catch (error) {
-      console.error('Manual Reset Error:', error);
-      toast.error('Could not complete hard reset.');
-    }
-  };
 
   const handleSystemReset = async () => {
     const currentUid = user?.uid || null;
@@ -1538,14 +1342,12 @@ export default function App() {
             transactions={transactions} 
             budgets={budgets}
             loans={loans}
-            openPositions={openPositions}
             allTimeSavings={allTimeSavings}
             onViewTasks={handleViewTasks}
             onViewExpenses={handleViewExpenses}
             onAddTask={handleAddTask}
             onAddExpense={handleAddExpense}
             onAddClick={handleAddClick}
-            tradeSnapshot={tradeBufferState}
           />
         );
       case 'tasks':
@@ -1605,66 +1407,30 @@ export default function App() {
             onToggleStatus={toggleLoanStatus}
           />
         );
-      case 'trade-tracker':
-        return (
-          <div className="theme-trades">
-            <TradeTracker 
-              onSyncTrades={async () => {
-                if (isSyncingTrades) return;
-                const idToken = await user?.getIdToken();
-                if (idToken && user?.uid) {
-                  toast.info('Starting manual sync…');
-                  setIsSyncingTrades(true);
-                  try {
-                    const result = await performGlobalTradeSync(idToken, user.uid);
-                    if (result.success) {
-                      toast.success(result.tradeCount > 0 ? `Synced ${result.tradeCount} trades.` : 'No new trades found.');
-                    } else {
-                      toast.error(result.error || 'Sync failed.');
-                    }
-                  } catch {
-                    toast.error('Sync failed unexpectedly.');
-                  } finally {
-                    setIsSyncingTrades(false);
-                  }
-                }
-              }}
-              isSyncing={isSyncingTrades}
-            />
-          </div>
-        );
       case 'exercises':
         return <Exercises sessions={exerciseSessions} onLogSession={() => setIsExerciseModalOpen(true)} />;
-      case 'api-check':
-        return <TempApiKeyCheck />;
       case 'settings':
         return (
           <Settings 
             user={user} 
             onLogin={handleLogin}
             onSystemReset={handleSystemReset}
-            onTradeReset={handleTradeTrackerHardReset}
-            onUpdateTradeEpoch={handleUpdateTradeEpoch}
-            onOpenApiCheck={() => setActiveTab('api-check')}
             onRecalculateFinancials={handleRecalculateFinancials}
             isSyncingFinancials={isSyncingFinancials}
-            isSyncingTrades={isSyncingTrades}
             tasksCount={tasks.length}
             transactionsCount={transactions.length}
             budgetsCount={budgets.length}
             notesCount={notes.length}
             loansCount={loans.length}
-            openPositionsCount={openPositions.length}
           />
         );
       default:
         return (
           <Dashboard 
             tasks={tasks} 
-            transactions={transactions}
+            transactions={transactions} 
             budgets={budgets}
             loans={loans}
-            openPositions={openPositions}
             allTimeSavings={allTimeSavings}
             onViewTasks={() => setActiveTab('tasks')}
             onViewExpenses={() => setActiveTab('expenses')}
@@ -1677,7 +1443,6 @@ export default function App() {
               setIsExpenseModalOpen(true);
             }}
             onAddClick={handleAddClick}
-            tradeSnapshot={tradeBufferState}
           />
         );
     }
@@ -1687,15 +1452,12 @@ export default function App() {
     transactions,
     budgets,
     loans,
-    openPositions,
     allTimeSavings,
-    tradeBufferState,
     notes,
     user,
     monthlyBudget,
     settingsDocId,
     isSyncingFinancials,
-    isSyncingTrades,
     exerciseSessions
   ]);
 
@@ -1706,7 +1468,6 @@ export default function App() {
       case 'expenses': return 'top-[-100px] left-[-100px]';
       case 'loans': return 'bottom-[10%] left-[-100px]';
       case 'exercises': return 'bottom-[-100px] left-[-100px]';
-      case 'trade-tracker': return 'top-[20%] right-[10%]';
       default: return 'top-[-100px] right-[-100px]';
     }
   }, [activeTab]);

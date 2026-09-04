@@ -32,7 +32,7 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
   };
 
   return (
-    <div className="relative group overflow-hidden rounded-3xl">
+    <div className="relative group overflow-hidden rounded-2xl">
       <motion.div 
         style={{ backgroundColor: bg }}
         className="absolute inset-0 flex items-center justify-between px-8 z-0"
@@ -77,18 +77,18 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
             <div className="flex items-center gap-3 mb-1">
               <p className="text-sm sm:text-base font-black text-ink leading-tight truncate">{t.description || t.category || t.merchant}</p>
               {isLatest && !t.id.toString().startsWith('temp-') && (
-                <span className="px-2 py-1 rounded-lg bg-accent text-xs font-black text-white uppercase tracking-widest shadow-lg shadow-accent/20">Latest</span>
+                <span className="px-2 py-0.5 rounded-md bg-accent text-xs font-black text-white uppercase tracking-widest shadow-sm">Latest</span>
               )}
               {t.id.toString().startsWith('temp-') && (
-                <span className="px-2 py-1 rounded-lg bg-warning/20 border border-warning/30 text-xs font-black text-warning uppercase tracking-widest animate-pulse">Syncing…</span>
+                <span className="px-2 py-0.5 rounded-md bg-warning/20 border border-warning/30 text-xs font-black text-warning uppercase tracking-widest animate-pulse">Syncing…</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-xs uppercase font-black tracking-widest text-muted">{t.category}</span>
-              <span className="w-1 h-1 bg-white/10 rounded-full" />
-              <span className="text-xs font-mono text-muted truncate max-w-[100px] sm:max-w-none">{t.merchant}</span>
-              <span className="w-1 h-1 bg-white/10 rounded-full" />
-              <span className="text-xs font-mono text-muted">{format(parseISO(t.date), 'MMM d, yyyy')}</span>
+              <span className="text-xs uppercase font-bold tracking-widest text-muted/90">{t.category}</span>
+              <span className="w-1 h-1 bg-border rounded-full" />
+              <span className="text-xs font-mono text-muted/80 truncate max-w-[100px] sm:max-w-none">{t.merchant}</span>
+              <span className="w-1 h-1 bg-border rounded-full" />
+              <span className="text-xs font-mono text-muted/80">{format(parseISO(t.date), 'MMM d, yyyy')}</span>
             </div>
           </div>
         </div>

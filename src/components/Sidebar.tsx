@@ -4,7 +4,6 @@ import {
   CreditCard,
   Coins,
   Dumbbell,
-  LineChart,
   Settings,
   LogOut,
   BrainCircuit
@@ -24,7 +23,6 @@ const navItems = [
   { id: 'expenses', label: 'Expenses', icon: CreditCard },
   { id: 'loans', label: 'Loans', icon: Coins },
   { id: 'exercises', label: 'Exercises', icon: Dumbbell },
-  { id: 'trade-tracker', label: 'Trade Tracker', icon: LineChart },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -56,7 +54,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
                 onClick={() => {
                   setActiveTab(item.id);
                 }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200 group relative active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg ${
                   isActive ? 'text-ink' : 'text-muted hover:text-ink/80'
                 }`}
                 aria-label={`Navigate to ${item.label}`}

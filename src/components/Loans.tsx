@@ -258,23 +258,8 @@ export default function Loans({
 
   const confirmLedgerUnlock = () => {
     setPermissionGateOpen(false);
-    setIsLoadingLedger(true);
-
-    // Dynamic stage updates for security effect
-    let stage = 0;
-    setLoadingStageText(loadingStages[0]);
-    const textInterval = setInterval(() => {
-      stage++;
-      if (stage < loadingStages.length) {
-        setLoadingStageText(loadingStages[stage]);
-      }
-    }, 150);
-
-    setTimeout(() => {
-      clearInterval(textInterval);
-      setIsLoadingLedger(false);
-      setActiveLedgerOpen(true);
-    }, 850);
+    setIsLoadingLedger(false);
+    setActiveLedgerOpen(true);
   };
 
   const handleQuickAddForCounterparty = () => {

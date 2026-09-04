@@ -301,13 +301,13 @@ export default function Tasks({
             {!isFocusMode && (
                <button 
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className="w-full flex items-center justify-between p-4 sm:p-6 bg-surface/60 border border-border rounded-2xl hover:border-accent/20 transition-all group"
+                  className="w-full flex items-center justify-between p-4 sm:p-6 bg-surface/60 border border-border rounded-2xl hover:border-accent/20 active:scale-[0.98] transition-all group"
                >
                   <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0">
-                     <CalendarIcon className="w-5 h-5 text-muted/40 group-hover:text-accent transition-transform group-hover:scale-110" aria-hidden="true" />
-                     <span className="text-xs font-semibold tracking-wide text-muted/60 group-hover:text-ink">Calendar View</span>
+                     <CalendarIcon className="w-5 h-5 text-muted/70 group-hover:text-accent transition-transform group-hover:scale-110" aria-hidden="true" />
+                     <span className="text-xs font-semibold tracking-wide text-muted/85 group-hover:text-ink">Calendar View</span>
                   </div>
-                  <div className="w-10 h-10 bg-surface-subtle rounded-lg flex items-center justify-center text-muted group-hover:text-accent transition-all">
+                  <div className="w-10 h-10 bg-surface-subtle rounded-xl flex items-center justify-center text-muted group-hover:text-accent transition-all">
                      {showCalendar ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
                   </div>
                </button>

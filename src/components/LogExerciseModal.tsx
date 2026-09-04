@@ -141,7 +141,7 @@ export default function LogExerciseModal({ isOpen, onClose, onAdd }: LogExercise
                       <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                       <span className="text-xs font-black text-ink uppercase tracking-[0.12em] sm:tracking-[0.3em]">Log session</span>
                     </div>
-                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted/60">Use one entry per workout to keep the timeline readable.</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted/75">Use one entry per workout to keep the timeline readable.</p>
                   </div>
                   <button 
                     onClick={() => !isSubmitting && onClose()}

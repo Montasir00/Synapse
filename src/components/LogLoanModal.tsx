@@ -225,7 +225,7 @@ export default function LogLoanModal({
                       onChange={(e) => setAmount(e.target.value)}
                       onBlur={() => setSubmitAttempted(true)}
                       placeholder="0.00" 
-                      className={`w-full bg-transparent text-4xl sm:text-5xl font-mono font-bold tabular-nums outline-none transition-colors placeholder:text-muted/30 ${type === 'lent' ? 'text-success' : 'text-ink'}`}
+                      className={`w-full bg-transparent text-4xl sm:text-5xl font-mono font-bold tabular-nums outline-none transition-colors placeholder:text-muted/60 ${type === 'lent' ? 'text-success' : 'text-ink'}`}
                       inputMode="decimal"
                       required
                       autoFocus
@@ -243,7 +243,7 @@ export default function LogLoanModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Counterparty Name Field */}
                   <div className="space-y-3">
-                    <label htmlFor="loan-name" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Counterparty (Person)</label>
+                    <label htmlFor="loan-name" className="text-xs font-black text-muted/75 uppercase tracking-[0.2em] px-1">Counterparty (Person)</label>
                     <div className="relative group">
                       <User className="absolute left-5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                       <input 

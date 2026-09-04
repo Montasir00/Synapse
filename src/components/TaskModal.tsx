@@ -214,7 +214,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       onChange={(e) => setTitle(e.target.value)}
                       onBlur={() => setSubmitAttempted(true)}
                       placeholder="ENTER OBJECTIVE TITLE…" 
-                      className="w-full bg-transparent text-xl sm:text-2xl font-display font-black outline-none transition-colors placeholder:text-muted/30 text-ink uppercase tracking-tight"
+                      className="w-full bg-transparent text-xl sm:text-2xl font-display font-black outline-none transition-colors placeholder:text-muted/60 text-ink uppercase tracking-tight"
                       required
                       autoFocus
                     />
@@ -226,13 +226,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                 {/* Category Grid */}
                 <div className="space-y-4">
-                  <p className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Engagement Framework</p>
+                  <p className="text-xs font-black text-muted/75 uppercase tracking-[0.2em] px-1">Engagement Framework</p>
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
                       onClick={() => { setTaskCategory('daily'); haptics.light(); }}
                       aria-pressed={taskCategory === 'daily'}
-                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 ${taskCategory === 'daily' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
+                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 active:scale-[0.98] ${taskCategory === 'daily' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
                     >
                       <Repeat className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'daily' ? 'scale-110' : ''}`} aria-hidden="true" />
                       <span className="text-xs font-black uppercase tracking-widest">Iterative (Daily)</span>
@@ -241,7 +241,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       type="button"
                       onClick={() => { setTaskCategory('long-term'); haptics.light(); }}
                       aria-pressed={taskCategory === 'long-term'}
-                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 ${taskCategory === 'long-term' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
+                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 active:scale-[0.98] ${taskCategory === 'long-term' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
                     >
                       <Target className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'long-term' ? 'scale-110' : ''}`} aria-hidden="true" />
                       <span className="text-xs font-black uppercase tracking-widest">Linear (Long-term)</span>
@@ -260,7 +260,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       className="space-y-6 p-6 sm:p-8 bg-surface-subtle/30 border border-border rounded-[32px] backdrop-blur-sm"
                     >
                       <div className="flex items-center justify-between px-1">
-                        <label className="text-xs font-black text-muted/60 uppercase tracking-[0.2em]">Project Checkpoints</label>
+                        <label className="text-xs font-black text-muted/75 uppercase tracking-[0.2em]">Project Checkpoints</label>
                         <span className="text-xs font-black text-accent uppercase tracking-widest">[{subtasks.length} SECURED]</span>
                       </div>
                       
@@ -271,7 +271,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                           onChange={(e) => setNewSubtask(e.target.value)}
                           placeholder="ADD CHECKPOINT…"
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubtask())}
-                          className="flex-1 bg-surface/50 rounded-2xl py-3.5 px-6 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/40 uppercase tracking-widest"
+                          className="flex-1 bg-surface/50 rounded-2xl py-3.5 px-6 text-xs font-bold focus:border-accent/40 outline-none transition-all border border-border text-ink placeholder:text-muted/60 uppercase tracking-widest"
                           aria-label="Add checkpoint"
                           name="subtask"
                         />
@@ -392,7 +392,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label htmlFor="task-notes" className="text-xs font-black text-muted/60 uppercase tracking-[0.2em] px-1">Supplemental Logic</label>
+                  <label htmlFor="task-notes" className="text-xs font-black text-muted/75 uppercase tracking-[0.2em] px-1">Supplemental Logic</label>
                   <div className="relative group">
                     <AlignLeft className="absolute left-5 top-4.5 text-muted w-4 h-4 transition-colors group-focus-within:text-accent" aria-hidden="true" />
                     <textarea 
@@ -400,7 +400,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="APPEND DETAIL…" 
-                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/40 uppercase tracking-widest"
+                      className="w-full bg-surface-subtle/50 rounded-[28px] py-4 pl-12 pr-5 text-xs font-bold focus:border-accent/40 outline-none transition-all min-h-[120px] resize-none border border-border text-ink placeholder:text-muted/60 uppercase tracking-widest"
                     />
                   </div>
                 </div>
