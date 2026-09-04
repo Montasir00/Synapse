@@ -120,8 +120,9 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight font-extrabold;
-    letter-spacing: -0.02em;
+    @apply font-display font-extrabold;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
 
   button, input, select, textarea {
@@ -277,6 +278,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 100ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Apple Design: Reduced transparency accessibility */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-surface,
+  .glass-card,
+  nav,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: var(--color-surface) !important;
+  }
+}
+
+/* Apple Design: High contrast accessibility */
+@media (prefers-contrast: more) {
+  .border,
+  [class*="border-border"] {
+    border-color: var(--color-ink) !important;
   }
 }
 

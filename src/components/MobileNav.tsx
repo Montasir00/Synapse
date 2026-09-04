@@ -73,7 +73,7 @@ export default function MobileNav({ activeTab, setActiveTab, user, onLogout }: M
       <div className="fixed bottom-0 left-0 right-0 z-[80] lg:hidden flex justify-center pointer-events-none" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="px-4 w-full flex justify-center">
         <nav
-          className="pointer-events-auto bg-surface-subtle/85 backdrop-blur-3xl border border-border/40 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-md overflow-hidden"
+          className="pointer-events-auto bg-surface-subtle/80 backdrop-blur-2xl [backdrop-filter:blur(24px)_saturate(190%)] border border-border/40 border-t-white/15 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.08)] w-full max-w-md overflow-hidden"
         >
           <div className="flex items-center justify-around gap-1 px-2 py-2">
             {primaryNavItems.map((item) => {
