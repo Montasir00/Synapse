@@ -125,9 +125,9 @@
   }
 
   button, input, select, textarea {
-    transition-property: color, background-color, border-color, box-shadow, opacity, transform, filter;
-    transition-duration: 200ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   button:disabled,

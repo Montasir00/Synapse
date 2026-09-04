@@ -156,10 +156,10 @@ export default function LogLoanModal({
           
           <motion.div 
             ref={dialogRef}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ type: 'spring', duration: 0.32, bounce: 0.08 }}
             className="relative bg-surface w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden rounded-[42px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-border"
           >
             {/* Glossy Header Overlay */}

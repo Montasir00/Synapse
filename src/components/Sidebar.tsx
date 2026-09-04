@@ -125,7 +125,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }: Sid
           {user && (
             <button
               onClick={onLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-muted hover:text-alert hover:bg-alert/5 rounded-full border border-transparent hover:border-alert/10 transition-all group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert/50"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-muted hover:text-alert hover:bg-alert/5 rounded-full border border-transparent hover:border-alert/10 active:scale-[0.97] transition-all group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert/50"
               aria-label="Securely sign out of current session"
             >
               <LogOut className="w-3.5 h-3.5 transition-colors group-hover:text-alert shrink-0" aria-hidden="true" />

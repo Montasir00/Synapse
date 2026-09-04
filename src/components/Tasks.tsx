@@ -22,9 +22,13 @@ function SwipeableTaskItem({ task, onUpdateStatus, onDeleteTask, onEditTask, var
   const deleteOpacity = useTransform(x, [-80, -20], [1, 0]);
 
   const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.x > 100) {
+    // Emil Kowalski velocity-aware gesture dismissal: flick velocity or distance threshold
+    const isFlickRight = info.velocity.x > 500 || info.offset.x > 80;
+    const isFlickLeft = info.velocity.x < -500 || info.offset.x < -80;
+
+    if (isFlickRight) {
       onUpdateStatus(task.id, task.status === 'done' ? 'todo' : 'done');
-    } else if (info.offset.x < -100) {
+    } else if (isFlickLeft) {
       onDeleteTask(task.id);
     }
   };

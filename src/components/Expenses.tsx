@@ -24,9 +24,13 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
   const isLatest = index === 0 && !searchTerm;
 
   const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.x < -100) {
+    // Emil Kowalski velocity-aware gesture dismissal: flick velocity or distance threshold
+    const isFlickLeft = info.velocity.x < -500 || info.offset.x < -80;
+    const isFlickRight = info.velocity.x > 500 || info.offset.x > 80;
+
+    if (isFlickLeft) {
       onDelete(t.id);
-    } else if (info.offset.x > 100) {
+    } else if (isFlickRight) {
       onEdit(t);
     }
   };
@@ -893,8 +897,8 @@ export default function Expenses({
               <h3 className="text-2xl font-display font-black text-ink mb-2 uppercase tracking-tight">Delete Entry?</h3>
               <p className="text-muted text-xs mb-8 font-bold tracking-widest">IRREVERSIBLE ACTION</p>
               <div className="flex gap-4">
-                <button onClick={() => setTransactionToDelete(null)} className="flex-1 py-3 bg-surface-subtle/20 border border-border/40 rounded-full font-semibold text-sm text-muted/70 transition-all hover:bg-surface/50">Cancel</button>
-                <button onClick={() => { onDeleteExpense(transactionToDelete); setTransactionToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-semibold text-sm shadow-2xl shadow-alert/30 hover:bg-alert/90 transition-all">Delete</button>
+                <button onClick={() => setTransactionToDelete(null)} className="flex-1 py-3 bg-surface-subtle/20 border border-border/40 rounded-full font-semibold text-sm text-muted/70 active:scale-[0.97] transition-all hover:bg-surface/50">Cancel</button>
+                <button onClick={() => { onDeleteExpense(transactionToDelete); setTransactionToDelete(null); }} className="flex-1 py-3 bg-alert text-white rounded-full font-semibold text-sm shadow-2xl shadow-alert/30 hover:bg-alert/90 active:scale-[0.97] transition-all">Delete</button>
               </div>
             </motion.div>
           </div>
