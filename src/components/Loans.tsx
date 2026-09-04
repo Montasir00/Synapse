@@ -301,13 +301,14 @@ export default function Loans({
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-3 bg-surface-subtle/50 px-4 py-2 rounded-full border border-border focus-within:border-accent/40 transition-all w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-muted/70" />
+          <div className="flex items-center gap-3 bg-surface-subtle/50 px-4 py-2 rounded-full border border-border focus-within:border-accent/60 focus-within:ring-1 focus-within:ring-accent/30 transition-all w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-muted/70" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search counterparty…"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              aria-label="Search counterparties"
               className="bg-transparent border-none outline-none text-xs text-ink w-full placeholder:text-muted/70 font-bold"
             />
           </div>

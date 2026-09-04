@@ -119,7 +119,7 @@ export default function Exercises({ sessions, onLogSession }: ExercisesProps) {
                   className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-start group"
                 >
                   <div className="w-full sm:w-32 h-48 sm:h-32 aspect-square rounded-2xl overflow-hidden flex-shrink-0 bg-surface-subtle/20 border border-border/60 ring-1 ring-white/5 group-hover:border-accent/40 transition-all duration-300 shadow-xl shadow-black/20">
-                    <img src={session.img || `https://picsum.photos/seed/${session.title}/200/200`} alt={session.title} width={200} height={200} className="w-full h-full object-cover grayscale opacity-50 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-500 scale-110 group-hover:scale-100" referrerPolicy="no-referrer" />
+                    <img src={session.img || `https://picsum.photos/seed/${session.title}/200/200`} alt={session.title} width={200} height={200} loading="lazy" decoding="async" className="w-full h-full object-cover grayscale opacity-50 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-500 scale-110 group-hover:scale-100" referrerPolicy="no-referrer" />
                   </div>
                   <div className="flex-1 pb-8 border-b border-border/40 w-full">
                     <div className="flex justify-between items-start mb-3">

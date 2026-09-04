@@ -521,8 +521,8 @@ export default function Expenses({
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-6 bg-surface-subtle/50 px-5 py-2.5 rounded-full border border-border focus-within:border-accent/40 transition-all w-full max-w-sm">
-            <Search className="w-4 h-4 text-muted/70" />
+          <div className="flex items-center gap-3 mt-6 bg-surface-subtle/50 px-5 py-2.5 rounded-full border border-border focus-within:border-accent/60 focus-within:ring-1 focus-within:ring-accent/30 transition-all w-full max-w-sm">
+            <Search className="w-4 h-4 text-muted/70" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search by merchant, category or amount…"
