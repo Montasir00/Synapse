@@ -122,20 +122,20 @@ export default function Dashboard({
           <h1 className="text-2xl font-display font-bold text-ink tracking-tight text-balance">System Overview</h1>
         </div>
         
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <button
             onClick={onAddTask}
-            className="precise-button flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px]"
+            className="precise-button flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px] shadow-sm shadow-accent/20"
           >
             <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
             <span className="text-xs font-black uppercase tracking-widest">Add Task</span>
           </button>
           <button
             onClick={onAddExpense}
-            className="precise-button flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px]"
+            className="flex-1 sm:flex-initial !px-5 !py-2.5 flex items-center justify-center gap-2 group min-h-[42px] rounded-[var(--radius)] bg-surface-subtle/80 hover:bg-surface border border-border/80 hover:border-accent/40 text-ink active:scale-[0.98] transition-all"
           >
-            <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
-            <span className="text-xs font-black uppercase tracking-widest">Log Expense</span>
+            <Plus className="w-3.5 h-3.5 text-accent group-hover:rotate-90 transition-transform" />
+            <span className="text-xs font-black uppercase tracking-widest text-ink/90">Log Expense</span>
           </button>
         </div>
       </div>

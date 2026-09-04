@@ -205,8 +205,8 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                     </div>
                   </div>
                   
-                  <div className={`relative flex items-center p-6 sm:p-8 bg-surface-subtle/30 rounded-[32px] border-2 transition-all duration-300 ${titleError ? 'border-alert/50' : 'border-border group-focus-within:border-accent group-focus-within:bg-accent/[0.02]'}`}>
-                    <Type className="text-accent/40 w-6 h-6 mr-4" />
+                  <div className={`relative flex items-center p-5 sm:p-6 bg-surface-subtle/30 rounded-2xl border transition-all duration-300 ${titleError ? 'border-alert/70 ring-1 ring-alert/30' : 'border-border/80 group-focus-within:border-accent group-focus-within:ring-1 group-focus-within:ring-accent/40 group-focus-within:bg-accent/[0.02]'}`}>
+                    <Type className="text-accent/60 w-5 h-5 mr-3 flex-shrink-0" />
                     <input 
                       id="task-title"
                       type="text" 
@@ -214,7 +214,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       onChange={(e) => setTitle(e.target.value)}
                       onBlur={() => setSubmitAttempted(true)}
                       placeholder="ENTER OBJECTIVE TITLE…" 
-                      className="w-full bg-transparent text-xl sm:text-2xl font-display font-black outline-none transition-colors placeholder:text-muted/60 text-ink uppercase tracking-tight"
+                      className="w-full bg-transparent text-lg sm:text-xl font-display font-bold outline-none transition-colors placeholder:text-muted/60 text-ink uppercase tracking-tight"
                       required
                       autoFocus
                     />
@@ -232,7 +232,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       type="button"
                       onClick={() => { setTaskCategory('daily'); haptics.light(); }}
                       aria-pressed={taskCategory === 'daily'}
-                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 active:scale-[0.98] ${taskCategory === 'daily' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
+                      className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 active:scale-[0.98] ${taskCategory === 'daily' ? 'bg-accent/10 border-accent/60 ring-1 ring-accent/30 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/40 border-border/80 text-muted hover:bg-surface hover:border-border'}`}
                     >
                       <Repeat className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'daily' ? 'scale-110' : ''}`} aria-hidden="true" />
                       <span className="text-xs font-black uppercase tracking-widest">Iterative (Daily)</span>
@@ -241,7 +241,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                       type="button"
                       onClick={() => { setTaskCategory('long-term'); haptics.light(); }}
                       aria-pressed={taskCategory === 'long-term'}
-                      className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-300 active:scale-[0.98] ${taskCategory === 'long-term' ? 'bg-accent/10 border-accent/40 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/30 border-border text-muted hover:bg-surface'}`}
+                      className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 active:scale-[0.98] ${taskCategory === 'long-term' ? 'bg-accent/10 border-accent/60 ring-1 ring-accent/30 text-accent shadow-xl shadow-accent/10' : 'bg-surface-subtle/40 border-border/80 text-muted hover:bg-surface hover:border-border'}`}
                     >
                       <Target className={`w-6 h-6 mb-3 transition-transform ${taskCategory === 'long-term' ? 'scale-110' : ''}`} aria-hidden="true" />
                       <span className="text-xs font-black uppercase tracking-widest">Linear (Long-term)</span>

@@ -212,7 +212,7 @@ export default function LogLoanModal({
                     </div>
                   </div>
                   
-                  <div className={`relative flex items-center p-5 sm:p-8 bg-surface-subtle/30 rounded-[32px] border-2 transition-all duration-300 ${amountError ? 'border-alert/50' : 'border-border group-focus-within:border-accent group-focus-within:bg-accent/[0.02]'}`}>
+                  <div className={`relative flex items-center p-5 sm:p-7 bg-surface-subtle/30 rounded-2xl border transition-all duration-300 ${amountError ? 'border-alert/70 ring-1 ring-alert/30' : 'border-border/80 group-focus-within:border-accent group-focus-within:ring-1 group-focus-within:ring-accent/40 group-focus-within:bg-accent/[0.02]'}`}>
                     <span className={`text-3xl sm:text-5xl font-mono font-bold mr-2 ${type === 'lent' ? 'text-success' : 'text-ink'}`}>
                       {type === 'lent' ? '+' : '-'}
                     </span>

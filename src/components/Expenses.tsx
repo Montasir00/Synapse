@@ -133,9 +133,9 @@ const NoirTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const val = payload[0].value;
     return (
-      <div className="bg-surface backdrop-blur-md border border-border p-3 rounded-2xl shadow-xl">
-        <p className="text-xs font-black text-muted uppercase tracking-[0.2em] mb-1">{payload[0].payload.name}</p>
-        <p className={`text-sm font-mono font-black ${val >= 0 ? 'text-success' : 'text-alert'}`}>
+      <div className="bg-surface/90 backdrop-blur-xl border border-border/80 ring-1 ring-white/10 p-3.5 rounded-2xl shadow-2xl">
+        <p className="text-xs font-black text-muted/90 uppercase tracking-[0.2em] mb-1.5">{payload[0].payload.name}</p>
+        <p className={`text-base font-mono font-black tabular-nums ${val >= 0 ? 'text-success' : 'text-alert'}`}>
           {val >= 0 ? '+' : '-'}${Math.abs(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
       </div>
