@@ -1,3 +1,9 @@
+import { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import { format, subMonths, startOfMonth, startOfYear, endOfMonth, isWithinInterval, endOfDay, parseISO, eachMonthOfInterval } from 'date-fns';
+import { BarChart, Bar, ResponsiveContainer, Cell, Tooltip, PieChart as RechartsPieChart, Pie, Legend, CartesianGrid } from 'recharts';
+import { db, auth } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { toast } from 'sonner';
 import { TrendingUp, Landmark, ShoppingBag, Utensils, Briefcase, Home, Plane, Download, Plus, PieChart, ArrowUpRight, ArrowDownRight, Trash2, Edit3, Settings2, KeyRound, Check, X, ChevronDown, Search, Maximize2, CalendarRange, RotateCcw, History as HistoryIcon, Receipt } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
 import { Transaction, Budget } from '../types';
@@ -109,12 +115,6 @@ function SwipeableExpenseItem({ transaction: t, onEdit, onDelete, index, searchT
     </div>
   );
 }
-import { useState, useMemo, useEffect } from 'react';
-import { format, subMonths, startOfMonth, startOfYear, endOfMonth, isWithinInterval, endOfDay, parseISO, eachMonthOfInterval } from 'date-fns';
-import { BarChart, Bar, ResponsiveContainer, Cell, Tooltip, PieChart as RechartsPieChart, Pie, Legend, CartesianGrid } from 'recharts';
-import { db, auth } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { toast } from 'sonner';
 
 interface ExpensesProps {
   transactions: Transaction[];
@@ -168,6 +168,7 @@ export default function Expenses({
   const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<{category: string, limit: string} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [selectedBudgetDate, setSelectedBudgetDate] = useState(new Date());
   const [isFocusedLedgerOpen, setIsFocusedLedgerOpen] = useState(false);
@@ -286,17 +287,17 @@ export default function Expenses({
     });
   }, [transactionPool, periodMode, dateRange]);
 
-  // Search filter for the ledger
+  // Search filter for the ledger using deferred search term
   const searchedTransactions = useMemo(() => {
-    if (!searchTerm) return filteredTransactions;
-    const lower = searchTerm.toLowerCase();
+    if (!deferredSearchTerm) return filteredTransactions;
+    const lower = deferredSearchTerm.toLowerCase();
     return filteredTransactions.filter(t =>
       (t.merchant?.toLowerCase().includes(lower)) ||
       t.category.toLowerCase().includes(lower) ||
       (t.description?.toLowerCase().includes(lower)) ||
       t.amount.toString().includes(lower)
     );
-  }, [filteredTransactions, searchTerm]);
+  }, [filteredTransactions, deferredSearchTerm]);
 
   const { totalSpent, totalIncome } = useMemo(() => {
     return filteredTransactions.reduce((acc, t) => {

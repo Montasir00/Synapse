@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import { Search, Edit2, Trash2, CheckCircle2, Circle, ListChecks, Calendar as CalendarIcon, History, ShieldAlert, ChevronDown, ChevronUp, BrainCircuit, Zap, RotateCcw } from 'lucide-react';
 import CalendarView from './CalendarView';
 import ModuleCard from './ModuleCard';
@@ -122,6 +122,7 @@ export default function Tasks({
   onLoadHistory,
 }: TasksProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showCalendar, setShowCalendar] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -133,10 +134,10 @@ export default function Tasks({
     if (!onLoadHistory || historyLoading || historyTasks !== null) return;
     setHistoryLoading(true);
     try {
-      const history = await onLoadHistory();
-      setHistoryTasks(history);
+      const olderTasks = await onLoadHistory();
+      setHistoryTasks(olderTasks);
     } catch (e) {
-      console.error('Failed to load task history', e);
+      console.error('Failed to load completed task history', e);
     } finally {
       setHistoryLoading(false);
     }
@@ -150,10 +151,10 @@ export default function Tasks({
   };
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
-      return t.title.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-  }, [tasks, searchQuery]);
+    if (!deferredSearchQuery) return tasks;
+    const query = deferredSearchQuery.toLowerCase();
+    return tasks.filter(t => t.title.toLowerCase().includes(query));
+  }, [tasks, deferredSearchQuery]);
 
   const isOverdue = (t: Task) => {
     if (t.status === 'done') return false;
